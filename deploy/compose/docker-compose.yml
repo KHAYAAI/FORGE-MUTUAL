@@ -1,0 +1,67 @@
+# Local stack for `make up` (ARCHITECTURE.md section 21.4).
+# Image tags are placeholders pinned to major versions. Each must be verified
+# against the vendor's current stable release before use (see docs/QUESTIONS.md, VERIFY-IMG).
+name: forge-local
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: forge-local-only
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:latest   # VERIFY-IMG: pin exact version
+    command: start --addresses=0.0.0.0:3000 --development /data/0_0.tigerbeetle
+    volumes: ["tb-data:/data"]
+    security_opt: ["seccomp:unconfined"]
+    ports: ["3000:3000"]
+
+  kafka:
+    image: apache/kafka:latest                      # VERIFY-IMG: KRaft single node
+    ports: ["9092:9092"]
+
+  valkey:
+    image: valkey/valkey:8                          # VERIFY-IMG
+    ports: ["6379:6379"]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest         # VERIFY-IMG
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: forge-local-only
+    ports: ["8080:8080"]
+
+  opa:
+    image: openpolicyagent/opa:latest              # VERIFY-IMG
+    command: run --server --addr 0.0.0.0:8181 /policy
+    volumes: ["../../policy:/policy:ro"]
+    ports: ["8181:8181"]
+
+  temporal:
+    image: temporalio/auto-setup:latest            # VERIFY-IMG
+    environment:
+      DB: postgres12
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PWD: forge-local-only
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["7233:7233"]
+
+  openbao:
+    image: ghcr.io/openbao/openbao:latest          # VERIFY-IMG
+    command: server -dev -dev-root-token-id=forge-local-only -dev-listen-address=0.0.0.0:8200
+    ports: ["8200:8200"]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest  # VERIFY-IMG
+    ports: ["4317:4317", "4318:4318"]
+
+volumes:
+  tb-data:
