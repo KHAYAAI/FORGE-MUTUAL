@@ -1,0 +1,33 @@
+// Event envelope and payloads (ARCHITECTURE.md 18.2 and Appendix C).
+syntax = "proto3";
+
+package forge.events.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/events/v1;eventsv1";
+
+message EventEnvelope {
+  string event_id = 1;       // UUID, unique
+  string event_type = 2;     // e.g. forge.bank.ledger.transfer.committed.v1
+  uint32 schema_version = 3;
+  string entity_code = 4;    // PLAT, BANK, DAST, MFI:<tenant>
+  string correlation_id = 5; // end-to-end business flow
+  string causation_id = 6;   // command that caused this event
+  string producer = 7;       // service name
+  google.protobuf.Timestamp occurred_at = 8;
+  bytes payload = 9;         // serialised payload message named by event_type
+}
+
+message TransferCommitted {
+  string transfer_id = 1;
+  string business_txn_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+  string asset = 5;
+  string amount_minor = 6;
+  uint32 code = 7;
+  bool pending = 8;
+  string pending_id = 9;
+  uint64 ledger_timestamp = 10;
+}

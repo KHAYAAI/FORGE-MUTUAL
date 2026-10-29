@@ -3,4 +3,5 @@ go 1.24
 use (
 	./pkg/money
 	./tools/isolation
+	./services/bank/ledger-gateway-bank
 )
