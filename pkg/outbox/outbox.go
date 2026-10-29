@@ -5,12 +5,13 @@ package outbox
 
 import (
 	"context"
-	"crypto/rand"
 	_ "embed"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/khayaai/forge-mutual/pkg/uuid"
 )
 
 //go:embed schema.sql
@@ -98,13 +99,5 @@ func Relay(ctx context.Context, pool *pgxpool.Pool, limit int, pub Publisher) (i
 	return len(events), nil
 }
 
-// NewEventID returns a random RFC 4122 version 4 UUID.
-func NewEventID() (string, error) {
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return "", err
-	}
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
-}
+// NewEventID returns a random RFC 4122 version 4 UUID for an event.
+func NewEventID() (string, error) { return uuid.NewV4() }

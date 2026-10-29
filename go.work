@@ -4,8 +4,11 @@ use (
 	./pkg/api
 	./pkg/callerauth
 	./pkg/outbox
+	./pkg/uuid
 	./pkg/money
 	./tools/isolation
 	./services/shared/policy-service
+	./services/platform/party-service
+	./services/platform/consent-service
 	./services/bank/ledger-gateway-bank
 )
