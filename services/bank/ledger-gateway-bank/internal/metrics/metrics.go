@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	ledgerv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 )
 
 // Collector holds the gateway's metrics. Register it once with a registry.

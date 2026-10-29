@@ -11,8 +11,8 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 
-	eventsv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/events/v1"
-	ledgerv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1"
+	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
 )

@@ -23,7 +23,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/auth"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"

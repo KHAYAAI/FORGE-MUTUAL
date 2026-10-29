@@ -279,7 +279,7 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"pending_id\x18\t \x01(\tR\tpendingId\x12)\n" +
 	"\x10ledger_timestamp\x18\n" +
-	" \x01(\x04R\x0fledgerTimestampB`Z^github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/events/v1;eventsv1b\x06proto3"
+	" \x01(\x04R\x0fledgerTimestampBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once

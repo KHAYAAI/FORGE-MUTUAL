@@ -5,7 +5,7 @@ package forge.events.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/events/v1;eventsv1";
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1";
 
 message EventEnvelope {
   string event_id = 1;       // UUID, unique

@@ -1372,7 +1372,7 @@ const file_forge_ledger_v1_ledger_proto_rawDesc = "" +
 	"\vPostPending\x12#.forge.ledger.v1.PostPendingRequest\x1a$.forge.ledger.v1.PostPendingResponse\x12X\n" +
 	"\vVoidPending\x12#.forge.ledger.v1.VoidPendingRequest\x1a$.forge.ledger.v1.VoidPendingResponse\x12X\n" +
 	"\vGetBalances\x12#.forge.ledger.v1.GetBalancesRequest\x1a$.forge.ledger.v1.GetBalancesResponse\x12d\n" +
-	"\x0fLookupTransfers\x12'.forge.ledger.v1.LookupTransfersRequest\x1a(.forge.ledger.v1.LookupTransfersResponseB`Z^github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1;ledgerv1b\x06proto3"
+	"\x0fLookupTransfers\x12'.forge.ledger.v1.LookupTransfersRequest\x1a(.forge.ledger.v1.LookupTransfersResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1;ledgerv1b\x06proto3"
 
 var (
 	file_forge_ledger_v1_ledger_proto_rawDescOnce sync.Once

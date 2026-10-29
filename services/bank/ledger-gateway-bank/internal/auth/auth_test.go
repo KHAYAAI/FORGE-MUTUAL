@@ -8,8 +8,8 @@ import (
 
 	"connectrpc.com/connect"
 
-	ledgerv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1/ledgerv1connect"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/memrepo"

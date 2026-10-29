@@ -15,10 +15,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/money"
-	eventsv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/events/v1"
-	ledgerv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
 )
 

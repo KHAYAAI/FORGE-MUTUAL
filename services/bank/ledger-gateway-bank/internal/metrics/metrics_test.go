@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	ledgerv1 "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 )
 
 const procedure = "/forge.ledger.v1.LedgerService/CreateTransfers"

@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package forge.ledger.v1;
 
-option go_package = "github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/gen/forge/ledger/v1;ledgerv1";
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1;ledgerv1";
 
 enum Status {
   STATUS_UNSPECIFIED = 0;
