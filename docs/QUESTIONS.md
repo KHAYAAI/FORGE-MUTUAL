@@ -20,4 +20,6 @@ Several services use `latest` or a major tag placeholder. Before the stack is re
 - **Postgres version.** ARCHITECTURE.md names PostgreSQL 17. The gateway was tested on 16.15. Re-run `make test-ledger-pg` on 17.
 - **Limits are placeholders.** `DefaultConfig` holds per-leg limits (R10M / $10M) and enabled codes so the gateway can run. Real limits belong in `tiers.yaml` and OPA. Confirm with the risk owner.
 - **Caller identity.** Local development trusts the `X-Forge-Caller` header. Production must derive the caller from the mTLS workload identity (ARCHITECTURE.md section 5). Not implemented.
-- **Not built.** Outbox reconciler, idempotency record purge (30 days), metrics and tracing.
+- **Outbox reconciler.** ARCHITECTURE.md 7.8 asks for a reconciler between TigerBeetle and the outbox. A transactional outbox makes gaps impossible inside the gateway, so this needs a decision: drop it from the spec, or keep it as a detector. Decide before Phase 1.
+- **Retention window.** Idempotency records are purged after 30 days by default (`LEDGER_IDEMPOTENCY_RETENTION`). Confirm the window against the longest client retry, and against the 30-day minimum in ARCHITECTURE.md 7.6.
+- **Tracing not built.** Metrics are built. OpenTelemetry tracing (section 22) is not.

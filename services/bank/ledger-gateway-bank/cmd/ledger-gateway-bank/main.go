@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -25,6 +27,7 @@ import (
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/auth"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/metrics"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/outbox"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/postgres"
 )
@@ -39,6 +42,7 @@ type settings struct {
 	publisher     string // "kafka" or "log"
 	callersFile   string
 	relayInterval time.Duration
+	retention     time.Duration
 }
 
 func loadSettings() (settings, error) {
@@ -51,6 +55,7 @@ func loadSettings() (settings, error) {
 		publisher:     getenv("LEDGER_PUBLISHER", "kafka"),
 		callersFile:   os.Getenv("LEDGER_CALLERS_FILE"),
 		relayInterval: 500 * time.Millisecond,
+		retention:     30 * 24 * time.Hour,
 	}
 	if v := os.Getenv("TB_CLUSTER_ID"); v != "" {
 		id, err := strconv.ParseUint(v, 10, 64)
@@ -65,6 +70,16 @@ func loadSettings() (settings, error) {
 			return s, fmt.Errorf("LEDGER_RELAY_INTERVAL: %w", err)
 		}
 		s.relayInterval = d
+	}
+	if v := os.Getenv("LEDGER_IDEMPOTENCY_RETENTION"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return s, fmt.Errorf("LEDGER_IDEMPOTENCY_RETENTION: %w", err)
+		}
+		if d < 30*24*time.Hour {
+			return s, errors.New("LEDGER_IDEMPOTENCY_RETENTION must be at least 720h (30 days)")
+		}
+		s.retention = d
 	}
 	if s.databaseURL == "" {
 		return s, errors.New("DATABASE_URL is required")
@@ -121,12 +136,18 @@ func run(log *slog.Logger) error {
 
 	relay := &outbox.Relay{Repo: repo, Publisher: pub, BatchSize: 100, Interval: s.relayInterval, Log: log}
 	go relay.Run(ctx)
+	go gateway.RunRetention(ctx, repo, s.retention, time.Hour, time.Now, log)
+
+	m := metrics.New()
+	m.Register(prometheus.DefaultRegisterer)
 
 	svc := gateway.NewService(gateway.DefaultConfig(), store, repo)
-	path, handler := ledgerv1connect.NewLedgerServiceHandler(svc, connect.WithInterceptors(allow.Interceptor()))
+	path, handler := ledgerv1connect.NewLedgerServiceHandler(svc,
+		connect.WithInterceptors(m.Interceptor(), allow.Interceptor()))
 
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
+	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if err := repo.Ping(r.Context()); err != nil {

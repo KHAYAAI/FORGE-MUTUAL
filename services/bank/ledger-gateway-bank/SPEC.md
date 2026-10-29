@@ -119,6 +119,18 @@ These were not in the original spec and should be confirmed by a human reviewer.
 - VERIFY-TB: TigerBeetle version, ID scheme, linked chains across ledgers, batch limits, and whether `exists` inside a
   linked chain counts as success. The memory model assumes it does.
 - VERIFY-KAFKA: Kafka broker configuration and franz-go behaviour under failure.
-- The reconciler that republishes gaps between TigerBeetle and the outbox (ARCHITECTURE.md 7.8) is not built.
-- Idempotency record purge after 30 days (ARCHITECTURE.md 7.6) is not built.
-- Metrics and tracing (ARCHITECTURE.md section 22) are not wired. Only health and readiness endpoints exist.
+- **Outbox reconciler (ARCHITECTURE.md 7.8) is not built, and I recommend changing that section.** The gateway writes
+  each outbox row in the same transaction as the record it belongs to, so a committed transfer without an event
+  cannot happen inside the gateway. A reconciler that compares TigerBeetle with the outbox would only detect writes
+  made outside the gateway, and the one-writer rule (invariant 6) forbids those. A human should decide between
+  dropping the reconciler from the spec or keeping it as a detector.
+- Tracing (ARCHITECTURE.md section 22) is not wired. Metrics are: `ledger_rpc_total{rpc,outcome}`,
+  `ledger_rpc_duration_seconds{rpc}` and `ledger_rejections_total{rpc,code}`, served at `/metrics`.
+  Labels never carry account, party or transfer IDs.
+
+## 11. Retention (built)
+
+- `RunRetention` deletes COMMITTED idempotency records whose result was stored more than `LEDGER_IDEMPOTENCY_RETENTION`
+  ago, every hour. The default is 720 hours and the server refuses anything shorter.
+- PENDING records are never deleted. A purged key that is replayed would move money again, so the retention must
+  exceed every client's retry window. Clients must not reuse a key after that window.

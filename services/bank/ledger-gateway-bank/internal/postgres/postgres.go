@@ -6,6 +6,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -168,6 +169,16 @@ func (r *Repo) Directory(ctx context.Context, ids []ledger.ID) (map[ledger.ID]ga
 		}
 	}
 	return out, rows.Err()
+}
+
+// PurgeRecords implements gateway.Repository.
+func (r *Repo) PurgeRecords(ctx context.Context, cutoff time.Time) (int64, error) {
+	tag, err := r.pool.Exec(ctx, `
+		delete from idempotency_record where status = 'COMMITTED' and updated_at < $1`, cutoff)
+	if err != nil {
+		return 0, fmt.Errorf("postgres: purge: %w", err)
+	}
+	return tag.RowsAffected(), nil
 }
 
 // RelayBatch implements gateway.Repository. Rows are locked with SKIP LOCKED so several

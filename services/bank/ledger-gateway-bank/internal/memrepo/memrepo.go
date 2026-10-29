@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"sync"
+	"time"
 
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
@@ -14,9 +15,17 @@ import (
 // Repo implements gateway.Repository in memory.
 type Repo struct {
 	mu      sync.Mutex
-	records map[string]*gateway.Record
-	dir     map[ledger.ID]gateway.DirectoryEntry
-	outbox  []outboxRow
+	now     func() time.Time
+	records map[string]*committedAt
+
+	dir    map[ledger.ID]gateway.DirectoryEntry
+	outbox []outboxRow
+}
+
+// committedAt is a record plus the time it was last completed, used by PurgeRecords.
+type committedAt struct {
+	rec       gateway.Record
+	updatedAt time.Time
 }
 
 type outboxRow struct {
@@ -26,9 +35,9 @@ type outboxRow struct {
 
 var _ gateway.Repository = (*Repo)(nil)
 
-// New returns an empty repository.
+// New returns an empty repository. Timestamps come from time.Now.
 func New() *Repo {
-	return &Repo{records: make(map[string]*gateway.Record), dir: make(map[ledger.ID]gateway.DirectoryEntry)}
+	return &Repo{now: time.Now, records: make(map[string]*committedAt), dir: make(map[ledger.ID]gateway.DirectoryEntry)}
 }
 
 func recKey(caller, key string) string { return caller + "\x00" + key }
@@ -39,14 +48,14 @@ func (r *Repo) Begin(_ context.Context, caller, key string, hash []byte, propose
 	defer r.mu.Unlock()
 	k := recKey(caller, key)
 	if existing, ok := r.records[k]; ok {
-		if !bytes.Equal(existing.Hash, hash) {
+		if !bytes.Equal(existing.rec.Hash, hash) {
 			return gateway.Record{}, false, gateway.ErrConflict
 		}
-		return *existing, false, nil
+		return existing.rec, false, nil
 	}
-	rec := &gateway.Record{Status: gateway.StatusPending, Hash: append([]byte(nil), hash...), IDs: append([]ledger.ID(nil), proposed...)}
-	r.records[k] = rec
-	return *rec, true, nil
+	rec := gateway.Record{Status: gateway.StatusPending, Hash: append([]byte(nil), hash...), IDs: append([]ledger.ID(nil), proposed...)}
+	r.records[k] = &committedAt{rec: rec}
+	return rec, true, nil
 }
 
 // Complete implements gateway.Repository.
@@ -57,11 +66,12 @@ func (r *Repo) Complete(_ context.Context, caller, key string, result []byte, di
 	if !ok {
 		return ErrNoRecord
 	}
-	if rec.Status == gateway.StatusCommitted {
+	if rec.rec.Status == gateway.StatusCommitted {
 		return nil
 	}
-	rec.Status = gateway.StatusCommitted
-	rec.Result = append([]byte(nil), result...)
+	rec.rec.Status = gateway.StatusCommitted
+	rec.rec.Result = append([]byte(nil), result...)
+	rec.updatedAt = r.now()
 	for _, d := range dir {
 		if _, exists := r.dir[d.AccountID]; !exists {
 			r.dir[d.AccountID] = d
@@ -84,6 +94,20 @@ func (r *Repo) Directory(_ context.Context, ids []ledger.ID) (map[ledger.ID]gate
 		}
 	}
 	return out, nil
+}
+
+// PurgeRecords implements gateway.Repository.
+func (r *Repo) PurgeRecords(_ context.Context, cutoff time.Time) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var n int64
+	for k, rec := range r.records {
+		if rec.rec.Status == gateway.StatusCommitted && rec.updatedAt.Before(cutoff) {
+			delete(r.records, k)
+			n++
+		}
+	}
+	return n, nil
 }
 
 // RelayBatch implements gateway.Repository.

@@ -5,6 +5,7 @@ package gateway
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
 )
@@ -65,6 +66,10 @@ type Repository interface {
 
 	// Directory returns the entries for the given accounts. Missing accounts are omitted.
 	Directory(ctx context.Context, ids []ledger.ID) (map[ledger.ID]DirectoryEntry, error)
+
+	// PurgeRecords deletes COMMITTED records whose result was stored before cutoff. PENDING
+	// records are never deleted, because a retry may still need their IDs. It returns the count.
+	PurgeRecords(ctx context.Context, cutoff time.Time) (int64, error)
 
 	// RelayBatch hands up to limit unpublished events to publish. Events are marked published
 	// only if publish returns nil, in one transaction. It returns how many were published.

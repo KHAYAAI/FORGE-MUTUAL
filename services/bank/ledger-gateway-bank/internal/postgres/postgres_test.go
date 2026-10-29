@@ -78,3 +78,55 @@ func TestPendingRecordSurvivesRestart(t *testing.T) {
 		t.Fatalf("different hash after restart: want ErrConflict, got %v", err)
 	}
 }
+
+// TestPurgeRemovesOnlyOldCommittedRecords checks retention on the real table: old COMMITTED
+// rows go, recent ones and PENDING rows stay.
+func TestPurgeRemovesOnlyOldCommittedRecords(t *testing.T) {
+	dsn := os.Getenv("LEDGER_TEST_DSN")
+	if dsn == "" {
+		t.Skip("LEDGER_TEST_DSN not set")
+	}
+	ctx := context.Background()
+	repo, err := Connect(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	if _, err := repo.pool.Exec(ctx, `truncate idempotency_record`); err != nil {
+		t.Fatal(err)
+	}
+	id, _ := ledger.NewID(time.Unix(1_800_000_000, 0))
+	for _, key := range []string{"old", "recent", "pending"} {
+		if _, _, err := repo.Begin(ctx, "svc", key, []byte(key), []ledger.ID{id}); err != nil {
+			t.Fatal(err)
+		}
+		if key != "pending" {
+			if err := repo.Complete(ctx, "svc", key, []byte("r"), nil, nil); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err := repo.pool.Exec(ctx, `update idempotency_record set updated_at = now() - interval '40 days' where idempotency_key in ('old', 'pending')`); err != nil {
+		t.Fatal(err)
+	}
+	n, err := repo.PurgeRecords(ctx, time.Now().Add(-30*24*time.Hour))
+	if err != nil || n != 1 {
+		t.Fatalf("purge: n=%d err=%v", n, err)
+	}
+	var left []string
+	rows, err := repo.pool.Query(ctx, `select idempotency_key from idempotency_record order by 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var k string
+		if err := rows.Scan(&k); err != nil {
+			t.Fatal(err)
+		}
+		left = append(left, k)
+	}
+	rows.Close()
+	if len(left) != 2 || left[0] != "pending" || left[1] != "recent" {
+		t.Fatalf("rows left after purge = %v, want [pending recent]", left)
+	}
+}
