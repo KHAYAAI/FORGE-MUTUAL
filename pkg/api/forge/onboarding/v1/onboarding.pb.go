@@ -30,6 +30,7 @@ const (
 	OnboardingState_ONBOARDING_STATE_RUNNING     OnboardingState = 1
 	OnboardingState_ONBOARDING_STATE_COMPLETED   OnboardingState = 2
 	OnboardingState_ONBOARDING_STATE_DECLINED    OnboardingState = 3
+	OnboardingState_ONBOARDING_STATE_FAILED      OnboardingState = 4 // an unexpected error stopped the workflow; retry or inspect
 )
 
 // Enum value maps for OnboardingState.
@@ -39,12 +40,14 @@ var (
 		1: "ONBOARDING_STATE_RUNNING",
 		2: "ONBOARDING_STATE_COMPLETED",
 		3: "ONBOARDING_STATE_DECLINED",
+		4: "ONBOARDING_STATE_FAILED",
 	}
 	OnboardingState_value = map[string]int32{
 		"ONBOARDING_STATE_UNSPECIFIED": 0,
 		"ONBOARDING_STATE_RUNNING":     1,
 		"ONBOARDING_STATE_COMPLETED":   2,
 		"ONBOARDING_STATE_DECLINED":    3,
+		"ONBOARDING_STATE_FAILED":      4,
 	}
 )
 
@@ -504,12 +507,13 @@ const file_forge_onboarding_v1_onboarding_proto_rawDesc = "" +
 	"\x0edecline_reason\x18\a \x01(\tR\rdeclineReason\x12\x14\n" +
 	"\x05steps\x18\b \x03(\tR\x05steps\"V\n" +
 	"\x15GetOnboardingResponse\x12=\n" +
-	"\x06status\x18\x01 \x01(\v2%.forge.onboarding.v1.OnboardingStatusR\x06status*\x90\x01\n" +
+	"\x06status\x18\x01 \x01(\v2%.forge.onboarding.v1.OnboardingStatusR\x06status*\xad\x01\n" +
 	"\x0fOnboardingState\x12 \n" +
 	"\x1cONBOARDING_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ONBOARDING_STATE_RUNNING\x10\x01\x12\x1e\n" +
 	"\x1aONBOARDING_STATE_COMPLETED\x10\x02\x12\x1d\n" +
-	"\x19ONBOARDING_STATE_DECLINED\x10\x032\x82\x02\n" +
+	"\x19ONBOARDING_STATE_DECLINED\x10\x03\x12\x1b\n" +
+	"\x17ONBOARDING_STATE_FAILED\x10\x042\x82\x02\n" +
 	"\x11OnboardingService\x12\x84\x01\n" +
 	"\x17StartBusinessOnboarding\x123.forge.onboarding.v1.StartBusinessOnboardingRequest\x1a4.forge.onboarding.v1.StartBusinessOnboardingResponse\x12f\n" +
 	"\rGetOnboarding\x12).forge.onboarding.v1.GetOnboardingRequest\x1a*.forge.onboarding.v1.GetOnboardingResponseBJZHgithub.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1;onboardingv1b\x06proto3"

@@ -3,8 +3,11 @@ package uuid
 
 import (
 	"crypto/rand"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // NewV4 returns a random UUID in canonical 8-4-4-4-12 form.
@@ -26,4 +29,24 @@ func Parse(s string) (string, error) {
 		return "", fmt.Errorf("uuid: not canonical: %q", s)
 	}
 	return s, nil
+}
+
+// NewV5 returns the RFC 4122 version 5 (SHA-1, name-based) UUID of name in namespace. The same
+// namespace and name always give the same UUID, so an idempotency key can name a workflow.
+func NewV5(namespace, name string) (string, error) {
+	ns, err := Parse(namespace)
+	if err != nil {
+		return "", err
+	}
+	raw, err := hex.DecodeString(strings.ReplaceAll(ns, "-", ""))
+	if err != nil {
+		return "", err
+	}
+	h := sha1.New()
+	h.Write(raw)
+	h.Write([]byte(name))
+	sum := h.Sum(nil)
+	sum[6] = (sum[6] & 0x0f) | 0x50
+	sum[8] = (sum[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%x-%x-%x-%x-%x", sum[0:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16]), nil
 }

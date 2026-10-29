@@ -40,6 +40,7 @@ enum OnboardingState {
   ONBOARDING_STATE_RUNNING = 1;
   ONBOARDING_STATE_COMPLETED = 2;
   ONBOARDING_STATE_DECLINED = 3;
+  ONBOARDING_STATE_FAILED = 4; // an unexpected error stopped the workflow; retry or inspect
 }
 
 message OnboardingStatus {
