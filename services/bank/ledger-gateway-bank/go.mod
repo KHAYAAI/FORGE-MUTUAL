@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	connectrpc.com/connect v1.18.1
+	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -29,7 +30,7 @@ require (
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
-	github.com/khayaai/forge-mutual/pkg/api v0.0.0-00010101000000-000000000000
+	github.com/khayaai/forge-mutual/pkg/api v0.0.0
 	github.com/khayaai/forge-mutual/pkg/money v0.0.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/tigerbeetle/tigerbeetle-go v0.16.60
@@ -39,5 +40,6 @@ require (
 
 replace (
 	github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
+	github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
 	github.com/khayaai/forge-mutual/pkg/money => ../../../pkg/money
 )

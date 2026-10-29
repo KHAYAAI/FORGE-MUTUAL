@@ -1,8 +1,11 @@
-go 1.24
+go 1.24.6
 
 use (
 	./pkg/api
+	./pkg/callerauth
+	./pkg/outbox
 	./pkg/money
 	./tools/isolation
+	./services/shared/policy-service
 	./services/bank/ledger-gateway-bank
 )

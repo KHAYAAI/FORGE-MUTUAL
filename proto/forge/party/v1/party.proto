@@ -1,0 +1,129 @@
+// Party service API (ARCHITECTURE.md 11.4). Persons, companies and funds, their relationships and lifecycle.
+syntax = "proto3";
+
+package forge.party.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/party/v1;partyv1";
+
+service PartyService {
+  rpc CreateParty(CreatePartyRequest) returns (CreatePartyResponse);
+  rpc GetParty(GetPartyRequest) returns (GetPartyResponse);
+  rpc AddRelationship(AddRelationshipRequest) returns (AddRelationshipResponse);
+  rpc ListRelationships(ListRelationshipsRequest) returns (ListRelationshipsResponse);
+  rpc SetStatus(SetStatusRequest) returns (SetStatusResponse);
+  rpc SetTier(SetTierRequest) returns (SetTierResponse);
+}
+
+enum PartyType {
+  PARTY_TYPE_UNSPECIFIED = 0;
+  PARTY_TYPE_PERSON = 1;
+  PARTY_TYPE_COMPANY = 2;
+  PARTY_TYPE_FUND = 3;
+}
+
+// Lifecycle: PROSPECT -> KYC_PENDING -> ACTIVE -> RESTRICTED | FROZEN -> CLOSED.
+enum PartyStatus {
+  PARTY_STATUS_UNSPECIFIED = 0;
+  PARTY_STATUS_PROSPECT = 1;
+  PARTY_STATUS_KYC_PENDING = 2;
+  PARTY_STATUS_ACTIVE = 3;
+  PARTY_STATUS_RESTRICTED = 4;
+  PARTY_STATUS_FROZEN = 5;
+  PARTY_STATUS_CLOSED = 6;
+}
+
+enum RelationshipType {
+  RELATIONSHIP_TYPE_UNSPECIFIED = 0;
+  RELATIONSHIP_TYPE_DIRECTOR = 1;
+  RELATIONSHIP_TYPE_SHAREHOLDER = 2;
+  RELATIONSHIP_TYPE_UBO = 3;
+  RELATIONSHIP_TYPE_SIGNATORY = 4;
+  RELATIONSHIP_TYPE_EMPLOYEE = 5;
+}
+
+message Party {
+  string party_id = 1;
+  PartyType type = 2;
+  PartyStatus status = 3;
+  string legal_name = 4;
+  string registration_number = 5; // companies
+  string national_id_masked = 6;  // persons; the full value is sealed at rest
+  string country = 7;
+  string tier = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message CreatePartyRequest {
+  string idempotency_key = 1;
+  PartyType type = 2;
+  string legal_name = 3;
+  string registration_number = 4;
+  string national_id = 5;
+  string country = 6;
+  string actor = 7;
+}
+
+message CreatePartyResponse {
+  Party party = 1;
+}
+
+message GetPartyRequest {
+  string party_id = 1;
+}
+
+message GetPartyResponse {
+  Party party = 1;
+}
+
+message Relationship {
+  string relationship_id = 1;
+  string from_party_id = 2;
+  string to_party_id = 3;
+  RelationshipType type = 4;
+  uint32 percentage_bps = 5; // 0 to 10000
+  bool active = 6;
+}
+
+message AddRelationshipRequest {
+  string idempotency_key = 1;
+  string from_party_id = 2;
+  string to_party_id = 3;
+  RelationshipType type = 4;
+  uint32 percentage_bps = 5;
+  string actor = 6;
+}
+
+message AddRelationshipResponse {
+  Relationship relationship = 1;
+}
+
+message ListRelationshipsRequest {
+  string party_id = 1; // relationships in which the party is either end
+}
+
+message ListRelationshipsResponse {
+  repeated Relationship relationships = 1;
+}
+
+message SetStatusRequest {
+  string party_id = 1;
+  PartyStatus to_status = 2;
+  string reason = 3;
+  string actor = 4;
+}
+
+message SetStatusResponse {
+  Party party = 1;
+}
+
+message SetTierRequest {
+  string party_id = 1;
+  string tier = 2;
+  string actor = 3;
+}
+
+message SetTierResponse {
+  Party party = 1;
+}

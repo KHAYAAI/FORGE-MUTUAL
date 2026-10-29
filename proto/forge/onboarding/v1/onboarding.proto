@@ -1,0 +1,58 @@
+// Onboarding API (ARCHITECTURE.md 11.3). Each onboarding is a Temporal workflow.
+syntax = "proto3";
+
+package forge.onboarding.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1;onboardingv1";
+
+service OnboardingService {
+  rpc StartBusinessOnboarding(StartBusinessOnboardingRequest) returns (StartBusinessOnboardingResponse);
+  rpc GetOnboarding(GetOnboardingRequest) returns (GetOnboardingResponse);
+}
+
+message Director {
+  string legal_name = 1;
+  string national_id = 2;
+  uint32 ownership_bps = 3; // 0 to 10000; zero for directors with no shares
+  bool is_ubo = 4;          // ultimate beneficial owner
+}
+
+message StartBusinessOnboardingRequest {
+  string idempotency_key = 1;
+  string legal_name = 2;
+  string registration_number = 3;
+  string country = 4;
+  string sector_code = 5;
+  repeated Director directors = 6;
+  string actor = 7;
+}
+
+message StartBusinessOnboardingResponse {
+  string onboarding_id = 1;
+}
+
+message GetOnboardingRequest {
+  string onboarding_id = 1;
+}
+
+enum OnboardingState {
+  ONBOARDING_STATE_UNSPECIFIED = 0;
+  ONBOARDING_STATE_RUNNING = 1;
+  ONBOARDING_STATE_COMPLETED = 2;
+  ONBOARDING_STATE_DECLINED = 3;
+}
+
+message OnboardingStatus {
+  string onboarding_id = 1;
+  OnboardingState state = 2;
+  string company_party_id = 3;
+  repeated string person_party_ids = 4;
+  repeated string account_ids = 5;
+  string tier = 6;
+  string decline_reason = 7;
+  repeated string steps = 8; // steps completed so far, in order
+}
+
+message GetOnboardingResponse {
+  OnboardingStatus status = 1;
+}

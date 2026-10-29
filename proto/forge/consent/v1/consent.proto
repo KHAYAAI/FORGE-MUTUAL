@@ -1,0 +1,71 @@
+// Consent service API (ARCHITECTURE.md 11.5). Every use of third-party data is checked against a consent.
+syntax = "proto3";
+
+package forge.consent.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1;consentv1";
+
+service ConsentService {
+  rpc Grant(GrantRequest) returns (GrantResponse);
+  rpc Revoke(RevokeRequest) returns (RevokeResponse);
+  rpc Check(CheckRequest) returns (CheckResponse);
+  rpc List(ListRequest) returns (ListResponse);
+}
+
+message Consent {
+  string consent_id = 1;
+  string party_id = 2;
+  string purpose = 3;
+  repeated string scopes = 4;
+  repeated string data_sources = 5;
+  google.protobuf.Timestamp granted_at = 6;
+  google.protobuf.Timestamp expires_at = 7; // unset means no expiry
+  google.protobuf.Timestamp revoked_at = 8; // unset means not revoked
+  string evidence_ref = 9;
+}
+
+message GrantRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string purpose = 3;
+  repeated string scopes = 4;
+  repeated string data_sources = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  string evidence_ref = 7;
+  string actor = 8;
+}
+
+message GrantResponse {
+  Consent consent = 1;
+}
+
+message RevokeRequest {
+  string consent_id = 1;
+  string actor = 2;
+}
+
+message RevokeResponse {
+  Consent consent = 1;
+}
+
+message CheckRequest {
+  string party_id = 1;
+  string purpose = 2;
+  string scope = 3;
+}
+
+message CheckResponse {
+  bool allowed = 1;
+  string reason = 2;
+  string consent_id = 3; // the consent that allowed the use, when allowed
+}
+
+message ListRequest {
+  string party_id = 1;
+}
+
+message ListResponse {
+  repeated Consent consents = 1;
+}

@@ -4,13 +4,14 @@ BUF ?= buf
 COMPOSE ?= docker compose -f deploy/compose/docker-compose.yml
 GATEWAY := services/bank/ledger-gateway-bank
 
-.PHONY: ci test lint vet fmt-check test-isolation test-ledger test-ledger-pg test-ledger-tb proto up down
+.PHONY: ci test lint vet fmt-check test-isolation test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform proto up down
 
 ci: lint test test-isolation
 
-test: test-ledger
+test: test-ledger test-policy
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
+	cd pkg/callerauth && $(GO) test ./...
 
 # Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg).
 test-ledger:
@@ -21,6 +22,22 @@ test-ledger:
 test-ledger-pg:
 	@test -n "$$LEDGER_TEST_DSN" || (echo "set LEDGER_TEST_DSN to a throwaway database"; exit 1)
 	cd $(GATEWAY) && $(GO) test -count=1 -v ./internal/postgres/
+
+# Policy service: Rego tests, bundle verification and decision tests. Decision tests need POLICY_TEST_DSN.
+test-policy:
+	cd services/shared/policy-service && $(GO) test -count=1 ./...
+
+# Signs policy/ into manifest.json and manifest.sig. Needs POLICY_SIGNING_KEY from the secret store and a
+# version string. Never commit the key. Commit the regenerated manifest only with the rule changes it covers.
+policy-manifest:
+	@test -n "$$POLICY_VERSION" || (echo "set POLICY_VERSION, for example 2026.10.29-1"; exit 1)
+	cd services/shared/policy-service && $(GO) run ./cmd/policy-sign -dir ../../../policy -version "$$POLICY_VERSION"
+
+# Party, consent and onboarding services. Each test that touches Postgres needs its own DSN variable.
+test-platform:
+	cd services/platform/party-service && $(GO) test -count=1 ./...
+	cd services/platform/consent-service && $(GO) test -count=1 ./...
+	cd services/platform/onboarding && $(GO) test -count=1 ./...
 
 # Runs the shared behaviour suite against a live TigerBeetle cluster.
 test-ledger-tb:
@@ -36,6 +53,9 @@ vet:
 	cd pkg/money && $(GO) vet ./...
 	cd tools/isolation && $(GO) vet ./...
 	cd $(GATEWAY) && $(GO) vet ./... && $(GO) vet -tags tbintegration ./internal/ledger/
+	cd pkg/outbox && $(GO) vet ./...
+	cd pkg/callerauth && $(GO) vet ./...
+	cd services/shared/policy-service && $(GO) vet ./...
 
 test-isolation:
 	cd tools/isolation && $(GO) run . ../..

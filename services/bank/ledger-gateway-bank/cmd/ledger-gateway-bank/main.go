@@ -24,7 +24,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/auth"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
 	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/metrics"
@@ -143,7 +143,7 @@ func run(log *slog.Logger) error {
 
 	svc := gateway.NewService(gateway.DefaultConfig(), store, repo)
 	path, handler := ledgerv1connect.NewLedgerServiceHandler(svc,
-		connect.WithInterceptors(m.Interceptor(), allow.Interceptor()))
+		connect.WithInterceptors(m.Interceptor(), allow.Interceptor(callerauth.DefaultHeader)))
 
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
@@ -218,7 +218,7 @@ func (p logPublisher) Publish(_ context.Context, topic string, key, value []byte
 }
 
 // loadCallers reads the caller allow-list: a JSON object mapping caller identity to RPC names.
-func loadCallers(path string) (auth.Allowlist, error) {
+func loadCallers(path string) (callerauth.Allowlist, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("callers file: %w", err)
@@ -227,7 +227,7 @@ func loadCallers(path string) (auth.Allowlist, error) {
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return nil, fmt.Errorf("callers file: %w", err)
 	}
-	out := auth.Allowlist{}
+	out := callerauth.Allowlist{}
 	for caller, methods := range raw {
 		out[caller] = map[string]bool{}
 		for _, m := range methods {

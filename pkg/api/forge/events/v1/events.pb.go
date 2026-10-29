@@ -248,6 +248,268 @@ func (x *TransferCommitted) GetLedgerTimestamp() uint64 {
 	return 0
 }
 
+// Policy decision audit record (topic forge.shared.policy.decision.v1). Inputs are not stored;
+// only their SHA-256 digest, so the log holds no personal data.
+type PolicyDecision struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DecisionId    string                 `protobuf:"bytes,1,opt,name=decision_id,json=decisionId,proto3" json:"decision_id,omitempty"`
+	DecisionPoint string                 `protobuf:"bytes,2,opt,name=decision_point,json=decisionPoint,proto3" json:"decision_point,omitempty"`
+	EntityCode    string                 `protobuf:"bytes,3,opt,name=entity_code,json=entityCode,proto3" json:"entity_code,omitempty"`
+	RequestId     string                 `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	BundleVersion string                 `protobuf:"bytes,5,opt,name=bundle_version,json=bundleVersion,proto3" json:"bundle_version,omitempty"`
+	Allow         bool                   `protobuf:"varint,6,opt,name=allow,proto3" json:"allow,omitempty"`
+	Stepup        bool                   `protobuf:"varint,7,opt,name=stepup,proto3" json:"stepup,omitempty"`
+	Reason        string                 `protobuf:"bytes,8,opt,name=reason,proto3" json:"reason,omitempty"`
+	InputSha256   []byte                 `protobuf:"bytes,9,opt,name=input_sha256,json=inputSha256,proto3" json:"input_sha256,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PolicyDecision) Reset() {
+	*x = PolicyDecision{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PolicyDecision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PolicyDecision) ProtoMessage() {}
+
+func (x *PolicyDecision) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PolicyDecision.ProtoReflect.Descriptor instead.
+func (*PolicyDecision) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PolicyDecision) GetDecisionId() string {
+	if x != nil {
+		return x.DecisionId
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetDecisionPoint() string {
+	if x != nil {
+		return x.DecisionPoint
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetEntityCode() string {
+	if x != nil {
+		return x.EntityCode
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetBundleVersion() string {
+	if x != nil {
+		return x.BundleVersion
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetAllow() bool {
+	if x != nil {
+		return x.Allow
+	}
+	return false
+}
+
+func (x *PolicyDecision) GetStepup() bool {
+	if x != nil {
+		return x.Stepup
+	}
+	return false
+}
+
+func (x *PolicyDecision) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *PolicyDecision) GetInputSha256() []byte {
+	if x != nil {
+		return x.InputSha256
+	}
+	return nil
+}
+
+type PartyStatusChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PartyId       string                 `protobuf:"bytes,1,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	FromStatus    string                 `protobuf:"bytes,2,opt,name=from_status,json=fromStatus,proto3" json:"from_status,omitempty"`
+	ToStatus      string                 `protobuf:"bytes,3,opt,name=to_status,json=toStatus,proto3" json:"to_status,omitempty"`
+	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	Actor         string                 `protobuf:"bytes,5,opt,name=actor,proto3" json:"actor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PartyStatusChanged) Reset() {
+	*x = PartyStatusChanged{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PartyStatusChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PartyStatusChanged) ProtoMessage() {}
+
+func (x *PartyStatusChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PartyStatusChanged.ProtoReflect.Descriptor instead.
+func (*PartyStatusChanged) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PartyStatusChanged) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *PartyStatusChanged) GetFromStatus() string {
+	if x != nil {
+		return x.FromStatus
+	}
+	return ""
+}
+
+func (x *PartyStatusChanged) GetToStatus() string {
+	if x != nil {
+		return x.ToStatus
+	}
+	return ""
+}
+
+func (x *PartyStatusChanged) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *PartyStatusChanged) GetActor() string {
+	if x != nil {
+		return x.Actor
+	}
+	return ""
+}
+
+type ConsentChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConsentId     string                 `protobuf:"bytes,1,opt,name=consent_id,json=consentId,proto3" json:"consent_id,omitempty"`
+	PartyId       string                 `protobuf:"bytes,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Purpose       string                 `protobuf:"bytes,3,opt,name=purpose,proto3" json:"purpose,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"` // GRANTED or REVOKED
+	Actor         string                 `protobuf:"bytes,5,opt,name=actor,proto3" json:"actor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConsentChanged) Reset() {
+	*x = ConsentChanged{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConsentChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConsentChanged) ProtoMessage() {}
+
+func (x *ConsentChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConsentChanged.ProtoReflect.Descriptor instead.
+func (*ConsentChanged) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ConsentChanged) GetConsentId() string {
+	if x != nil {
+		return x.ConsentId
+	}
+	return ""
+}
+
+func (x *ConsentChanged) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *ConsentChanged) GetPurpose() string {
+	if x != nil {
+		return x.Purpose
+	}
+	return ""
+}
+
+func (x *ConsentChanged) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ConsentChanged) GetActor() string {
+	if x != nil {
+		return x.Actor
+	}
+	return ""
+}
+
 var File_forge_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_forge_events_v1_events_proto_rawDesc = "" +
@@ -279,7 +541,34 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"pending_id\x18\t \x01(\tR\tpendingId\x12)\n" +
 	"\x10ledger_timestamp\x18\n" +
-	" \x01(\x04R\x0fledgerTimestampBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
+	" \x01(\x04R\x0fledgerTimestamp\"\xa8\x02\n" +
+	"\x0ePolicyDecision\x12\x1f\n" +
+	"\vdecision_id\x18\x01 \x01(\tR\n" +
+	"decisionId\x12%\n" +
+	"\x0edecision_point\x18\x02 \x01(\tR\rdecisionPoint\x12\x1f\n" +
+	"\ventity_code\x18\x03 \x01(\tR\n" +
+	"entityCode\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\tR\trequestId\x12%\n" +
+	"\x0ebundle_version\x18\x05 \x01(\tR\rbundleVersion\x12\x14\n" +
+	"\x05allow\x18\x06 \x01(\bR\x05allow\x12\x16\n" +
+	"\x06stepup\x18\a \x01(\bR\x06stepup\x12\x16\n" +
+	"\x06reason\x18\b \x01(\tR\x06reason\x12!\n" +
+	"\finput_sha256\x18\t \x01(\fR\vinputSha256\"\x9b\x01\n" +
+	"\x12PartyStatusChanged\x12\x19\n" +
+	"\bparty_id\x18\x01 \x01(\tR\apartyId\x12\x1f\n" +
+	"\vfrom_status\x18\x02 \x01(\tR\n" +
+	"fromStatus\x12\x1b\n" +
+	"\tto_status\x18\x03 \x01(\tR\btoStatus\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\x12\x14\n" +
+	"\x05actor\x18\x05 \x01(\tR\x05actor\"\x92\x01\n" +
+	"\x0eConsentChanged\x12\x1d\n" +
+	"\n" +
+	"consent_id\x18\x01 \x01(\tR\tconsentId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x18\n" +
+	"\apurpose\x18\x03 \x01(\tR\apurpose\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\x12\x14\n" +
+	"\x05actor\x18\x05 \x01(\tR\x05actorBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once
@@ -293,14 +582,17 @@ func file_forge_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_forge_events_v1_events_proto_rawDescData
 }
 
-var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_forge_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: forge.events.v1.EventEnvelope
 	(*TransferCommitted)(nil),     // 1: forge.events.v1.TransferCommitted
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*PolicyDecision)(nil),        // 2: forge.events.v1.PolicyDecision
+	(*PartyStatusChanged)(nil),    // 3: forge.events.v1.PartyStatusChanged
+	(*ConsentChanged)(nil),        // 4: forge.events.v1.ConsentChanged
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_forge_events_v1_events_proto_depIdxs = []int32{
-	2, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	5, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -319,7 +611,7 @@ func file_forge_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_events_v1_events_proto_rawDesc), len(file_forge_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

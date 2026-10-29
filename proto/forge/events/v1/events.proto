@@ -31,3 +31,34 @@ message TransferCommitted {
   string pending_id = 9;
   uint64 ledger_timestamp = 10;
 }
+
+// Policy decision audit record (topic forge.shared.policy.decision.v1). Inputs are not stored;
+// only their SHA-256 digest, so the log holds no personal data.
+message PolicyDecision {
+  string decision_id = 1;
+  string decision_point = 2;
+  string entity_code = 3;
+  string request_id = 4;
+  string bundle_version = 5;
+  bool allow = 6;
+  bool stepup = 7;
+  string reason = 8;
+  bytes input_sha256 = 9;
+}
+
+message PartyStatusChanged {
+  string party_id = 1;
+  string from_status = 2;
+  string to_status = 3;
+  string reason = 4;
+  string actor = 5;
+}
+
+message ConsentChanged {
+  string consent_id = 1;
+  string party_id = 2;
+  string purpose = 3;
+  string action = 4; // GRANTED or REVOKED
+  string actor = 5;
+}
+

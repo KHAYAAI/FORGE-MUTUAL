@@ -1,4 +1,5 @@
-# Local stack for `make up` (ARCHITECTURE.md section 21.4).
+# Local stack for `make up` (ARCHITECTURE.md section 21.4). OPA runs inside policy-service as a library,
+# so there is no separate OPA container.
 # Image tags are placeholders pinned to major versions. Each must be verified
 # against the vendor's current stable release before use (see docs/QUESTIONS.md, VERIFY-IMG).
 name: forge-local
@@ -36,12 +37,6 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: forge-local-only
     ports: ["8080:8080"]
-
-  opa:
-    image: openpolicyagent/opa:latest              # VERIFY-IMG
-    command: run --server --addr 0.0.0.0:8181 /policy
-    volumes: ["../../policy:/policy:ro"]
-    ports: ["8181:8181"]
 
   temporal:
     image: temporalio/auto-setup:latest            # VERIFY-IMG
