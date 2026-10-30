@@ -44,6 +44,9 @@ type Input struct {
 	SectorCode         string
 	Directors          []DirectorInput
 	Actor              string
+	// KYCTimeoutSeconds overrides KYCTimeout when positive. The RPC never sets it. Tests use it to
+	// exercise the real timer on a dev server without waiting seven days.
+	KYCTimeoutSeconds int64
 }
 
 // KYCSignal is delivered by the webhook receiver when a provider reports a verdict.
@@ -141,7 +144,11 @@ func OnboardBusiness(ctx workflow.Context, in Input) (Status, error) {
 		pending[id] = true
 	}
 	signals := workflow.GetSignalChannel(ctx, SignalKYCResult)
-	timer := workflow.NewTimer(ctx, KYCTimeout)
+	kycTimeout := KYCTimeout
+	if in.KYCTimeoutSeconds > 0 {
+		kycTimeout = time.Duration(in.KYCTimeoutSeconds) * time.Second
+	}
+	timer := workflow.NewTimer(ctx, kycTimeout)
 	for len(pending) > 0 {
 		var sig KYCSignal
 		timedOut := false

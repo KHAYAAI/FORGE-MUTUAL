@@ -1,6 +1,6 @@
 # SPEC: onboarding
 
-Status: built and tested locally, except the Temporal server and the Didit adapter (see section 6).
+Status: built and tested locally, including against a real Temporal dev server. The Didit adapter is not implemented (see section 6).
 Human review required before any real customer (ARCHITECTURE.md section 0, rule 3).
 Entity: PLAT. Sections referenced: ARCHITECTURE.md 11.2, 11.3, 15.1, P1-05.
 
@@ -55,9 +55,16 @@ in `policy/tiers.json`.
 
 ## 6. Open items and deviations
 
-- **Temporal server is not exercised.** The workflow runs in Temporal's in-process test environment. The worker and
-  the client code compile and start against a real server only when TEMPORAL_HOST is reachable (VERIFY-TEMPORAL).
-  Queries (`GetOnboarding`) and signals (the webhook path) are tested through a fake client, not a server.
+- **Temporal server.** Verified on a Temporal dev server (server 1.24.2, CLI v1.0.0) by `make test-temporal`
+  (`TEMPORAL_HOST` required, behind the `temporaldev` build tag). The dev-server suite covers an approved run, the real
+  KYC timer, duplicate and restarted workflow IDs, retry backoff for a transient ledger failure, a non-retryable failure
+  that stops at once, the RPC idempotency and conflict paths, the status query, and signalled webhooks. Production
+  must run against a real cluster with the same SDK; this has not been exercised with a multi-node server or
+  Temporal Cloud (VERIFY-TEMPORAL).
+- **Already-started errors must be requested.** The Temporal SDK swallows `WorkflowExecutionAlreadyStarted` by
+  default and returns a handle to the existing run. The service sets `WorkflowExecutionErrorWhenAlreadyStarted`, so
+  a changed request under the same key is refused. The dev-server test
+  `TestDevSameKeyDifferentRequestIsRefusedOnTheRealServer` fails if the flag is removed (verified by mutation).
 - **Didit is not implemented.** `kyc.Didit` refuses everything (`ErrNotConfigured`), so onboarding cannot approve
   anyone with the real provider. The session contract and webhook signature scheme must be confirmed against Didit's
   documentation before implementation (VERIFY-DIDIT).
@@ -70,5 +77,6 @@ in `policy/tiers.json`.
 - **Caller identity.** Calls to other services carry `X-Forge-Caller: svc-onboarding`. Production must use mTLS.
 - **A UBO must hold a share.** `StartBusinessOnboarding` refuses a UBO with `ownership_bps` of zero. Party-service
   would refuse the relationship anyway; the early check gives the caller a clearer error.
+- **`KYCTimeoutSeconds`** on the workflow input overrides the seven-day timer. Only tests set it.
 - **Integration test.** `internal/integration` builds the real party, consent, policy and ledger binaries and runs the
   workflow against them, with an approved and a declined case. It needs `ONBOARDING_TEST_PG` (a Postgres base DSN).

@@ -4,7 +4,7 @@ BUF ?= buf
 COMPOSE ?= docker compose -f deploy/compose/docker-compose.yml
 GATEWAY := services/bank/ledger-gateway-bank
 
-.PHONY: ci test lint vet fmt-check test-isolation test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform proto up down
+.PHONY: ci test lint vet fmt-check test-isolation test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-temporal proto up down
 
 ci: lint test test-isolation
 
@@ -40,6 +40,13 @@ test-platform:
 	cd services/platform/consent-service && $(GO) test -count=1 ./...
 	cd services/platform/onboarding && $(GO) test -count=1 ./...
 
+# Onboarding workflow and API against a real Temporal server. Start one first, for example:
+#   temporal server start-dev --headless --port 7233
+# then: TEMPORAL_HOST=127.0.0.1:7233 make test-temporal
+test-temporal:
+	@test -n "$$TEMPORAL_HOST" || (echo "set TEMPORAL_HOST, for example 127.0.0.1:7233"; exit 1)
+	cd services/platform/onboarding && $(GO) test -tags temporaldev -count=1 -v -timeout 600s ./internal/onboarding/ ./internal/service/
+
 # Runs the shared behaviour suite against a live TigerBeetle cluster.
 test-ledger-tb:
 	@test -n "$$TB_ADDRESSES" -a -n "$$TB_CLUSTER_ID" || (echo "set TB_ADDRESSES and TB_CLUSTER_ID"; exit 1)
@@ -59,7 +66,7 @@ vet:
 	cd services/shared/policy-service && $(GO) vet ./...
 	cd services/platform/party-service && $(GO) vet ./...
 	cd services/platform/consent-service && $(GO) vet ./...
-	cd services/platform/onboarding && $(GO) vet ./...
+	cd services/platform/onboarding && $(GO) vet ./... && $(GO) vet -tags temporaldev ./internal/...
 	cd pkg/uuid && $(GO) vet ./...
 
 test-isolation:

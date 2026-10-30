@@ -112,10 +112,14 @@ func (s *Service) StartBusinessOnboarding(ctx context.Context, req *connect.Requ
 		OnboardingID: id, RequestHash: hash, LegalName: m.LegalName, RegistrationNumber: m.RegistrationNumber,
 		Country: m.Country, SectorCode: m.SectorCode, Directors: directors, Actor: m.Actor,
 	}
+	// WorkflowExecutionErrorWhenAlreadyStarted is required. Without it the SDK swallows the
+	// already-started error and returns a handle to the existing run, so the duplicate-key check
+	// below would never run and a changed request under the same key would be accepted silently.
 	_, err = s.tc.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-		ID:                    id,
-		TaskQueue:             s.taskQueue,
-		WorkflowIDReusePolicy: enumspb.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
+		ID:                                       id,
+		TaskQueue:                                s.taskQueue,
+		WorkflowIDReusePolicy:                    enumspb.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
+		WorkflowExecutionErrorWhenAlreadyStarted: true,
 	}, onboarding.OnboardBusiness, input)
 	var started *serviceerror.WorkflowExecutionAlreadyStarted
 	if errors.As(err, &started) {
