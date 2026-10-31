@@ -9,28 +9,35 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 
 ## Built and tested
 
-Each service is its own Go module. `make ci` runs lint, every module's tests and the isolation check.
+Each service is its own Go module. `make ci-db` creates throwaway databases on the compose Postgres 17, then runs the
+full gate: lint, every module's tests against real Postgres and a real Kafka broker, and the isolation check. It passes
+with 49 packages and no skipped tests.
 
-- **Ledger gateway** (`services/bank/ledger-gateway-bank`): the only writer to the bank ledger. Linked transfer
-  chains, pending, post and void, idempotency, transactional outbox, and `ListAccounts` over the account directory.
-  Passes one shared behaviour suite in memory and against Postgres. The TigerBeetle adapter is compiled and
-  unit-tested but **not yet run against a live cluster**.
-- **Policy service** (`services/shared/policy-service`, `policy/`): embedded OPA v1.13.0, Ed25519-signed bundles,
-  every decision audited to the outbox before it is returned. The `forge.banklayer` rules gate own-licence features.
+- **Ledger gateway** (`services/bank/ledger-gateway-bank`): the only writer to the bank ledger. Linked transfer chains,
+  pending, post and void, idempotency, transactional outbox, and `ListAccounts` over the account directory. Passes one
+  shared behaviour suite in memory and against Postgres. The TigerBeetle adapter is compiled and unit-tested, but
+  **the cluster has never run** (see *Blocked*).
+- **Policy service** (`services/shared/policy-service`, `policy/`): embedded OPA v1.13.0, Ed25519-signed bundles, every
+  decision audited to the outbox before it is returned. The break rule is strict: while any reconciliation break is
+  open, every payment is held (`docs/DECISIONS.md`).
 - **Party and consent services** (`services/platform/party-service`, `consent-service`): national IDs encrypted
   (AES-256-GCM) with a keyed index, founder and company separation enforced, consent checked live.
-- **Onboarding** (`services/platform/onboarding`): Temporal workflow `OnboardBusiness`, tested on a real Temporal
-  dev server. KYC uses a **fake provider**; the Didit adapter is a stub.
+- **Onboarding** (`services/platform/onboarding`): Temporal workflow `OnboardBusiness`, tested on a real Temporal dev
+  server. KYC uses a **fake provider**; the Didit adapter is a stub (see *Blocked*).
 - **Rails gateway** (`services/bank/rails-gateway`) and **payments orchestrator** (`services/bank/payments-orchestrator`):
-  domestic payment saga with reserve, initiate, settle or release, and repair. Rails are simulated. Payments read the
-  reconciliation gate and refuse to start without it. Inbound credits are booked once, to a customer or to suspense.
-- **Reconciliation** (`services/bank/reconciliation`): five checks per asset (statement arithmetic, ledger double
-  entry, unclassified balances, the sponsor or partner equation, and the pool mirror). A moving ledger makes a run
-  inconclusive. The gate fails closed and is tested against Postgres.
+  domestic payment saga with reserve, initiate, settle or release, and repair. Settlement posts the hold, then records
+  the sponsor's debit as a clearing leg into the pool. Each rail status is recorded when it is seen. Inbound credits
+  are booked once, to a customer or to suspense. Rails are simulated.
+- **Reconciliation** (`services/bank/reconciliation`): five checks per asset. A moving ledger makes a run inconclusive.
+  The in-flight terms come from payments: inbound credits the bank has reported but the books do not yet hold, and
+  outbound payments the bank has settled but the books have not yet cleared. The gate fails closed and is tested
+  against Postgres.
 - **Audit service** (`services/shared/audit-service`): append-only hash-chained log. Triggers refuse update, delete and
   truncate. Head anchors detect a full rewrite that reseals every hash. `forge-audit verify` checks the chain.
 - **Treasury risk** (`services/bank/treasury-risk`): concentration, net outflow, liquidity and suspense alerts. Each
   alert is raised once and cleared once, with one outbox event per transition. Thresholds are placeholders.
+- **Outbox and Kafka** (`pkg/outbox`): the relay publishes to a real broker. Tests show that events arrive in order, and
+  that during a broker outage every event stays unpublished for the next pass.
 - **BankLayer** (`pkg/banklayer`): the interface, a sponsor simulator, an HTTP client, a contract suite that the
   simulator and the client both pass, config-driven bootstrap that refuses own-licence, and a CI check that only
   `pkg/banklayer` may read the licence route.
@@ -39,7 +46,8 @@ Each service is its own Go module. `make ci` runs lint, every module's tests and
 
 - **Compliance engine** (`services/shared/compliance-engine`): a sanctions loader that checks integrity and freshness
   and fails closed, four monitoring rules, and a case store with maker-checker and SLA timers. These are building
-  blocks, not a running service. There is no event feed for the rules, and no API.
+  blocks, not a running service. There is no event feed for the rules, and no API. The list source is a recommendation
+  (`docs/SANCTIONS_SOURCES.md`), not a decision.
 - **Reg-reporting** (`services/bank/reg-reporting`): immutable evidence packs with stable digests and maker-checker.
   goAML submission is **deliberately refused** until its schema is verified (VERIFY-GOAML). No report builders yet.
 
@@ -57,41 +65,62 @@ Nine services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are no
 - **web**: customer workspace front end.
 - **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker).
 
-Also not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`, and the
-customer USD account flow. Reconciliation's in-flight terms are zero until the inbound feed is read by it.
+Also not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`, the customer
+USD account flow, and the Didit adapter beyond its stub.
 
 ## Blocked
 
-- **Didit (KYC/KYB)**: the connected Didit organisation and its application mode (sandbox or live) are unconfirmed.
-  No verification sessions have been created, because live sessions bill.
-- **TigerBeetle cluster**: the server image could not be pulled from its blob host, so `make test-ledger-tb` has not run.
-- **Kafka**: the publisher compiles; no broker has run it. Events (treasury alerts, ledger and policy events) wait in
-  the outbox until a relay publishes them.
-- **Sponsor, partner-bank and FIC list formats**: unverified (VERIFY-SPONSOR, VERIFY-PARTNER, VERIFY-FIC). The
-  simulators define Forge's own wire formats.
+- **Didit (KYC/KYB)**: the decision is a new organisation, not A-CARD. That organisation does not exist yet, and no tool
+  in this environment can create one. The owner must create it and grant access. No verification session has been created,
+  and none is approved.
+- **TigerBeetle cluster: has never run.** Tried and failed, all from this environment: the `ghcr.io` image's blob host is
+  forbidden; `quay.io` and Docker Hub have no published image; GitHub release downloads return 403; the Zig download host
+  is blocked, so the server cannot be built; the Go module proxy has the module path but no tagged versions. Without the
+  server, `make test-ledger-tb` cannot run. Obtain the server binary by another route, or run the test on a host that
+  can reach the release artefacts.
+- **Kafka: runs in the dev stack, but only single-node.** `apache/kafka:3.9.0` in KRaft mode is verified by the outbox
+  tests. Not verified: a multi-broker cluster, TLS and SASL, topic creation policy in production, and the Kafka wiring of
+  the other services' relays.
+- **Sponsor, partner-bank and FIC list formats**: unverified (VERIFY-SPONSOR, VERIFY-PARTNER, VERIFY-FIC). The simulators
+  define Forge's own wire formats. The government and UN sites were not reachable from the build environment, so the
+  sanctions facts in `docs/SANCTIONS_SOURCES.md` are secondary and need checking.
 - **goAML XML**: the official schema is unverified (VERIFY-GOAML). Submission is refused until it is confirmed.
 - **WORM storage** for audit anchors and evidence packs (VERIFY-WORM). Local files are used for development only.
+- **Threshold owners**: every placeholder needs a named owner (`docs/THRESHOLDS.md`). None is named yet.
+- **Sanctions list source and licence**: a recommendation exists; the decision and the licence do not.
 - **ADR-0020** (legal form of the bank layer) is open, so the own-licence route is not built.
+- **Reconciliation's window**: between the bank debiting a payment and payments seeing it, the run breaks and the gate
+  closes until a later clean run. That is fail-closed by design. It is documented in the reconciliation spec.
 
 ## Running it
 
 ```sh
-make ci               # lint, all module tests, isolation check
-make test-banklayer   # BankLayer contract suite, bootstrap, simulator, route check
+make up               # local stack: Postgres 17, Kafka 3.9.0, and the others in deploy/compose
+make ci-db            # the full gate, with throwaway databases on the compose Postgres and the broker from make up
+make ci               # the same gate, if you have set every database and broker variable yourself
+make test-outbox      # the outbox against a real broker
 make test-recon       # reconciliation (serial: packages share a database)
+make test-banklayer   # BankLayer contract suite, bootstrap, simulator, route check
 make test-audit       # audit log, anchors and service
 make test-treasury    # treasury alerts
 make test-compliance  # sanctions, monitoring and cases
 make test-policy      # policy service and Rego tests
 make test-platform    # party, consent and onboarding
 make test-bank        # rails gateway and payments orchestrator
-make up               # local stack (Postgres, TigerBeetle, Kafka, Valkey, Keycloak, Temporal, OpenBao, OTel)
 ```
 
-**Database-backed tests skip when their variable is unset**, so a green `make ci` without them proves less. Set these
-to throwaway databases to run every suite: `LEDGER_TEST_DSN`, `RECON_TEST_DSN`, `PAYMENTS_TEST_PG`,
-`INBOUND_TEST_DSN`, `AUDIT_TEST_DSN`, `TREASURY_TEST_DSN`, `COMPLIANCE_TEST_DSN`. Each Makefile target names what it
-needs. The sponsor simulator (`tools/sim/sponsor`) refuses to start unless `SPONSOR_SIMULATION=1` is set.
+**`make ci` refuses to pass unless the database and broker suites are configured.** Set them with `make ci-db`, or set
+every variable in `DB_TEST_VARS` (see the Makefile). The only opt-out is `FORGE_SKIP_DB_TESTS=1`, which prints a warning
+and proves less. Each suite still reads its own variable, and a test that cannot reach its database fails rather than
+skips.
+
+The sponsor simulator (`tools/sim/sponsor`) refuses to start unless `SPONSOR_SIMULATION=1` is set.
+
+## Decisions and open items
+
+See [`docs/DECISIONS.md`](docs/DECISIONS.md) for every owner decision, what it changed, and what is still open. The
+threshold register is [`docs/THRESHOLDS.md`](docs/THRESHOLDS.md). The sanctions recommendation is
+[`docs/SANCTIONS_SOURCES.md`](docs/SANCTIONS_SOURCES.md).
 
 ## Conventions
 
