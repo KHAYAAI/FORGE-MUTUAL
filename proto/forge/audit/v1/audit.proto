@@ -1,0 +1,54 @@
+// Audit API (ARCHITECTURE.md 15.3, invariant 14). Entries are append-only and hash-chained. The writer is the caller
+// identity from the request header, never a field the caller can set.
+syntax = "proto3";
+
+package forge.audit.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/audit/v1;auditv1";
+
+service AuditService {
+  rpc Append(AppendRequest) returns (AppendResponse);
+  rpc Query(QueryRequest) returns (QueryResponse);
+  rpc Head(HeadRequest) returns (HeadResponse);
+}
+
+message AppendRequest {
+  string action = 1;
+  string entity = 2;
+  string payload_json = 3; // canonical JSON describing the event; hashed as bytes, so keep it stable
+}
+
+message AppendResponse {
+  uint64 seq = 1;
+  string hash = 2; // hex
+}
+
+message QueryRequest {
+  string entity = 1;     // empty means every entity
+  uint64 after_seq = 2;  // exclusive
+  uint32 limit = 3;      // 1 to 500
+}
+
+message Entry {
+  uint64 seq = 1;
+  string at = 2;         // RFC 3339, microsecond precision
+  string actor = 3;
+  string action = 4;
+  string entity = 5;
+  string payload_json = 6;
+  string payload_hash = 7;
+  string prev_hash = 8;
+  string hash = 9;
+}
+
+message QueryResponse {
+  repeated Entry entries = 1;
+  uint64 next_after_seq = 2; // zero when there are no more
+}
+
+message HeadRequest {}
+
+message HeadResponse {
+  uint64 seq = 1;
+  string hash = 2;
+}

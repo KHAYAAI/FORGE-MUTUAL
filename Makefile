@@ -4,11 +4,11 @@ BUF ?= buf
 COMPOSE ?= docker compose -f deploy/compose/docker-compose.yml
 GATEWAY := services/bank/ledger-gateway-bank
 
-.PHONY: ci test lint vet fmt-check test-isolation test-banklayer test-recon test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
+.PHONY: ci test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
 
 ci: lint test test-isolation
 
-test: test-ledger test-policy test-platform test-bank test-banklayer test-recon
+test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
 	cd pkg/callerauth && $(GO) test ./...
@@ -80,6 +80,7 @@ vet:
 	cd tools/sim/sponsor && $(GO) vet ./...
 	cd tools/banklayercheck && $(GO) vet ./...
 	cd services/bank/reconciliation && $(GO) vet ./...
+	cd services/shared/audit-service && $(GO) vet ./...
 	cd pkg/uuid && $(GO) vet ./...
 
 test-isolation:
@@ -88,6 +89,11 @@ test-isolation:
 # Reconciliation (ARCHITECTURE.md 13). The store, runner and service tests need RECON_TEST_DSN (a throwaway database).
 test-recon:
 	cd services/bank/reconciliation && $(GO) test -count=1 ./...
+
+# Audit log (ARCHITECTURE.md 15.3, invariant 14). Database tests need AUDIT_TEST_DSN (a throwaway database). Packages
+# run one at a time because they share it.
+test-audit:
+	cd services/shared/audit-service && $(GO) test -count=1 -p 1 ./...
 
 # BankLayer (ARCHITECTURE.md 5.2): the contract suite on the simulator and on the HTTP client, the config bootstrap,
 # the simulator, and the route check. Only pkg/banklayer may read the licence route.
