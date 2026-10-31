@@ -18,5 +18,6 @@ use (
 	./services/platform/onboarding
 	./services/bank/rails-gateway
 	./services/bank/payments-orchestrator
+	./services/bank/reconciliation
 	./services/bank/ledger-gateway-bank
 )

@@ -1,0 +1,76 @@
+// Reconciliation API (ARCHITECTURE.md section 13). The gate tells outbound payments whether a break blocks them
+// (invariant 9). Amounts are integer minor units, carried as decimal strings.
+syntax = "proto3";
+
+package forge.recon.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1;reconv1";
+
+service ReconService {
+  rpc GetGate(GetGateRequest) returns (GetGateResponse);
+  rpc ListBreaks(ListBreaksRequest) returns (ListBreaksResponse);
+  rpc InvestigateBreak(InvestigateBreakRequest) returns (InvestigateBreakResponse);
+  rpc RunRecon(RunReconRequest) returns (RunReconResponse);
+}
+
+message GetGateRequest {}
+
+// The gate is open only when every monitored asset has a fresh, conclusive run in which every check matched.
+// Anything else (a break, a stale run, a run that never concluded) keeps it closed.
+message GetGateResponse {
+  bool break_active = 1;
+  repeated string reasons = 2;
+  string as_of = 3; // RFC 3339, when the gate was computed
+}
+
+message Break {
+  string break_id = 1;
+  string asset = 2;
+  string check = 3;
+  string difference_minor = 4;
+  string detail = 5;
+  string status = 6;               // OPEN or CLEARED
+  string opened_at = 7;
+  string last_seen_at = 8;
+  string cleared_at = 9;
+  string investigation_note = 10;  // a human's account of the investigation; never an accepted difference
+  string investigated_by = 11;
+  string investigated_at = 12;
+}
+
+message ListBreaksRequest {
+  bool open_only = 1;
+}
+
+message ListBreaksResponse {
+  repeated Break breaks = 1;
+}
+
+// InvestigateBreak records a human's findings on a break. It does not change the gate: only a later conclusive run
+// that matches can clear a break, so a difference cannot be waved through.
+message InvestigateBreakRequest {
+  string break_id = 1;
+  string note = 2;
+}
+
+message InvestigateBreakResponse {
+  Break break = 1;
+}
+
+message RunReconRequest {
+  string asset = 1;
+}
+
+message CheckResult {
+  string check = 1;
+  string asset = 2;
+  string difference_minor = 3;
+  bool matched = 4;
+  string detail = 5;
+}
+
+message RunReconResponse {
+  string run_id = 1;
+  string outcome = 2; // CONCLUSIVE or INCONCLUSIVE
+  repeated CheckResult checks = 3;
+}
