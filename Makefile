@@ -90,8 +90,9 @@ test-isolation:
 	cd tools/isolation && $(GO) run . ../..
 
 # Reconciliation (ARCHITECTURE.md 13). The store, runner and service tests need RECON_TEST_DSN (a throwaway database).
+# Packages run one at a time because they share it; in parallel they truncate each other's rows.
 test-recon:
-	cd services/bank/reconciliation && $(GO) test -count=1 ./...
+	cd services/bank/reconciliation && $(GO) test -count=1 -p 1 ./...
 
 # Audit log (ARCHITECTURE.md 15.3, invariant 14). Database tests need AUDIT_TEST_DSN (a throwaway database). Packages
 # run one at a time because they share it.
