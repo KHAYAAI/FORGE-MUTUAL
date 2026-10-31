@@ -28,6 +28,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
 	github.com/lestrrat-go/dsig v1.0.0 // indirect
@@ -73,3 +74,5 @@ replace github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
 replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
 
 replace github.com/khayaai/forge-mutual/pkg/outbox => ../../../pkg/outbox
+
+replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
