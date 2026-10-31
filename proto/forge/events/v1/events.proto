@@ -62,3 +62,14 @@ message ConsentChanged {
   string actor = 5;
 }
 
+// Payment lifecycle event (topics forge.bank.payment.requested.v1, .settled.v1 and .failed.v1).
+message PaymentEvent {
+  string payment_id = 1;
+  string party_id = 2;
+  string from_account_id = 3;
+  string amount_minor = 4;
+  string asset = 5;
+  string status = 6; // REQUESTED, SETTLED or FAILED
+  string reason = 7;
+}
+

@@ -24,6 +24,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/khayaai/forge-mutual/pkg/screening v0.0.0
 	github.com/nexus-rpc/sdk-go v0.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
@@ -45,3 +46,5 @@ replace github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
 replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
 
 replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
+
+replace github.com/khayaai/forge-mutual/pkg/screening => ../../../pkg/screening

@@ -510,6 +510,99 @@ func (x *ConsentChanged) GetActor() string {
 	return ""
 }
 
+// Payment lifecycle event (topics forge.bank.payment.requested.v1, .settled.v1 and .failed.v1).
+type PaymentEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PaymentId     string                 `protobuf:"bytes,1,opt,name=payment_id,json=paymentId,proto3" json:"payment_id,omitempty"`
+	PartyId       string                 `protobuf:"bytes,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	FromAccountId string                 `protobuf:"bytes,3,opt,name=from_account_id,json=fromAccountId,proto3" json:"from_account_id,omitempty"`
+	AmountMinor   string                 `protobuf:"bytes,4,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	Asset         string                 `protobuf:"bytes,5,opt,name=asset,proto3" json:"asset,omitempty"`
+	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"` // REQUESTED, SETTLED or FAILED
+	Reason        string                 `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PaymentEvent) Reset() {
+	*x = PaymentEvent{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PaymentEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PaymentEvent) ProtoMessage() {}
+
+func (x *PaymentEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PaymentEvent.ProtoReflect.Descriptor instead.
+func (*PaymentEvent) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PaymentEvent) GetPaymentId() string {
+	if x != nil {
+		return x.PaymentId
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetFromAccountId() string {
+	if x != nil {
+		return x.FromAccountId
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetAmountMinor() string {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 var File_forge_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_forge_events_v1_events_proto_rawDesc = "" +
@@ -568,7 +661,16 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x18\n" +
 	"\apurpose\x18\x03 \x01(\tR\apurpose\x12\x16\n" +
 	"\x06action\x18\x04 \x01(\tR\x06action\x12\x14\n" +
-	"\x05actor\x18\x05 \x01(\tR\x05actorBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
+	"\x05actor\x18\x05 \x01(\tR\x05actor\"\xd9\x01\n" +
+	"\fPaymentEvent\x12\x1d\n" +
+	"\n" +
+	"payment_id\x18\x01 \x01(\tR\tpaymentId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12&\n" +
+	"\x0ffrom_account_id\x18\x03 \x01(\tR\rfromAccountId\x12!\n" +
+	"\famount_minor\x18\x04 \x01(\tR\vamountMinor\x12\x14\n" +
+	"\x05asset\x18\x05 \x01(\tR\x05asset\x12\x16\n" +
+	"\x06status\x18\x06 \x01(\tR\x06status\x12\x16\n" +
+	"\x06reason\x18\a \x01(\tR\x06reasonBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once
@@ -582,17 +684,18 @@ func file_forge_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_forge_events_v1_events_proto_rawDescData
 }
 
-var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_forge_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: forge.events.v1.EventEnvelope
 	(*TransferCommitted)(nil),     // 1: forge.events.v1.TransferCommitted
 	(*PolicyDecision)(nil),        // 2: forge.events.v1.PolicyDecision
 	(*PartyStatusChanged)(nil),    // 3: forge.events.v1.PartyStatusChanged
 	(*ConsentChanged)(nil),        // 4: forge.events.v1.ConsentChanged
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*PaymentEvent)(nil),          // 5: forge.events.v1.PaymentEvent
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_forge_events_v1_events_proto_depIdxs = []int32{
-	5, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	6, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -611,7 +714,7 @@ func file_forge_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_events_v1_events_proto_rawDesc), len(file_forge_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

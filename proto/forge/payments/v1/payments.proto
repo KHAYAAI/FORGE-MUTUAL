@@ -1,0 +1,79 @@
+// Payments API (ARCHITECTURE.md 9.1, DomesticPayment). Each payment is a Temporal workflow.
+syntax = "proto3";
+
+package forge.payments.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1;paymentsv1";
+
+service PaymentsService {
+  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse);
+  rpc GetPayment(GetPaymentRequest) returns (GetPaymentResponse);
+  rpc ApprovePayment(ApprovePaymentRequest) returns (ApprovePaymentResponse);
+  rpc ResolveRepair(ResolveRepairRequest) returns (ResolveRepairResponse);
+}
+
+message CreatePaymentRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string from_account_id = 3; // the customer's ledger account
+  string amount_minor = 4;
+  string asset = 5;           // "ZAR" only in this version: domestic EFT
+  string beneficiary_name = 6;
+  string account_number = 7;
+  string bank_code = 8;
+  string reference = 9;
+  string actor = 10;
+  // Simulation only. Honoured when the service runs with simulation enabled; refused otherwise.
+  string simulation_scenario = 11;
+}
+
+message CreatePaymentResponse {
+  string payment_id = 1;
+}
+
+message GetPaymentRequest {
+  string payment_id = 1;
+}
+
+enum PaymentState {
+  PAYMENT_STATE_UNSPECIFIED = 0;
+  PAYMENT_STATE_RUNNING = 1;
+  PAYMENT_STATE_AWAITING_APPROVAL = 2;
+  PAYMENT_STATE_COMPLETED = 3;      // settled
+  PAYMENT_STATE_DECLINED = 4;       // refused before any money was reserved
+  PAYMENT_STATE_FAILED = 5;         // the rail rejected or returned it; the hold was released
+  PAYMENT_STATE_CANCELLED = 6;      // approval refused or not given in time; nothing reserved
+  PAYMENT_STATE_REPAIR_REQUIRED = 7; // the rail's outcome is unknown; the hold stays until an operator resolves it
+  PAYMENT_STATE_RESERVED = 8;        // the hold is placed; the rail has not yet given an outcome
+}
+
+message PaymentStatus {
+  string payment_id = 1;
+  PaymentState state = 2;
+  string reason = 3;
+  string rail_status = 4;
+  string initiated_by = 5;
+  repeated string steps = 6;
+  string amount_minor = 7;
+  string asset = 8;
+}
+
+message GetPaymentResponse {
+  PaymentStatus status = 1;
+}
+
+message ApprovePaymentRequest {
+  string payment_id = 1;
+  bool approve = 2;   // false refuses the payment
+  string approver = 3;
+}
+
+message ApprovePaymentResponse {}
+
+message ResolveRepairRequest {
+  string payment_id = 1;
+  bool settled = 2;   // true if the rail confirms the money moved; false if it did not
+  string operator = 3;
+}
+
+message ResolveRepairResponse {}

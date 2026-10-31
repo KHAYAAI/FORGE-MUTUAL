@@ -28,9 +28,9 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/screening"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
-	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/screening"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/service"
 )
 
