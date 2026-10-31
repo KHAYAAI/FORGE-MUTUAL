@@ -17,6 +17,7 @@ import (
 	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/banklayer"
+	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/pkg/uuid"
 )
 
@@ -240,28 +241,7 @@ func (w *Worker) systemAccountsFor(ctx context.Context, asset string) (systemAcc
 }
 
 func (w *Worker) ensure(ctx context.Context, asset string, code uint16, key string) (string, error) {
-	txn, err := uuid.NewV5(namespace, key)
-	if err != nil {
-		return "", err
-	}
-	res, err := w.Ledger.CreateAccounts(ctx, connect.NewRequest(&ledgerv1.CreateAccountsRequest{
-		IdempotencyKey: key,
-		BusinessTxnId:  txn,
-		EntityCode:     w.Entity,
-		Accounts:       []*ledgerv1.AccountSpec{{Asset: asset, Code: uint32(code), ProductId: key}},
-		Actor:          "inbound-credits",
-		Reason:         "ensure a system account",
-	}))
-	if err != nil {
-		return "", fmt.Errorf("inbound: system account %s: %w", key, err)
-	}
-	if res.Msg.Status != ledgerv1.Status_STATUS_OK && res.Msg.Status != ledgerv1.Status_STATUS_REPLAYED {
-		return "", fmt.Errorf("inbound: ledger refused system account %s", key)
-	}
-	if len(res.Msg.AccountIds) != 1 {
-		return "", fmt.Errorf("inbound: ledger returned no account for %s", key)
-	}
-	return res.Msg.AccountIds[0], nil
+	return systemaccounts.Ensure(ctx, w.Ledger, w.Entity, asset, uint32(code), key)
 }
 
 // inboundFor reads credits from the bank that holds the asset: the sponsor for ZAR, the partner for USD.

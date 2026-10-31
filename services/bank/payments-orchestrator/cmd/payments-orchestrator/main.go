@@ -33,7 +33,9 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/pkg/screening"
+	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/inbound"
+	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/inflight"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/payments"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/service"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/store"
@@ -102,6 +104,10 @@ func run(log *slog.Logger) error {
 		return fmt.Errorf("settlement account: %w", err)
 	}
 	log.Info("settlement account ready", "account", settlement)
+	sponsorPool, err := systemaccounts.Ensure(ctx, ledger, "BANK", "ZAR", 3003, "system:pool:ZAR:v1")
+	if err != nil {
+		return fmt.Errorf("sponsor pool account: %w", err)
+	}
 
 	hostPort := getenv("TEMPORAL_HOST", "localhost:7233")
 	tc, err := client.Dial(client.Options{HostPort: hostPort, Namespace: getenv("TEMPORAL_NAMESPACE", "default")})
@@ -112,15 +118,16 @@ func run(log *slog.Logger) error {
 	taskQueue := getenv("TEMPORAL_TASK_QUEUE", "payments")
 
 	acts := &payments.Activities{
-		Store:      st,
-		Party:      partyv1connect.NewPartyServiceClient(http.DefaultClient, urls["PARTY_URL"], callerAs("svc-payments")),
-		Policy:     policyv1connect.NewPolicyServiceClient(http.DefaultClient, urls["POLICY_URL"], callerAs("svc-payments")),
-		Ledger:     ledger,
-		Rails:      railsv1connect.NewRailServiceClient(http.DefaultClient, urls["RAILS_URL"], callerAs("svc-payments")),
-		Screener:   scr,
-		Recon:      recon,
-		Settlement: settlement,
-		Entity:     "BANK",
+		Store:       st,
+		Party:       partyv1connect.NewPartyServiceClient(http.DefaultClient, urls["PARTY_URL"], callerAs("svc-payments")),
+		Policy:      policyv1connect.NewPolicyServiceClient(http.DefaultClient, urls["POLICY_URL"], callerAs("svc-payments")),
+		Ledger:      ledger,
+		Rails:       railsv1connect.NewRailServiceClient(http.DefaultClient, urls["RAILS_URL"], callerAs("svc-payments")),
+		Screener:    scr,
+		Recon:       recon,
+		Settlement:  settlement,
+		SponsorPool: sponsorPool,
+		Entity:      "BANK",
 	}
 	w := worker.New(tc, taskQueue, worker.Options{})
 	w.RegisterWorkflow(payments.DomesticPayment)
@@ -152,6 +159,13 @@ func run(log *slog.Logger) error {
 		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
+	if err := inbound.Open(ctx, st.Pool()); err != nil {
+		return err
+	}
+	inflightPath, inflightHandler := paymentsv1connect.NewInFlightServiceHandler(
+		&inflight.Service{Pool: st.Pool(), Inbound: &inbound.Worker{Pool: st.Pool()}},
+		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+	mux.Handle(inflightPath, inflightHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if err := st.Pool().Ping(r.Context()); err != nil {

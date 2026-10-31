@@ -29,6 +29,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/khayaai/forge-mutual/pkg/banklayer v0.0.0
 	github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap v0.0.0
+	github.com/khayaai/forge-mutual/pkg/systemaccounts v0.0.0
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/nexus-rpc/sdk-go v0.6.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
@@ -62,3 +63,5 @@ replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
 replace github.com/khayaai/forge-mutual/pkg/banklayer => ../../../pkg/banklayer
 
 replace github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap => ../../../pkg/banklayer/bootstrap
+
+replace github.com/khayaai/forge-mutual/pkg/systemaccounts => ../../../pkg/systemaccounts

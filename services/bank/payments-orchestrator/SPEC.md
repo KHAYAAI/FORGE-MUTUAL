@@ -92,3 +92,18 @@ Credits the bank reports are recorded, then booked once each.
   reconciliation service still assumes zero (see its SPEC).
 - **Not yet wired.** Customer accounts do not register their bank references yet. Until onboarding does, every
   inbound credit goes to suspense. The binary runs this loop only when `INBOUND_ENABLED=1`.
+
+## Sponsor clearing and the in-flight endpoint
+
+- **Clearing leg.** When the rail reports SETTLED, Settle posts the hold (customer to the settlement account 3001), and
+  then records the sponsor's debit: RAIL_SETTLE (code 31) moves the amount from the settlement account to the sponsor
+  pool (3003). Without this leg the pool keeps the money and reconciliation breaks after every settled payment. The
+  integration test checks that the settlement account nets to zero and the pool holds the amount. A mutation without
+  the leg fails that test.
+- **Status is recorded when it is seen.** `RailStatus` writes the rail status on every poll, not only at the end. That
+  is what makes "rail says settled, payment not complete" visible to reconciliation during the wait.
+- **`InFlightService.GetInFlight(asset)`** returns two totals. Inbound: pending inbound credits. Outbound: payments whose
+  rail status is SETTLED and whose state is not COMPLETED, including payments in REPAIR_REQUIRED, because the money has
+  left the bank and the books still show it. Callers are allow-listed like every other method.
+- The sponsor pool account is created by `pkg/systemaccounts` under the fixed key `system:pool:ZAR:v1`. Inbound credits
+  use the same key, so both see the same account.

@@ -1,0 +1,21 @@
+// In-flight money for reconciliation (ARCHITECTURE.md section 13). Inbound is what the bank has credited and the books
+// do not yet hold. Outbound is what the bank has debited for a payment and the books have not yet cleared. Amounts are
+// integer minor units carried as decimal strings.
+syntax = "proto3";
+
+package forge.payments.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1;paymentsv1";
+
+service InFlightService {
+  rpc GetInFlight(GetInFlightRequest) returns (GetInFlightResponse);
+}
+
+message GetInFlightRequest {
+  string asset = 1;
+}
+
+message GetInFlightResponse {
+  string inbound_minor = 1;
+  string outbound_minor = 2;
+}

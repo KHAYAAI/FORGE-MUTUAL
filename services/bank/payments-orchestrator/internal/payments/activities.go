@@ -28,7 +28,10 @@ import (
 )
 
 // Ledger transfer code for a payment out (Appendix B: PAYMENT_OUT).
-const codePaymentOut = 11
+const (
+	codePaymentOut = 11
+	codeRailSettle = 31 // RAIL_SETTLE: the sponsor has debited the pool for a payment
+)
 
 // Event topics (ARCHITECTURE.md Appendix C).
 const (
@@ -39,15 +42,16 @@ const (
 
 // Activities holds the collaborators. Each method is one activity.
 type Activities struct {
-	Store      *store.Store
-	Party      partyv1connect.PartyServiceClient
-	Policy     policyv1connect.PolicyServiceClient
-	Ledger     ledgerv1connect.LedgerServiceClient
-	Rails      railsv1connect.RailServiceClient
-	Screener   screening.Screener
-	Recon      ReconStatus
-	Settlement string // the ledger account of RAIL_SETTLEMENT_EFT
-	Entity     string // "BANK"
+	Store       *store.Store
+	Party       partyv1connect.PartyServiceClient
+	Policy      policyv1connect.PolicyServiceClient
+	Ledger      ledgerv1connect.LedgerServiceClient
+	Rails       railsv1connect.RailServiceClient
+	Screener    screening.Screener
+	Recon       ReconStatus
+	Settlement  string // the ledger account of RAIL_SETTLEMENT_EFT (code 3001)
+	SponsorPool string // the ledger account of SPONSOR_POOLED (code 3003), the mirror of the sponsor's pooled account
+	Entity      string // "BANK"
 }
 
 // LoadParty reads the paying party's status and tier.
@@ -187,16 +191,23 @@ func (a *Activities) RailInitiate(ctx context.Context, in Input) (RailResult, er
 	return RailResult{Status: res.Msg.Status, Reference: res.Msg.Reference}, nil
 }
 
-// RailStatus reads the rail's current status for the instruction.
+// RailStatus reads the rail's current status for the instruction and records it. The record matters: once the rail
+// reports SETTLED, the sponsor has debited the pool, and the payment is in flight until Settle clears it. Reconciliation
+// reads that from the record, so the status must be written when it is seen, not only at the end.
 func (a *Activities) RailStatus(ctx context.Context, in Input) (RailResult, error) {
 	res, err := a.Rails.Status(ctx, connect.NewRequest(&railsv1.StatusRequest{InstructionId: in.PaymentID}))
 	if err != nil {
 		return RailResult{}, retryable(err)
 	}
+	if err := a.writeRecord(ctx, in, StateReserved, "", res.Msg.Status.String(), "", ""); err != nil {
+		return RailResult{}, retryable(err)
+	}
 	return RailResult{Status: res.Msg.Status, Reference: res.Msg.Reference}, nil
 }
 
-// Settle posts the hold to the settlement account, and records SETTLED with its event.
+// Settle posts the hold to the settlement account, then records the sponsor's debit: RAIL_SETTLE moves the amount from
+// the settlement account to the sponsor pool. Without that second leg the pool would still hold the money, and
+// reconciliation would break on every settled payment. Both legs have fixed keys, so a retry replays them.
 func (a *Activities) Settle(ctx context.Context, in Input, transferID, railStatus string) error {
 	res, err := a.Ledger.PostPending(ctx, connect.NewRequest(&ledgerv1.PostPendingRequest{
 		IdempotencyKey:     in.PaymentID + ":settle",
@@ -211,6 +222,28 @@ func (a *Activities) Settle(ctx context.Context, in Input, transferID, railStatu
 	}
 	if res.Msg.Status != ledgerv1.Status_STATUS_OK && res.Msg.Status != ledgerv1.Status_STATUS_REPLAYED {
 		return temporal.NewNonRetryableApplicationError(fmt.Sprintf("hold cannot be posted: %v", res.Msg.RejectionCodes), ErrTypeValidation, nil)
+	}
+	if a.SponsorPool == "" {
+		return temporal.NewNonRetryableApplicationError("sponsor pool account is not configured", ErrTypeValidation, nil)
+	}
+	clear, err := a.Ledger.CreateTransfers(ctx, connect.NewRequest(&ledgerv1.CreateTransfersRequest{
+		IdempotencyKey: in.PaymentID + ":rail-settle",
+		BusinessTxnId:  in.PaymentID,
+		EntityCode:     a.Entity,
+		Legs: []*ledgerv1.TransferLeg{{
+			DebitAccountId:  a.Settlement,
+			CreditAccountId: a.SponsorPool,
+			Amount:          &ledgerv1.Money{Asset: in.Asset, AmountMinor: in.AmountMinor},
+			Code:            codeRailSettle,
+		}},
+		Actor:  "payments",
+		Reason: "sponsor debited for payment",
+	}))
+	if err != nil {
+		return retryable(err)
+	}
+	if clear.Msg.Status != ledgerv1.Status_STATUS_OK && clear.Msg.Status != ledgerv1.Status_STATUS_REPLAYED {
+		return temporal.NewNonRetryableApplicationError(fmt.Sprintf("rail settlement refused: %v", clear.Msg.RejectionCodes), ErrTypeValidation, nil)
 	}
 	return a.writeRecord(ctx, in, StateCompleted, "", railStatus, transferID, TopicSettled)
 }

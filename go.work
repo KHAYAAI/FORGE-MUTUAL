@@ -9,6 +9,7 @@ use (
 	./pkg/money
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
+	./pkg/systemaccounts
 	./tools/isolation
 	./tools/banklayercheck
 	./tools/sim/sponsor

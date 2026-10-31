@@ -34,6 +34,7 @@ import (
 	railsv1connect "github.com/khayaai/forge-mutual/pkg/api/forge/rails/v1/railsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/screening"
+	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/payments"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/store"
 )
@@ -236,6 +237,7 @@ type rig struct {
 	testParty partyv1connect.PartyServiceClient
 	operating string
 	settle    string
+	pool      string
 	st        *store.Store
 	acts      *payments.Activities
 }
@@ -284,16 +286,22 @@ func newRig(t *testing.T) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
+	pool, err := systemaccounts.Ensure(ctx, r.ledger, "BANK", "ZAR", 3003, "system:pool:ZAR:v1")
+	if err != nil {
+		t.Fatalf("sponsor pool: %v", err)
+	}
+	r.pool = pool
 	r.acts = &payments.Activities{
-		Store:      st,
-		Party:      r.party,
-		Policy:     policyv1connect.NewPolicyServiceClient(http.DefaultClient, s.urls["policy"], callerClient("svc-payments")),
-		Ledger:     r.ledger,
-		Rails:      railsv1connect.NewRailServiceClient(http.DefaultClient, s.urls["rails"], callerClient("svc-payments")),
-		Screener:   screen,
-		Recon:      payments.StaticRecon{Break: false},
-		Settlement: settle,
-		Entity:     "BANK",
+		Store:       st,
+		Party:       r.party,
+		Policy:      policyv1connect.NewPolicyServiceClient(http.DefaultClient, s.urls["policy"], callerClient("svc-payments")),
+		Ledger:      r.ledger,
+		Rails:       railsv1connect.NewRailServiceClient(http.DefaultClient, s.urls["rails"], callerClient("svc-payments")),
+		Screener:    screen,
+		Recon:       payments.StaticRecon{Break: false},
+		Settlement:  settle,
+		SponsorPool: pool,
+		Entity:      "BANK",
 	}
 	return r
 }
@@ -437,6 +445,14 @@ func TestPaymentsAgainstRealServices(t *testing.T) {
 		}
 		if got := r.pending(acc); got != "0" {
 			t.Fatalf("hold still open: %s", got)
+		}
+		// The sponsor debited the pool, so the books must show it: the settlement account nets to zero, and the pool
+		// holds the credit that RAIL_SETTLE posted. This is the leg reconciliation depends on.
+		if got := r.balance(r.settle); got != "0" {
+			t.Fatalf("settlement account must net to zero after clearing, got %s", got)
+		}
+		if got := r.balance(r.pool); got != "15000" {
+			t.Fatalf("sponsor pool = %s after a 15000 payment, want 15000 (RAIL_SETTLE missing?)", got)
 		}
 		if row := r.row(in.PaymentID); row.State != payments.StateCompleted {
 			t.Fatalf("payment row state = %s", row.State)
