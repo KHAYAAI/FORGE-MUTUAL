@@ -41,6 +41,7 @@ func Run(t *testing.T, newEnv Factory) {
 	t.Run("crash_after_ledger_commit_is_recovered", func(t *testing.T) { crashRecovered(t, newEnv) })
 	t.Run("validation", func(t *testing.T) { validation(t, newEnv) })
 	t.Run("outbox_publishes_each_committed_leg_once", func(t *testing.T) { outboxOnce(t, newEnv) })
+	t.Run("list_accounts_pages_and_filters_the_directory", func(t *testing.T) { listAccounts(t, newEnv) })
 }
 
 // fixture creates an operating account and a customer account and returns their IDs.
@@ -444,4 +445,83 @@ func outboxOnce(t *testing.T, newEnv Factory) {
 			t.Fatalf("payload = %+v", &tc)
 		}
 	}
+}
+
+// listAccounts checks the directory listing that reconciliation uses to sum customer balances: paging is stable and
+// complete, the filters narrow correctly, and malformed requests are refused before the store is read.
+func listAccounts(t *testing.T, newEnv Factory) {
+	f := setup(t, newEnv) // one operating (2001) and one customer (1001) account
+	ctx := context.Background()
+	resp := f.createAccounts(t, "list", []*ledgerv1.AccountSpec{
+		{Asset: "ZAR", Code: 1001, DebitsMustNotExceedCredits: true, Insured: true, OwnerPartyId: txnPrefix + "000000000002"},
+		{Asset: "ZAR", Code: 1001, DebitsMustNotExceedCredits: true, Insured: true, OwnerPartyId: txnPrefix + "000000000003"},
+		{Asset: "ZAR", Code: 1001, DebitsMustNotExceedCredits: true, Insured: true, OwnerPartyId: txnPrefix + "000000000004"},
+		{Asset: "ZAR", Code: 2001, Insured: false},
+	})
+	if resp.Status != ledgerv1.Status_STATUS_OK {
+		t.Fatalf("create accounts: %v %v", resp.Status, resp.RejectionCodes)
+	}
+	list := func(req *ledgerv1.ListAccountsRequest) (*ledgerv1.ListAccountsResponse, error) {
+		r, err := f.svc.ListAccounts(ctx, withCaller(connect.NewRequest(req)))
+		if err != nil {
+			return nil, err
+		}
+		return r.Msg, nil
+	}
+	all := func(base *ledgerv1.ListAccountsRequest) []string {
+		var ids []string
+		cursor := ""
+		for i := 0; i < 20; i++ {
+			req := proto.Clone(base).(*ledgerv1.ListAccountsRequest)
+			req.AfterAccountId = cursor
+			page, err := list(req)
+			if err != nil {
+				t.Fatalf("list: %v", err)
+			}
+			for _, a := range page.Accounts {
+				ids = append(ids, a.AccountId)
+			}
+			if page.NextAfterAccountId == "" {
+				return ids
+			}
+			if len(page.Accounts) != int(base.Limit) {
+				t.Fatalf("a non-final page must be full: got %d of %d", len(page.Accounts), base.Limit)
+			}
+			cursor = page.NextAfterAccountId
+		}
+		t.Fatal("paging did not terminate")
+		return nil
+	}
+
+	base := &ledgerv1.ListAccountsRequest{EntityCode: entity, Limit: 2}
+	got := all(base)
+	if len(got) != 6 {
+		t.Fatalf("paged %d accounts, want 6", len(got))
+	}
+	for i := 1; i < len(got); i++ {
+		if got[i-1] >= got[i] {
+			t.Fatalf("pages are not in ascending ID order at %d", i)
+		}
+	}
+
+	if n := len(all(&ledgerv1.ListAccountsRequest{EntityCode: entity, Ledger: 710, Limit: 50})); n != 6 {
+		t.Fatalf("ZAR ledger 710 holds %d accounts, want 6", n)
+	}
+	if n := len(all(&ledgerv1.ListAccountsRequest{EntityCode: entity, Ledger: 840, Limit: 50})); n != 0 {
+		t.Fatalf("USD ledger 840 holds %d accounts, want 0", n)
+	}
+	if n := len(all(&ledgerv1.ListAccountsRequest{EntityCode: entity, Code: 1001, Limit: 50})); n != 4 {
+		t.Fatalf("code 1001 holds %d accounts, want 4", n)
+	}
+
+	refuse := func(name string, req *ledgerv1.ListAccountsRequest) {
+		t.Helper()
+		if _, err := list(req); connect.CodeOf(err) != connect.CodeInvalidArgument {
+			t.Fatalf("%s: code %v, want InvalidArgument (err %v)", name, connect.CodeOf(err), err)
+		}
+	}
+	refuse("foreign entity", &ledgerv1.ListAccountsRequest{EntityCode: "PLAT", Limit: 10})
+	refuse("zero limit", &ledgerv1.ListAccountsRequest{EntityCode: entity, Limit: 0})
+	refuse("limit over 1000", &ledgerv1.ListAccountsRequest{EntityCode: entity, Limit: 1001})
+	refuse("malformed cursor", &ledgerv1.ListAccountsRequest{EntityCode: entity, Limit: 10, AfterAccountId: "not-hex"})
 }

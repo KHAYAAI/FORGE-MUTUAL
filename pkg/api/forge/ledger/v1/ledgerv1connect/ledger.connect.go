@@ -54,6 +54,9 @@ const (
 	// LedgerServiceLookupTransfersProcedure is the fully-qualified name of the LedgerService's
 	// LookupTransfers RPC.
 	LedgerServiceLookupTransfersProcedure = "/forge.ledger.v1.LedgerService/LookupTransfers"
+	// LedgerServiceListAccountsProcedure is the fully-qualified name of the LedgerService's
+	// ListAccounts RPC.
+	LedgerServiceListAccountsProcedure = "/forge.ledger.v1.LedgerService/ListAccounts"
 )
 
 // LedgerServiceClient is a client for the forge.ledger.v1.LedgerService service.
@@ -64,6 +67,7 @@ type LedgerServiceClient interface {
 	VoidPending(context.Context, *connect.Request[v1.VoidPendingRequest]) (*connect.Response[v1.VoidPendingResponse], error)
 	GetBalances(context.Context, *connect.Request[v1.GetBalancesRequest]) (*connect.Response[v1.GetBalancesResponse], error)
 	LookupTransfers(context.Context, *connect.Request[v1.LookupTransfersRequest]) (*connect.Response[v1.LookupTransfersResponse], error)
+	ListAccounts(context.Context, *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error)
 }
 
 // NewLedgerServiceClient constructs a client for the forge.ledger.v1.LedgerService service. By
@@ -113,6 +117,12 @@ func NewLedgerServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(ledgerServiceMethods.ByName("LookupTransfers")),
 			connect.WithClientOptions(opts...),
 		),
+		listAccounts: connect.NewClient[v1.ListAccountsRequest, v1.ListAccountsResponse](
+			httpClient,
+			baseURL+LedgerServiceListAccountsProcedure,
+			connect.WithSchema(ledgerServiceMethods.ByName("ListAccounts")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -124,6 +134,7 @@ type ledgerServiceClient struct {
 	voidPending     *connect.Client[v1.VoidPendingRequest, v1.VoidPendingResponse]
 	getBalances     *connect.Client[v1.GetBalancesRequest, v1.GetBalancesResponse]
 	lookupTransfers *connect.Client[v1.LookupTransfersRequest, v1.LookupTransfersResponse]
+	listAccounts    *connect.Client[v1.ListAccountsRequest, v1.ListAccountsResponse]
 }
 
 // CreateAccounts calls forge.ledger.v1.LedgerService.CreateAccounts.
@@ -156,6 +167,11 @@ func (c *ledgerServiceClient) LookupTransfers(ctx context.Context, req *connect.
 	return c.lookupTransfers.CallUnary(ctx, req)
 }
 
+// ListAccounts calls forge.ledger.v1.LedgerService.ListAccounts.
+func (c *ledgerServiceClient) ListAccounts(ctx context.Context, req *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error) {
+	return c.listAccounts.CallUnary(ctx, req)
+}
+
 // LedgerServiceHandler is an implementation of the forge.ledger.v1.LedgerService service.
 type LedgerServiceHandler interface {
 	CreateAccounts(context.Context, *connect.Request[v1.CreateAccountsRequest]) (*connect.Response[v1.CreateAccountsResponse], error)
@@ -164,6 +180,7 @@ type LedgerServiceHandler interface {
 	VoidPending(context.Context, *connect.Request[v1.VoidPendingRequest]) (*connect.Response[v1.VoidPendingResponse], error)
 	GetBalances(context.Context, *connect.Request[v1.GetBalancesRequest]) (*connect.Response[v1.GetBalancesResponse], error)
 	LookupTransfers(context.Context, *connect.Request[v1.LookupTransfersRequest]) (*connect.Response[v1.LookupTransfersResponse], error)
+	ListAccounts(context.Context, *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error)
 }
 
 // NewLedgerServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -209,6 +226,12 @@ func NewLedgerServiceHandler(svc LedgerServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(ledgerServiceMethods.ByName("LookupTransfers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	ledgerServiceListAccountsHandler := connect.NewUnaryHandler(
+		LedgerServiceListAccountsProcedure,
+		svc.ListAccounts,
+		connect.WithSchema(ledgerServiceMethods.ByName("ListAccounts")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.ledger.v1.LedgerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LedgerServiceCreateAccountsProcedure:
@@ -223,6 +246,8 @@ func NewLedgerServiceHandler(svc LedgerServiceHandler, opts ...connect.HandlerOp
 			ledgerServiceGetBalancesHandler.ServeHTTP(w, r)
 		case LedgerServiceLookupTransfersProcedure:
 			ledgerServiceLookupTransfersHandler.ServeHTTP(w, r)
+		case LedgerServiceListAccountsProcedure:
+			ledgerServiceListAccountsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -254,4 +279,8 @@ func (UnimplementedLedgerServiceHandler) GetBalances(context.Context, *connect.R
 
 func (UnimplementedLedgerServiceHandler) LookupTransfers(context.Context, *connect.Request[v1.LookupTransfersRequest]) (*connect.Response[v1.LookupTransfersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.ledger.v1.LedgerService.LookupTransfers is not implemented"))
+}
+
+func (UnimplementedLedgerServiceHandler) ListAccounts(context.Context, *connect.Request[v1.ListAccountsRequest]) (*connect.Response[v1.ListAccountsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.ledger.v1.LedgerService.ListAccounts is not implemented"))
 }

@@ -1256,6 +1256,237 @@ func (x *LookupTransfersResponse) GetTransfers() []*TransferRecord {
 	return nil
 }
 
+// ListAccounts pages through the account directory of one entity, optionally filtered by ledger and code.
+// It returns business identity only; balances come from GetBalances. Reconciliation uses it to sum customer
+// balances. Closed accounts are included, because their balances still count.
+type ListAccountsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	EntityCode     string                 `protobuf:"bytes,1,opt,name=entity_code,json=entityCode,proto3" json:"entity_code,omitempty"`
+	Ledger         uint32                 `protobuf:"varint,2,opt,name=ledger,proto3" json:"ledger,omitempty"`
+	Code           uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`                                            // 0 means any code
+	AfterAccountId string                 `protobuf:"bytes,4,opt,name=after_account_id,json=afterAccountId,proto3" json:"after_account_id,omitempty"` // exclusive cursor; empty for the first page
+	Limit          uint32                 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`                                          // 1 to 1000
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListAccountsRequest) Reset() {
+	*x = ListAccountsRequest{}
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAccountsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAccountsRequest) ProtoMessage() {}
+
+func (x *ListAccountsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAccountsRequest.ProtoReflect.Descriptor instead.
+func (*ListAccountsRequest) Descriptor() ([]byte, []int) {
+	return file_forge_ledger_v1_ledger_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListAccountsRequest) GetEntityCode() string {
+	if x != nil {
+		return x.EntityCode
+	}
+	return ""
+}
+
+func (x *ListAccountsRequest) GetLedger() uint32 {
+	if x != nil {
+		return x.Ledger
+	}
+	return 0
+}
+
+func (x *ListAccountsRequest) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *ListAccountsRequest) GetAfterAccountId() string {
+	if x != nil {
+		return x.AfterAccountId
+	}
+	return ""
+}
+
+func (x *ListAccountsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type DirectoryAccount struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountId     string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	EntityCode    string                 `protobuf:"bytes,2,opt,name=entity_code,json=entityCode,proto3" json:"entity_code,omitempty"`
+	Asset         string                 `protobuf:"bytes,3,opt,name=asset,proto3" json:"asset,omitempty"`
+	Ledger        uint32                 `protobuf:"varint,4,opt,name=ledger,proto3" json:"ledger,omitempty"`
+	Code          uint32                 `protobuf:"varint,5,opt,name=code,proto3" json:"code,omitempty"`
+	OwnerPartyId  string                 `protobuf:"bytes,6,opt,name=owner_party_id,json=ownerPartyId,proto3" json:"owner_party_id,omitempty"`
+	ProductId     string                 `protobuf:"bytes,7,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	Insured       bool                   `protobuf:"varint,8,opt,name=insured,proto3" json:"insured,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectoryAccount) Reset() {
+	*x = DirectoryAccount{}
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectoryAccount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectoryAccount) ProtoMessage() {}
+
+func (x *DirectoryAccount) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectoryAccount.ProtoReflect.Descriptor instead.
+func (*DirectoryAccount) Descriptor() ([]byte, []int) {
+	return file_forge_ledger_v1_ledger_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DirectoryAccount) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *DirectoryAccount) GetEntityCode() string {
+	if x != nil {
+		return x.EntityCode
+	}
+	return ""
+}
+
+func (x *DirectoryAccount) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *DirectoryAccount) GetLedger() uint32 {
+	if x != nil {
+		return x.Ledger
+	}
+	return 0
+}
+
+func (x *DirectoryAccount) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *DirectoryAccount) GetOwnerPartyId() string {
+	if x != nil {
+		return x.OwnerPartyId
+	}
+	return ""
+}
+
+func (x *DirectoryAccount) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+func (x *DirectoryAccount) GetInsured() bool {
+	if x != nil {
+		return x.Insured
+	}
+	return false
+}
+
+type ListAccountsResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Accounts           []*DirectoryAccount    `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+	NextAfterAccountId string                 `protobuf:"bytes,2,opt,name=next_after_account_id,json=nextAfterAccountId,proto3" json:"next_after_account_id,omitempty"` // empty when there are no more pages
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ListAccountsResponse) Reset() {
+	*x = ListAccountsResponse{}
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAccountsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAccountsResponse) ProtoMessage() {}
+
+func (x *ListAccountsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_ledger_v1_ledger_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAccountsResponse.ProtoReflect.Descriptor instead.
+func (*ListAccountsResponse) Descriptor() ([]byte, []int) {
+	return file_forge_ledger_v1_ledger_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ListAccountsResponse) GetAccounts() []*DirectoryAccount {
+	if x != nil {
+		return x.Accounts
+	}
+	return nil
+}
+
+func (x *ListAccountsResponse) GetNextAfterAccountId() string {
+	if x != nil {
+		return x.NextAfterAccountId
+	}
+	return ""
+}
+
 var File_forge_ledger_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_forge_ledger_v1_ledger_proto_rawDesc = "" +
@@ -1360,19 +1591,42 @@ const file_forge_ledger_v1_ledger_proto_rawDesc = "" +
 	"\n" +
 	"pending_id\x18\b \x01(\tR\tpendingId\"X\n" +
 	"\x17LookupTransfersResponse\x12=\n" +
-	"\ttransfers\x18\x01 \x03(\v2\x1f.forge.ledger.v1.TransferRecordR\ttransfers*Y\n" +
+	"\ttransfers\x18\x01 \x03(\v2\x1f.forge.ledger.v1.TransferRecordR\ttransfers\"\xa2\x01\n" +
+	"\x13ListAccountsRequest\x12\x1f\n" +
+	"\ventity_code\x18\x01 \x01(\tR\n" +
+	"entityCode\x12\x16\n" +
+	"\x06ledger\x18\x02 \x01(\rR\x06ledger\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\rR\x04code\x12(\n" +
+	"\x10after_account_id\x18\x04 \x01(\tR\x0eafterAccountId\x12\x14\n" +
+	"\x05limit\x18\x05 \x01(\rR\x05limit\"\xf3\x01\n" +
+	"\x10DirectoryAccount\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\x12\x1f\n" +
+	"\ventity_code\x18\x02 \x01(\tR\n" +
+	"entityCode\x12\x14\n" +
+	"\x05asset\x18\x03 \x01(\tR\x05asset\x12\x16\n" +
+	"\x06ledger\x18\x04 \x01(\rR\x06ledger\x12\x12\n" +
+	"\x04code\x18\x05 \x01(\rR\x04code\x12$\n" +
+	"\x0eowner_party_id\x18\x06 \x01(\tR\fownerPartyId\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\a \x01(\tR\tproductId\x12\x18\n" +
+	"\ainsured\x18\b \x01(\bR\ainsured\"\x88\x01\n" +
+	"\x14ListAccountsResponse\x12=\n" +
+	"\baccounts\x18\x01 \x03(\v2!.forge.ledger.v1.DirectoryAccountR\baccounts\x121\n" +
+	"\x15next_after_account_id\x18\x02 \x01(\tR\x12nextAfterAccountId*Y\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tSTATUS_OK\x10\x01\x12\x13\n" +
 	"\x0fSTATUS_REPLAYED\x10\x02\x12\x13\n" +
-	"\x0fSTATUS_REJECTED\x10\x032\xcc\x04\n" +
+	"\x0fSTATUS_REJECTED\x10\x032\xa9\x05\n" +
 	"\rLedgerService\x12a\n" +
 	"\x0eCreateAccounts\x12&.forge.ledger.v1.CreateAccountsRequest\x1a'.forge.ledger.v1.CreateAccountsResponse\x12d\n" +
 	"\x0fCreateTransfers\x12'.forge.ledger.v1.CreateTransfersRequest\x1a(.forge.ledger.v1.CreateTransfersResponse\x12X\n" +
 	"\vPostPending\x12#.forge.ledger.v1.PostPendingRequest\x1a$.forge.ledger.v1.PostPendingResponse\x12X\n" +
 	"\vVoidPending\x12#.forge.ledger.v1.VoidPendingRequest\x1a$.forge.ledger.v1.VoidPendingResponse\x12X\n" +
 	"\vGetBalances\x12#.forge.ledger.v1.GetBalancesRequest\x1a$.forge.ledger.v1.GetBalancesResponse\x12d\n" +
-	"\x0fLookupTransfers\x12'.forge.ledger.v1.LookupTransfersRequest\x1a(.forge.ledger.v1.LookupTransfersResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1;ledgerv1b\x06proto3"
+	"\x0fLookupTransfers\x12'.forge.ledger.v1.LookupTransfersRequest\x1a(.forge.ledger.v1.LookupTransfersResponse\x12[\n" +
+	"\fListAccounts\x12$.forge.ledger.v1.ListAccountsRequest\x1a%.forge.ledger.v1.ListAccountsResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1;ledgerv1b\x06proto3"
 
 var (
 	file_forge_ledger_v1_ledger_proto_rawDescOnce sync.Once
@@ -1387,7 +1641,7 @@ func file_forge_ledger_v1_ledger_proto_rawDescGZIP() []byte {
 }
 
 var file_forge_ledger_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forge_ledger_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_forge_ledger_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_forge_ledger_v1_ledger_proto_goTypes = []any{
 	(Status)(0),                     // 0: forge.ledger.v1.Status
 	(*Money)(nil),                   // 1: forge.ledger.v1.Money
@@ -1407,6 +1661,9 @@ var file_forge_ledger_v1_ledger_proto_goTypes = []any{
 	(*LookupTransfersRequest)(nil),  // 15: forge.ledger.v1.LookupTransfersRequest
 	(*TransferRecord)(nil),          // 16: forge.ledger.v1.TransferRecord
 	(*LookupTransfersResponse)(nil), // 17: forge.ledger.v1.LookupTransfersResponse
+	(*ListAccountsRequest)(nil),     // 18: forge.ledger.v1.ListAccountsRequest
+	(*DirectoryAccount)(nil),        // 19: forge.ledger.v1.DirectoryAccount
+	(*ListAccountsResponse)(nil),    // 20: forge.ledger.v1.ListAccountsResponse
 }
 var file_forge_ledger_v1_ledger_proto_depIdxs = []int32{
 	1,  // 0: forge.ledger.v1.TransferLeg.amount:type_name -> forge.ledger.v1.Money
@@ -1418,23 +1675,26 @@ var file_forge_ledger_v1_ledger_proto_depIdxs = []int32{
 	0,  // 6: forge.ledger.v1.VoidPendingResponse.status:type_name -> forge.ledger.v1.Status
 	13, // 7: forge.ledger.v1.GetBalancesResponse.balances:type_name -> forge.ledger.v1.AccountBalance
 	16, // 8: forge.ledger.v1.LookupTransfersResponse.transfers:type_name -> forge.ledger.v1.TransferRecord
-	4,  // 9: forge.ledger.v1.LedgerService.CreateAccounts:input_type -> forge.ledger.v1.CreateAccountsRequest
-	6,  // 10: forge.ledger.v1.LedgerService.CreateTransfers:input_type -> forge.ledger.v1.CreateTransfersRequest
-	7,  // 11: forge.ledger.v1.LedgerService.PostPending:input_type -> forge.ledger.v1.PostPendingRequest
-	8,  // 12: forge.ledger.v1.LedgerService.VoidPending:input_type -> forge.ledger.v1.VoidPendingRequest
-	12, // 13: forge.ledger.v1.LedgerService.GetBalances:input_type -> forge.ledger.v1.GetBalancesRequest
-	15, // 14: forge.ledger.v1.LedgerService.LookupTransfers:input_type -> forge.ledger.v1.LookupTransfersRequest
-	5,  // 15: forge.ledger.v1.LedgerService.CreateAccounts:output_type -> forge.ledger.v1.CreateAccountsResponse
-	9,  // 16: forge.ledger.v1.LedgerService.CreateTransfers:output_type -> forge.ledger.v1.CreateTransfersResponse
-	10, // 17: forge.ledger.v1.LedgerService.PostPending:output_type -> forge.ledger.v1.PostPendingResponse
-	11, // 18: forge.ledger.v1.LedgerService.VoidPending:output_type -> forge.ledger.v1.VoidPendingResponse
-	14, // 19: forge.ledger.v1.LedgerService.GetBalances:output_type -> forge.ledger.v1.GetBalancesResponse
-	17, // 20: forge.ledger.v1.LedgerService.LookupTransfers:output_type -> forge.ledger.v1.LookupTransfersResponse
-	15, // [15:21] is the sub-list for method output_type
-	9,  // [9:15] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	19, // 9: forge.ledger.v1.ListAccountsResponse.accounts:type_name -> forge.ledger.v1.DirectoryAccount
+	4,  // 10: forge.ledger.v1.LedgerService.CreateAccounts:input_type -> forge.ledger.v1.CreateAccountsRequest
+	6,  // 11: forge.ledger.v1.LedgerService.CreateTransfers:input_type -> forge.ledger.v1.CreateTransfersRequest
+	7,  // 12: forge.ledger.v1.LedgerService.PostPending:input_type -> forge.ledger.v1.PostPendingRequest
+	8,  // 13: forge.ledger.v1.LedgerService.VoidPending:input_type -> forge.ledger.v1.VoidPendingRequest
+	12, // 14: forge.ledger.v1.LedgerService.GetBalances:input_type -> forge.ledger.v1.GetBalancesRequest
+	15, // 15: forge.ledger.v1.LedgerService.LookupTransfers:input_type -> forge.ledger.v1.LookupTransfersRequest
+	18, // 16: forge.ledger.v1.LedgerService.ListAccounts:input_type -> forge.ledger.v1.ListAccountsRequest
+	5,  // 17: forge.ledger.v1.LedgerService.CreateAccounts:output_type -> forge.ledger.v1.CreateAccountsResponse
+	9,  // 18: forge.ledger.v1.LedgerService.CreateTransfers:output_type -> forge.ledger.v1.CreateTransfersResponse
+	10, // 19: forge.ledger.v1.LedgerService.PostPending:output_type -> forge.ledger.v1.PostPendingResponse
+	11, // 20: forge.ledger.v1.LedgerService.VoidPending:output_type -> forge.ledger.v1.VoidPendingResponse
+	14, // 21: forge.ledger.v1.LedgerService.GetBalances:output_type -> forge.ledger.v1.GetBalancesResponse
+	17, // 22: forge.ledger.v1.LedgerService.LookupTransfers:output_type -> forge.ledger.v1.LookupTransfersResponse
+	20, // 23: forge.ledger.v1.LedgerService.ListAccounts:output_type -> forge.ledger.v1.ListAccountsResponse
+	17, // [17:24] is the sub-list for method output_type
+	10, // [10:17] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_forge_ledger_v1_ledger_proto_init() }
@@ -1448,7 +1708,7 @@ func file_forge_ledger_v1_ledger_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_ledger_v1_ledger_proto_rawDesc), len(file_forge_ledger_v1_ledger_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   17,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

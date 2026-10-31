@@ -170,6 +170,42 @@ func (s *Service) GetBalances(ctx context.Context, req *connect.Request[ledgerv1
 	return connect.NewResponse(out), nil
 }
 
+// ListAccounts implements LedgerServiceHandler. It pages the account directory of this entity. The page size is
+// bounded, and the cursor must be a canonical account ID, so a malformed cursor cannot scan the table.
+func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[ledgerv1.ListAccountsRequest]) (*connect.Response[ledgerv1.ListAccountsResponse], error) {
+	m := req.Msg
+	if m.EntityCode != s.cfg.Entity {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("entity_code must be %s", s.cfg.Entity))
+	}
+	if m.Limit < 1 || m.Limit > 1000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("limit must be between 1 and 1000"))
+	}
+	if m.AfterAccountId != "" {
+		if _, err := ledger.ParseID(m.AfterAccountId); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("after_account_id: %w", err))
+		}
+	}
+	limit := int(m.Limit)
+	rows, err := s.repo.ListDirectory(ctx, DirectoryFilter{
+		Entity: s.cfg.Entity, Ledger: m.Ledger, Code: uint16(m.Code), After: m.AfterAccountId, Limit: limit + 1,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	out := &ledgerv1.ListAccountsResponse{}
+	if len(rows) > limit {
+		out.NextAfterAccountId = rows[limit-1].AccountID.String()
+		rows = rows[:limit]
+	}
+	for _, d := range rows {
+		out.Accounts = append(out.Accounts, &ledgerv1.DirectoryAccount{
+			AccountId: d.AccountID.String(), EntityCode: d.Entity, Asset: d.Asset, Ledger: d.Ledger, Code: uint32(d.Code),
+			OwnerPartyId: d.OwnerPartyID, ProductId: d.ProductID, Insured: d.Insured,
+		})
+	}
+	return connect.NewResponse(out), nil
+}
+
 // LookupTransfers implements LedgerServiceHandler. A transfer is returned only when both its
 // accounts belong to this entity.
 func (s *Service) LookupTransfers(ctx context.Context, req *connect.Request[ledgerv1.LookupTransfersRequest]) (*connect.Response[ledgerv1.LookupTransfersResponse], error) {

@@ -5,6 +5,7 @@ package memrepo
 import (
 	"bytes"
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -94,6 +95,33 @@ func (r *Repo) Directory(_ context.Context, ids []ledger.ID) (map[ledger.ID]gate
 		}
 	}
 	return out, nil
+}
+
+// ListDirectory implements gateway.Repository.
+func (r *Repo) ListDirectory(_ context.Context, f gateway.DirectoryFilter) ([]gateway.DirectoryEntry, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var matched []gateway.DirectoryEntry
+	for _, d := range r.dir {
+		if d.Entity != f.Entity {
+			continue
+		}
+		if f.Ledger != 0 && d.Ledger != f.Ledger {
+			continue
+		}
+		if f.Code != 0 && d.Code != f.Code {
+			continue
+		}
+		if f.After != "" && d.AccountID.String() <= f.After {
+			continue
+		}
+		matched = append(matched, d)
+	}
+	sort.Slice(matched, func(i, j int) bool { return matched[i].AccountID.String() < matched[j].AccountID.String() })
+	if len(matched) > f.Limit {
+		matched = matched[:f.Limit]
+	}
+	return matched, nil
 }
 
 // PurgeRecords implements gateway.Repository.

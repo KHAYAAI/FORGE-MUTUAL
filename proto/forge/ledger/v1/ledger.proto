@@ -135,6 +135,33 @@ message LookupTransfersResponse {
   repeated TransferRecord transfers = 1;
 }
 
+// ListAccounts pages through the account directory of one entity, optionally filtered by ledger and code.
+// It returns business identity only; balances come from GetBalances. Reconciliation uses it to sum customer
+// balances. Closed accounts are included, because their balances still count.
+message ListAccountsRequest {
+  string entity_code = 1;
+  uint32 ledger = 2;
+  uint32 code = 3;               // 0 means any code
+  string after_account_id = 4;   // exclusive cursor; empty for the first page
+  uint32 limit = 5;              // 1 to 1000
+}
+
+message DirectoryAccount {
+  string account_id = 1;
+  string entity_code = 2;
+  string asset = 3;
+  uint32 ledger = 4;
+  uint32 code = 5;
+  string owner_party_id = 6;
+  string product_id = 7;
+  bool insured = 8;
+}
+
+message ListAccountsResponse {
+  repeated DirectoryAccount accounts = 1;
+  string next_after_account_id = 2; // empty when there are no more pages
+}
+
 service LedgerService {
   rpc CreateAccounts(CreateAccountsRequest) returns (CreateAccountsResponse);
   rpc CreateTransfers(CreateTransfersRequest) returns (CreateTransfersResponse);
@@ -142,4 +169,5 @@ service LedgerService {
   rpc VoidPending(VoidPendingRequest) returns (VoidPendingResponse);
   rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
   rpc LookupTransfers(LookupTransfersRequest) returns (LookupTransfersResponse);
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
 }

@@ -52,6 +52,16 @@ type OutboxEvent struct {
 	Payload []byte
 }
 
+// DirectoryFilter selects directory entries of one entity. Ledger 0 and Code 0 mean any. After is an exclusive
+// cursor in canonical hex, empty for the first page. Results are ordered by account ID.
+type DirectoryFilter struct {
+	Entity string
+	Ledger uint32
+	Code   uint16
+	After  string
+	Limit  int
+}
+
 // Repository holds idempotency records, the account directory and the outbox.
 type Repository interface {
 	// Begin returns the record for (caller, key). If none exists it inserts one as PENDING
@@ -63,6 +73,10 @@ type Repository interface {
 	// directory entries (idempotently) and outbox events. Completing an already committed
 	// record is a no-op.
 	Complete(ctx context.Context, caller, key string, result []byte, dir []DirectoryEntry, events []OutboxEvent) error
+
+	// ListDirectory returns up to f.Limit entries matching the filter, ordered by account ID.
+	// Closed accounts are included.
+	ListDirectory(ctx context.Context, f DirectoryFilter) ([]DirectoryEntry, error)
 
 	// Directory returns the entries for the given accounts. Missing accounts are omitted.
 	Directory(ctx context.Context, ids []ledger.ID) (map[ledger.ID]DirectoryEntry, error)

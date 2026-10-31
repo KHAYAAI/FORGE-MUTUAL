@@ -171,6 +171,45 @@ func (r *Repo) Directory(ctx context.Context, ids []ledger.ID) (map[ledger.ID]ga
 	return out, rows.Err()
 }
 
+// ListDirectory implements gateway.Repository. The cursor compares canonical hex, which sorts the same way as the
+// IDs themselves because every ID is 32 lowercase hex characters.
+func (r *Repo) ListDirectory(ctx context.Context, f gateway.DirectoryFilter) ([]gateway.DirectoryEntry, error) {
+	rows, err := r.pool.Query(ctx, `
+		select account_id, entity_code, coalesce(owner_party_id, ''), asset, ledger, code, coalesce(product_id, ''), insured
+		from account_directory
+		where entity_code = $1
+		  and ($2::bigint = 0 or ledger = $2)
+		  and ($3::int = 0 or code = $3)
+		  and ($4::text = '' or account_id > $4)
+		order by account_id
+		limit $5`, f.Entity, int64(f.Ledger), int32(f.Code), f.After, f.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list directory: %w", err)
+	}
+	defer rows.Close()
+	var out []gateway.DirectoryEntry
+	for rows.Next() {
+		var (
+			idStr, entity, owner, asset, product string
+			ledgerNo                             int64
+			code                                 int32
+			insured                              bool
+		)
+		if err := rows.Scan(&idStr, &entity, &owner, &asset, &ledgerNo, &code, &product, &insured); err != nil {
+			return nil, fmt.Errorf("postgres: scan directory: %w", err)
+		}
+		id, err := ledger.ParseID(idStr)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, gateway.DirectoryEntry{
+			AccountID: id, Entity: entity, Asset: asset, Ledger: uint32(ledgerNo), Code: uint16(code),
+			OwnerPartyID: owner, ProductID: product, Insured: insured,
+		})
+	}
+	return out, rows.Err()
+}
+
 // PurgeRecords implements gateway.Repository.
 func (r *Repo) PurgeRecords(ctx context.Context, cutoff time.Time) (int64, error) {
 	tag, err := r.pool.Exec(ctx, `
