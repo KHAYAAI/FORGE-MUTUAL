@@ -19,9 +19,11 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
 	"github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/inflight"
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/ledgerview"
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/recon"
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/runner"
@@ -86,11 +88,17 @@ func run(log *slog.Logger) error {
 	defer st.Close()
 
 	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, callerAs("svc-reconciliation"))
+	paymentsURL := os.Getenv("PAYMENTS_INFLIGHT_URL")
+	if paymentsURL == "" {
+		return errors.New("PAYMENTS_INFLIGHT_URL is required: the in-flight terms live in payments")
+	}
+	inflightSource := inflight.Client{Client: paymentsv1connect.NewInFlightServiceClient(http.DefaultClient, paymentsURL, callerAs("svc-reconciliation"))}
 	rn := &runner.Runner{
-		Ledger: ledgerview.Reader{Client: ledger, Entity: "BANK"},
-		Bank:   bank,
-		Store:  st,
-		Now:    time.Now,
+		Ledger:   ledgerview.Reader{Client: ledger, Entity: "BANK"},
+		Bank:     bank,
+		InFlight: inflightSource,
+		Store:    st,
+		Now:      time.Now,
 	}
 	assets := make([]string, 0, len(recon.Rails))
 	for _, r := range recon.Rails {

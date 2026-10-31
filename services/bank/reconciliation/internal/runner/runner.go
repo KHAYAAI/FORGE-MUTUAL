@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/khayaai/forge-mutual/pkg/banklayer"
@@ -16,14 +15,16 @@ import (
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/store"
 )
 
-// inFlightNote is appended to checks that depend on in-flight money. No unbooked inbound or sponsor-debit feed is
-// connected yet, so both terms are zero, and the detail says so rather than hiding it.
-const inFlightNote = "; in-flight terms are zero because no unbooked inbound or sponsor-debit feed is connected yet"
+// InFlightSource reads the in-flight terms for an asset from the payments service.
+type InFlightSource interface {
+	InFlight(ctx context.Context, asset string) (recon.InFlight, error)
+}
 
 // Runner runs reconciliation for one or more assets.
 type Runner struct {
 	Ledger   ledgerview.Reader
 	Bank     banklayer.BankLayer
+	InFlight InFlightSource
 	Store    *store.Store
 	Now      func() time.Time
 	Attempts int // how many times to try for a stable read; default 3
@@ -54,9 +55,14 @@ func (r *Runner) Run(ctx context.Context, asset string) (Outcome, error) {
 	}
 	started := now().UTC()
 
+	if r.InFlight == nil {
+		return Outcome{}, errors.New("runner: no in-flight source is configured; refusing to run without it")
+	}
+
 	var (
 		snap   ledgerview.Snapshot
 		stmt   banklayer.Statement
+		flight recon.InFlight
 		stable bool
 	)
 	for i := 0; i < attempts && !stable; i++ {
@@ -68,12 +74,18 @@ func (r *Runner) Run(ctx context.Context, asset string) (Outcome, error) {
 		if err != nil {
 			return Outcome{}, err
 		}
+		// Read in-flight between the statement and the second snapshot: a change in either the books or the in-flight
+		// money during the read shows up as a digest mismatch, so the run retries rather than mixing two moments.
+		f, err := r.InFlight.InFlight(ctx, rail.Asset)
+		if err != nil {
+			return Outcome{}, err
+		}
 		after, err := r.Ledger.Snapshot(ctx, rail.Ledger)
 		if err != nil {
 			return Outcome{}, err
 		}
 		if before.Digest == after.Digest {
-			snap, stmt, stable = after, s, true
+			snap, stmt, flight, stable = after, s, f, true
 		}
 	}
 
@@ -87,12 +99,7 @@ func (r *Runner) Run(ctx context.Context, asset string) (Outcome, error) {
 		return Outcome{Asset: asset, Outcome: store.OutcomeInconclusive}, nil
 	}
 
-	checks := recon.Evaluate(rail, snap.Totals, factsOf(stmt), recon.InFlight{})
-	for i := range checks {
-		if strings.HasSuffix(checks[i].Check, "_equation") || strings.HasSuffix(checks[i].Check, "_pool_mirror") {
-			checks[i].Detail += inFlightNote
-		}
-	}
+	checks := recon.Evaluate(rail, snap.Totals, factsOf(stmt), flight)
 	run.Outcome = store.OutcomeConclusive
 	run.Checks = checks
 	if err := r.Store.Commit(ctx, run); err != nil {

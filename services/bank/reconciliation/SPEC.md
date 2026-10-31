@@ -12,6 +12,9 @@ run record. A run:
    `GetBalances`). It takes this snapshot twice, around the bank read, and compares digests.
 2. Reads today's statement from the bank that holds the asset, through `BankLayer` (`StatementSource` for ZAR,
    `ForeignCurrency` for USD). The bank route is never read here.
+2a. Reads the two in-flight terms from the payments service (`PAYMENTS_INFLIGHT_URL`, `InFlightService.GetInFlight`).
+   Inbound is the credits the bank has reported that the books do not yet hold. Outbound is the payments the rail
+   reports as settled that have not yet completed. If this read fails, the run fails and records nothing.
 3. If the two ledger snapshots differ, the books moved during the read and the run is **inconclusive**. It records
    that and changes no break. Three attempts, then inconclusive.
 4. Otherwise it evaluates five checks (`internal/recon/checks.go`) and commits the run and its breaks in one
@@ -45,10 +48,12 @@ an error rather than "no break".
 
 ## Known limits (not hidden)
 
-- **In-flight terms are zero.** No feed of unbooked inbound credits or sponsor debits is connected yet, so the
-  equation and mirror checks assume none exist. Each of those checks says so in its detail. A payment that the
-  bank settles before the ledger clears it will break a run, and the gate will stay closed until the ledger
-  catches up. That is intended fail-closed behaviour, and it is covered by a test.
+- **A short window is not covered.** The in-flight terms come from records. Between the bank debiting a payment and
+  the payments service seeing the rail report it, the bank is ahead of the books and not yet in flight. A run inside
+  that window breaks, and the gate stays closed until a later clean run. That is fail-closed behaviour, and it is
+  covered by a test. Shorten the payments poll interval to narrow the window.
+- **Inbound credits the bank has reported but ingest has not recorded yet** are the same kind of window. They are
+  recorded on the next ingest pass.
 - **Reads are live, not as-of.** The ledger has no historical balances, so the run compares today's statement with
   today's books, and relies on the digest check to make the comparison valid.
 - **Fineract GL is not checked.** The third leg of the three-way check needs core-bridge, which is not built.
@@ -74,6 +79,7 @@ Callers are allow-listed in the file named by `RECON_CALLERS_FILE`. A call with 
 | `DATABASE_URL` | Postgres for runs and breaks (required) |
 | `LEDGER_URL` | Ledger gateway, for `svc-reconciliation` (required) |
 | `RECON_CALLERS_FILE` | JSON allow-list (required) |
+| `PAYMENTS_INFLIGHT_URL` | Payments service, for the in-flight terms (required). Payments must allow `svc-reconciliation` to call `GetInFlight` |
 | `BANK_CONFIG` | Path to `config/banklayer.yaml` (default `config/banklayer.yaml`) |
 | `RECON_INTERVAL` | Time between runs (default 15m) |
 | `RECON_MAX_AGE` | How old a conclusive run may be before the gate closes (default 30m). Must exceed `RECON_INTERVAL` |

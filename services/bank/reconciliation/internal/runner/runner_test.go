@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/banklayer"
 	"github.com/khayaai/forge-mutual/pkg/banklayer/sim"
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/ledgerview"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/recon"
 	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/store"
 )
 
@@ -130,6 +132,19 @@ func (m mutatingSource) Statement(ctx context.Context, asset string, date time.T
 	return m.StatementSource.Statement(ctx, asset, date)
 }
 
+// flights is a fake payments service: the test sets what it reports.
+type flights struct {
+	in, out int64
+	fail    bool
+}
+
+func (f *flights) InFlight(_ context.Context, _ string) (recon.InFlight, error) {
+	if f.fail {
+		return recon.InFlight{}, errors.New("payments unreachable")
+	}
+	return recon.InFlight{Inbound: f.in, Outbound: f.out}, nil
+}
+
 func openStore(t *testing.T) *store.Store {
 	t.Helper()
 	dsn := os.Getenv("RECON_TEST_DSN")
@@ -164,7 +179,8 @@ func TestRunFollowsTheBooksThroughAPaymentCycle(t *testing.T) {
 	st := openStore(t)
 	b := newBook()
 	bank := sim.New(nil)
-	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: bank, Store: st, Now: time.Now}
+	fl := &flights{}
+	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: bank, InFlight: fl, Store: st, Now: time.Now}
 
 	// 1. A customer receives 100. The bank credits the pool; the ledger books the credit to the customer.
 	if _, err := bank.InjectInbound("ZAR", 100, "FORGE-A", false); err != nil {
@@ -199,14 +215,26 @@ func TestRunFollowsTheBooksThroughAPaymentCycle(t *testing.T) {
 	}
 	out, err = r.Run(ctx, "ZAR")
 	if err != nil || out.AllMatched {
-		t.Fatalf("an uncleared settlement must break the run: %+v, %v", out, err)
+		t.Fatalf("an uncleared settlement with no in-flight money must break the run: %+v, %v", out, err)
 	}
 	if ok, reasons := gateOpen(t, st, time.Now()); ok || !strings.Contains(strings.Join(reasons, " "), "sponsor_equation") {
 		t.Fatalf("the break must close the gate and name the check: open=%v reasons=%v", ok, reasons)
 	}
 
-	// 4. The ledger clears the clearing account against the pool. The next run matches, and the gate reopens.
+	// 3b. Payments reports the 30 as in flight: the bank has debited it and the books have not yet cleared it. The
+	// same statement now matches, so the break clears and the gate reopens without waiting for the ledger.
+	fl.out = 30
+	out, err = r.Run(ctx, "ZAR")
+	if err != nil || !out.AllMatched {
+		t.Fatalf("in-flight outbound must explain the settlement: %+v, %v", out.Checks, err)
+	}
+	if ok, reasons := gateOpen(t, st, time.Now()); !ok {
+		t.Fatalf("gate must reopen once in-flight explains the difference: %v", reasons)
+	}
+
+	// 4. The ledger clears the clearing account against the pool. The in-flight term goes back to zero and the books match.
 	b.post(acClearing, acPool, 30)
+	fl.out = 0
 	out, err = r.Run(ctx, "ZAR")
 	if err != nil || !out.AllMatched {
 		t.Fatalf("after clearing the books must match again: %+v, %v", out.Checks, err)
@@ -234,7 +262,7 @@ func TestUnstableBooksMakeTheRunInconclusive(t *testing.T) {
 		churn++
 		b.post(acPool, acCustomer, 1) // every statement read happens while the books move
 	}}
-	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: moving, Store: st, Now: time.Now, Attempts: 3}
+	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: moving, InFlight: &flights{}, Store: st, Now: time.Now, Attempts: 3}
 
 	out, err := r.Run(ctx, "ZAR")
 	if err != nil {
@@ -258,5 +286,57 @@ func TestUnknownAssetIsRefused(t *testing.T) {
 	r := &Runner{}
 	if _, err := r.Run(context.Background(), "EUR"); err == nil {
 		t.Fatal("EUR is not monitored")
+	}
+}
+
+// A credit the bank has reported but the books have not booked is inbound in flight. It must explain the difference
+// and stop explaining it once the books hold it.
+func TestPendingInboundCreditIsInFlight(t *testing.T) {
+	ctx := context.Background()
+	st := openStore(t)
+	b := newBook()
+	bank := sim.New(nil)
+	fl := &flights{}
+	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: bank, InFlight: fl, Store: st, Now: time.Now}
+
+	if _, err := bank.InjectInbound("ZAR", 250, "FORGE-PEND", false); err != nil {
+		t.Fatal(err)
+	}
+	fl.in = 250
+	if out, err := r.Run(ctx, "ZAR"); err != nil || !out.AllMatched {
+		t.Fatalf("pending inbound must explain the difference: %+v, %v", out.Checks, err)
+	}
+	fl.in = 0
+	if out, err := r.Run(ctx, "ZAR"); err != nil || out.AllMatched {
+		t.Fatalf("without the in-flight term the same credit must break: %+v, %v", out.Checks, err)
+	}
+	b.post(acPool, acCustomer, 250)
+	fl.in = 0
+	if out, err := r.Run(ctx, "ZAR"); err != nil || !out.AllMatched {
+		t.Fatalf("once the books book the credit, the run must match: %+v, %v", out.Checks, err)
+	}
+}
+
+// An unreachable payments service must not produce a run. Recording nothing lets the gate age out.
+func TestUnreachableInFlightSourceRecordsNothing(t *testing.T) {
+	ctx := context.Background()
+	st := openStore(t)
+	b := newBook()
+	bank := sim.New(nil)
+	r := &Runner{Ledger: ledgerview.Reader{Client: serve(t, b), Entity: "BANK"}, Bank: bank, InFlight: &flights{fail: true}, Store: st, Now: time.Now}
+
+	if _, err := r.Run(ctx, "ZAR"); err == nil {
+		t.Fatal("a failed in-flight read must fail the run")
+	}
+	if ok, reasons := gateOpen(t, st, time.Now()); ok || len(reasons) == 0 {
+		t.Fatalf("no run may be recorded, so the gate must stay closed: open=%v reasons=%v", ok, reasons)
+	}
+}
+
+// A runner without an in-flight source must refuse to run: running blind would hide in-flight money.
+func TestRunnerRefusesWithoutAnInFlightSource(t *testing.T) {
+	r := &Runner{}
+	if _, err := r.Run(context.Background(), "ZAR"); err == nil {
+		t.Fatal("a runner with no in-flight source must refuse")
 	}
 }
