@@ -23,6 +23,11 @@ Each service is its own Go module; `make ci` runs lint, every module's tests, an
 - **Rails gateway** (`services/bank/rails-gateway`) and **payments orchestrator** (`services/bank/payments-orchestrator`):
   domestic payment saga with reserve, initiate, settle or release, and repair. Rails are simulated; the real
   scenarios are gated behind an explicit switch.
+- **Reconciliation** (`services/bank/reconciliation`): sponsor and partner reconciliation with five checks, a
+  stability guard that makes a moving ledger inconclusive, and a fail-closed gate that payments now read instead of
+  a static flag. Runs and breaks are committed in one transaction. Tested against Postgres; the bank side uses the
+  simulator.
+- **Ledger listing**: `ListAccounts` pages the account directory for reconciliation.
 - **BankLayer** (`pkg/banklayer`, P0-03B): the interface, the sponsor simulator, an HTTP client for the sponsor
   boundary, a contract suite that the simulator and the HTTP client both pass, config-driven bootstrap that refuses
   own-licence and refuses the simulator in production, a `forge.banklayer` Rego package, and a CI check that only
@@ -30,10 +35,9 @@ Each service is its own Go module; `make ci` runs lint, every module's tests, an
 
 ## Not started (v1 scope)
 
-Fourteen services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started, including:
+Thirteen services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started, including:
 
-- **core-bridge**: projects ledger events into Fineract; nightly GL reconciliation
-- **reconciliation**: statement ingestion, three-way reconciliation, breaks, circuit breaker
+- **core-bridge**: projects ledger events into Fineract; nightly GL reconciliation (the Fineract leg of reconciliation waits on it)
 - **treasury-risk**: concentration and outflow alerts
 - **reg-reporting** (reporting): goAML reports and evidence packs
 - **compliance-engine** (compliance): sanctions, monitoring rules, alerts and cases
@@ -48,7 +52,7 @@ Fourteen services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 ar
 - **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker)
 
 Also not yet built: inbound credit matching (suspense account), cross-border payments, sanctions list loading, and
-the sponsor-rail integration with the payments orchestrator.
+moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`.
 
 ## Blocked
 
