@@ -20,5 +20,6 @@ use (
 	./services/bank/payments-orchestrator
 	./services/bank/reconciliation
 	./services/shared/audit-service
+	./services/bank/treasury-risk
 	./services/bank/ledger-gateway-bank
 )

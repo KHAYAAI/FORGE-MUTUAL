@@ -73,3 +73,17 @@ message PaymentEvent {
   string reason = 7;
 }
 
+
+// Treasury risk alert (ARCHITECTURE.md 6.2, 13). treasury-risk emits an event when an alert is raised and when it
+// clears, not on every run, so a threshold that stays crossed does not flood consumers.
+message RiskAlertRaised {
+  string alert_id = 1;
+  string kind = 2;          // CONCENTRATION, NET_OUTFLOW, LIQUIDITY, SUSPENSE_AGE
+  string asset = 3;
+  string severity = 4;      // WARNING or CRITICAL
+  string state = 5;         // RAISED or RESOLVED
+  string detail = 6;
+  string metric_bps = 7;    // the measured ratio in basis points, when the kind is a ratio
+  string threshold_bps = 8;
+  string observed_at = 9;   // RFC 3339
+}

@@ -603,6 +603,116 @@ func (x *PaymentEvent) GetReason() string {
 	return ""
 }
 
+// Treasury risk alert (ARCHITECTURE.md 6.2, 13). treasury-risk emits an event when an alert is raised and when it
+// clears, not on every run, so a threshold that stays crossed does not flood consumers.
+type RiskAlertRaised struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AlertId       string                 `protobuf:"bytes,1,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // CONCENTRATION, NET_OUTFLOW, LIQUIDITY, SUSPENSE_AGE
+	Asset         string                 `protobuf:"bytes,3,opt,name=asset,proto3" json:"asset,omitempty"`
+	Severity      string                 `protobuf:"bytes,4,opt,name=severity,proto3" json:"severity,omitempty"` // WARNING or CRITICAL
+	State         string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`       // RAISED or RESOLVED
+	Detail        string                 `protobuf:"bytes,6,opt,name=detail,proto3" json:"detail,omitempty"`
+	MetricBps     string                 `protobuf:"bytes,7,opt,name=metric_bps,json=metricBps,proto3" json:"metric_bps,omitempty"` // the measured ratio in basis points, when the kind is a ratio
+	ThresholdBps  string                 `protobuf:"bytes,8,opt,name=threshold_bps,json=thresholdBps,proto3" json:"threshold_bps,omitempty"`
+	ObservedAt    string                 `protobuf:"bytes,9,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"` // RFC 3339
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RiskAlertRaised) Reset() {
+	*x = RiskAlertRaised{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RiskAlertRaised) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RiskAlertRaised) ProtoMessage() {}
+
+func (x *RiskAlertRaised) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RiskAlertRaised.ProtoReflect.Descriptor instead.
+func (*RiskAlertRaised) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RiskAlertRaised) GetAlertId() string {
+	if x != nil {
+		return x.AlertId
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetSeverity() string {
+	if x != nil {
+		return x.Severity
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetMetricBps() string {
+	if x != nil {
+		return x.MetricBps
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetThresholdBps() string {
+	if x != nil {
+		return x.ThresholdBps
+	}
+	return ""
+}
+
+func (x *RiskAlertRaised) GetObservedAt() string {
+	if x != nil {
+		return x.ObservedAt
+	}
+	return ""
+}
+
 var File_forge_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_forge_events_v1_events_proto_rawDesc = "" +
@@ -670,7 +780,19 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\famount_minor\x18\x04 \x01(\tR\vamountMinor\x12\x14\n" +
 	"\x05asset\x18\x05 \x01(\tR\x05asset\x12\x16\n" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12\x16\n" +
-	"\x06reason\x18\a \x01(\tR\x06reasonBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
+	"\x06reason\x18\a \x01(\tR\x06reason\"\x85\x02\n" +
+	"\x0fRiskAlertRaised\x12\x19\n" +
+	"\balert_id\x18\x01 \x01(\tR\aalertId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05asset\x18\x03 \x01(\tR\x05asset\x12\x1a\n" +
+	"\bseverity\x18\x04 \x01(\tR\bseverity\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\x12\x16\n" +
+	"\x06detail\x18\x06 \x01(\tR\x06detail\x12\x1d\n" +
+	"\n" +
+	"metric_bps\x18\a \x01(\tR\tmetricBps\x12#\n" +
+	"\rthreshold_bps\x18\b \x01(\tR\fthresholdBps\x12\x1f\n" +
+	"\vobserved_at\x18\t \x01(\tR\n" +
+	"observedAtBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once
@@ -684,7 +806,7 @@ func file_forge_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_forge_events_v1_events_proto_rawDescData
 }
 
-var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_forge_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: forge.events.v1.EventEnvelope
 	(*TransferCommitted)(nil),     // 1: forge.events.v1.TransferCommitted
@@ -692,10 +814,11 @@ var file_forge_events_v1_events_proto_goTypes = []any{
 	(*PartyStatusChanged)(nil),    // 3: forge.events.v1.PartyStatusChanged
 	(*ConsentChanged)(nil),        // 4: forge.events.v1.ConsentChanged
 	(*PaymentEvent)(nil),          // 5: forge.events.v1.PaymentEvent
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*RiskAlertRaised)(nil),       // 6: forge.events.v1.RiskAlertRaised
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
 }
 var file_forge_events_v1_events_proto_depIdxs = []int32{
-	6, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	7, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -714,7 +837,7 @@ func file_forge_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_events_v1_events_proto_rawDesc), len(file_forge_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
