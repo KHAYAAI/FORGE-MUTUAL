@@ -28,6 +28,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/rails/v1/railsv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/pkg/screening"
@@ -225,16 +226,14 @@ func screenerFromEnv() (screening.Screener, error) {
 	return screening.NewFixture(names, asOf, maxAge, time.Now)
 }
 
-// reconFromEnv reads the reconciliation status. It must be set explicitly, because the reconciliation
-// service is not built yet and a missing value must never read as "no break".
+// reconFromEnv connects to the reconciliation gate. There is no static fallback: a missing gate must never read as
+// "no break".
 func reconFromEnv() (payments.ReconStatus, error) {
-	switch os.Getenv("RECON_BREAK_ACTIVE") {
-	case "true":
-		return payments.StaticRecon{Break: true}, nil
-	case "false":
-		return payments.StaticRecon{Break: false}, nil
+	url := os.Getenv("RECON_URL")
+	if url == "" {
+		return nil, errors.New("RECON_URL is required; payments reads the reconciliation gate (invariant 9)")
 	}
-	return nil, errors.New("RECON_BREAK_ACTIVE must be set to true or false until the reconciliation service exists")
+	return payments.ConnectRecon{Client: reconv1connect.NewReconServiceClient(http.DefaultClient, url, callerAs("svc-payments"))}, nil
 }
 
 func openPublisher(log *slog.Logger) (outbox.Publisher, func(), error) {

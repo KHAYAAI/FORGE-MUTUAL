@@ -23,7 +23,7 @@ The caller allow-list applies to each RPC.
 3. `policy_allowed` (asset): `assets` and `entity` policy. ZAR for the BANK entity, and a same-entity transfer under
    code 11.
 4. `policy_allowed` (limits): `limits` policy with the party's tier, the day's velocity (held and settled today) and
-   the reconciliation status. A refusal is DECLINED.
+   the reconciliation gate. A refusal is DECLINED.
 5. Step-up: when policy asks for it the payment is AWAITING_APPROVAL. A checker's approval is needed. The initiator's
    own approval is ignored. Refusal or the approval timeout CANCELs the payment before any hold.
 6. `reserved`: the hold is placed: a pending ledger transfer from the customer's account to RAIL_SETTLEMENT_EFT,
@@ -54,8 +54,9 @@ since 00:00 UTC. Policy's `limits` package compares it with the tier's daily lim
 - **Hold timeout equals the ledger maximum (7 days).** The ledger releases a hold at its timeout. If the rail has not
   reported an outcome by then, the release happens without a human decision. The repair path covers the common
   cases; the window is set by the rail's outcome time, so a slow rail needs an alert before the timeout. VERIFY-SPONSOR.
-- **Reconciliation is a static setting.** `RECON_BREAK_ACTIVE` must be set to `true` or `false`. The reconciliation
-  service (P1-08) replaces it. The service refuses to start without it.
+- **Reconciliation gate.** Payments reads `ReconService.GetGate` from the reconciliation service at `RECON_URL`. The
+  binary refuses to start without it. An unreadable gate is an error, so the limits activity retries and no money
+  moves. The gate is open only when every monitored asset has a fresh, conclusive run in which every check matched.
 - **The account-to-party binding is not checked here.** The ledger does not expose an account's owner, so a caller
   could name another party's account. A directory lookup by owner is needed before production.
 - **Only the DomesticPayment workflow exists.** InboundCredit (P1-07) is not built.
