@@ -1,0 +1,8 @@
+# Which BankLayer implementation runs (ARCHITECTURE.md 5.2). Changed by configuration, never by code.
+# route: the only route built in v1 is sponsor. own_licence is refused until ADR-0020 is accepted.
+# implementation: sponsor talks to the sponsor bank; sim is the in-memory simulator and is refused in production.
+# The sponsor base URL is read from the environment variable named here, so no secret or address lives in git.
+route: sponsor
+implementation: sponsor
+sponsor:
+  base_url_env: SPONSOR_BASE_URL

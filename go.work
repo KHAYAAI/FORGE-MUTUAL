@@ -7,7 +7,11 @@ use (
 	./pkg/uuid
 	./pkg/screening
 	./pkg/money
+	./pkg/banklayer
+	./pkg/banklayer/bootstrap
 	./tools/isolation
+	./tools/banklayercheck
+	./tools/sim/sponsor
 	./services/shared/policy-service
 	./services/platform/party-service
 	./services/platform/consent-service
