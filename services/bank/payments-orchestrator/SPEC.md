@@ -75,3 +75,20 @@ since 00:00 UTC. Policy's `limits` package compares it with the tier's daily lim
   rejected payments fails the rejection scenario.
 - `internal/service` dev-server tests (`temporaldev` tag, `TEMPORAL_HOST`): idempotent creation and conflicts on a
   real server, and repair resolved through the service's signal.
+
+## Inbound credits (internal/inbound)
+
+Credits the bank reports are recorded, then booked once each.
+
+- **Matching.** A bank reference is matched to a customer account registered with `RegisterReference`. A reference
+  is bound to one account for good: rebinding is refused, because a moved reference would send later money to the
+  wrong customer. Anything unmatched, or matched to an account in another asset, goes to SUSPENSE (code 2005) and
+  waits for an operator.
+- **Posting.** Debit the pool (sponsor pool 3003 for ZAR, the partner mirror 5001 for USD), credit the customer or
+  SUSPENSE, transfer code 10 (DEPOSIT_IN). The idempotency key is `inbound:<asset>:<bank movement>`, so a retry after a
+  crash returns the original posting and never books twice.
+- **In flight.** A credit is PENDING from the moment it is recorded until it is posted. `InFlight` totals PENDING
+  credits. Reconciliation should read this as its inbound in-flight term; that wiring is not yet built, so the
+  reconciliation service still assumes zero (see its SPEC).
+- **Not yet wired.** Customer accounts do not register their bank references yet. Until onboarding does, every
+  inbound credit goes to suspense. The binary runs this loop only when `INBOUND_ENABLED=1`.

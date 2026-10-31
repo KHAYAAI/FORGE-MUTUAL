@@ -29,9 +29,11 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/rails/v1/railsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
+	"github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/pkg/screening"
+	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/inbound"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/payments"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/service"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/store"
@@ -129,6 +131,11 @@ func run(log *slog.Logger) error {
 	defer w.Stop()
 
 	go relay(ctx, st, pub, log)
+	if os.Getenv("INBOUND_ENABLED") == "1" {
+		if err := startInbound(ctx, log, st, ledger); err != nil {
+			return err
+		}
+	}
 
 	simulation := os.Getenv("PAYMENTS_ALLOW_SIMULATION") == "true"
 	if simulation {
@@ -313,4 +320,53 @@ func splitList(s string) []string {
 		}
 	}
 	return out
+}
+
+// startInbound books the credits the bank reports, for every monitored asset, until the context ends. It is off unless
+// INBOUND_ENABLED=1, so a deployment opts in explicitly. A failed pass is logged and retried on the next tick.
+func startInbound(ctx context.Context, log *slog.Logger, st *store.Store, ledger ledgerv1connect.LedgerServiceClient) error {
+	cfgPath := getenv("BANK_CONFIG", "config/banklayer.yaml")
+	raw, err := os.ReadFile(cfgPath)
+	if err != nil {
+		return fmt.Errorf("inbound: bank config: %w", err)
+	}
+	cfg, err := bootstrap.Load(raw)
+	if err != nil {
+		return err
+	}
+	bank, err := bootstrap.Open(ctx, cfg, bootstrap.Options{Getenv: os.Getenv})
+	if err != nil {
+		return fmt.Errorf("inbound: bank layer: %w", err)
+	}
+	if err := inbound.Open(ctx, st.Pool()); err != nil {
+		return err
+	}
+	every, err := time.ParseDuration(getenv("INBOUND_INTERVAL", "1m"))
+	if err != nil || every <= 0 {
+		return errors.New("INBOUND_INTERVAL must be a positive duration")
+	}
+	w := &inbound.Worker{Pool: st.Pool(), Ledger: ledger, Bank: bank, Entity: "BANK", Now: time.Now}
+	go func() {
+		tick := time.NewTicker(every)
+		defer tick.Stop()
+		for {
+			for _, asset := range []string{"ZAR", "USD"} {
+				n, err := w.Ingest(ctx, asset, 48*time.Hour)
+				if err != nil {
+					log.Error("inbound pass failed", "asset", asset, "err", err)
+					continue
+				}
+				if n > 0 {
+					log.Info("inbound credits booked", "asset", asset, "count", n)
+				}
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-tick.C:
+			}
+		}
+	}()
+	log.Info("inbound credits enabled", "interval", every)
+	return nil
 }
