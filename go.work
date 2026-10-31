@@ -21,5 +21,6 @@ use (
 	./services/bank/reconciliation
 	./services/shared/audit-service
 	./services/bank/treasury-risk
+	./services/shared/compliance-engine
 	./services/bank/ledger-gateway-bank
 )
