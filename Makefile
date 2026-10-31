@@ -1,14 +1,35 @@
 # Repository entry points. `make ci` is the arbiter (ARCHITECTURE.md section 0, rule 5).
+SHELL := /bin/bash
 GO ?= go
 BUF ?= buf
 COMPOSE ?= docker compose -f deploy/compose/docker-compose.yml
 GATEWAY := services/bank/ledger-gateway-bank
 
-.PHONY: ci test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
+# Suites that need a database or a broker. make ci refuses to pass unless every one is configured, because a skipped
+# suite proves nothing. `make ci-db` creates the databases and sources the environment for you.
+DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN AUDIT_TEST_DSN TREASURY_TEST_DSN \
+	COMPLIANCE_TEST_DSN POLICY_TEST_DSN PARTY_TEST_DSN CONSENT_TEST_DSN ONBOARDING_TEST_PG OUTBOX_TEST_DSN KAFKA_TEST_BROKERS
 
-ci: lint test test-isolation
+.PHONY: ci ci-db require-test-dbs test-outbox test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
 
-test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting
+ci: require-test-dbs lint test test-isolation
+
+# Fails unless every database and broker variable is set. FORGE_SKIP_DB_TESTS=1 skips them knowingly, and says so.
+require-test-dbs:
+	@if [ "$(FORGE_SKIP_DB_TESTS)" = "1" ]; then \
+	  echo "WARNING: FORGE_SKIP_DB_TESTS=1: database and Kafka suites are SKIPPED. This run proves less."; exit 0; fi; \
+	missing=""; for v in $(DB_TEST_VARS); do [ -n "$${!v}" ] || missing="$$missing $$v"; done; \
+	if [ -n "$$missing" ]; then \
+	  echo "make ci needs these set so the database and Kafka suites run:$$missing"; \
+	  echo "run 'make ci-db' (throwaway databases on the compose Postgres, broker from 'make up'), or set FORGE_SKIP_DB_TESTS=1 to skip knowingly"; \
+	  exit 1; fi
+
+# Creates throwaway databases on the Postgres at FORGE_PG_HOST_DSN (default: compose), then runs the full gate with them.
+ci-db:
+	scripts/test-databases.sh
+	set -a; . ./.test-dbs.env; set +a; $(MAKE) ci
+
+test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
 	cd pkg/callerauth && $(GO) test ./...
@@ -106,6 +127,10 @@ test-treasury:
 # Compliance engine (ARCHITECTURE.md 15.1). Case tests need COMPLIANCE_TEST_DSN.
 test-compliance:
 	cd services/shared/compliance-engine && $(GO) test -count=1 -p 1 ./...
+
+# Transactional outbox against a real broker (ARCHITECTURE.md 18.2). Needs OUTBOX_TEST_DSN and KAFKA_TEST_BROKERS.
+test-outbox:
+	cd pkg/outbox && $(GO) test -count=1 -p 1 ./...
 
 # Regulatory reporting (ARCHITECTURE.md 15.2): evidence packs and the goAML refusal. No database.
 test-reg-reporting:
