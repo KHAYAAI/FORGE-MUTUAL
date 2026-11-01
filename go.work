@@ -11,6 +11,7 @@ use (
 	./pkg/banklayer/bootstrap
 	./pkg/systemaccounts
 	./pkg/events
+	./pkg/eventbus
 	./tools/isolation
 	./tools/banklayercheck
 	./tools/sim/sponsor
