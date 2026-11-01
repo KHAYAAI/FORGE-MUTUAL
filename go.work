@@ -25,6 +25,7 @@ use (
 	./services/shared/audit-service
 	./services/bank/treasury-risk
 	./services/shared/compliance-engine
+	./services/platform/consolidated-view
 	./services/bank/reg-reporting
 	./services/bank/ledger-gateway-bank
 )
