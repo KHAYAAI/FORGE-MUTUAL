@@ -41,6 +41,21 @@ with 49 packages and no skipped tests.
 - **BankLayer** (`pkg/banklayer`): the interface, a sponsor simulator, an HTTP client, a contract suite that the
   simulator and the client both pass, config-driven bootstrap that refuses own-licence, and a CI check that only
   `pkg/banklayer` may read the licence route.
+- **Core bridge** (`services/bank/core-bridge`): mirrors committed ledger transfers into Apache Fineract. Before a retry
+  it looks up the reference, so a lost response cannot post the same journal twice. Reconciles 14 general-ledger
+  accounts (seven codes in ZAR and USD) against the ledger, and refuses to run while a posting is pending. The suite
+  runs against a stateful Fineract fake. The posting path was also checked once against a live Fineract.
+- **Partner-bank router** (`services/bank/partner-bank-router`): routes USD operations by partner health and cost. A
+  payout is pinned to the partner it was first sent to, so a retry never reaches a second partner. Partners are
+  simulated.
+- **Consolidated view** (`services/platform/consolidated-view`): balances and activity per party, projected idempotently
+  from transfers and reconciled to the ledger. Drift is counted, not hidden. A party sees only its own accounts.
+- **Notifications** (`services/platform/notifications`): email and SMS from platform events. Contacts are sealed with
+  AES-256-GCM. Failed sends are retried, then marked failed. Only a development file sink exists; no provider is chosen
+  (VERIFY).
+- **FX service** (`services/bank/fx-service`): quotes with a disclosed spread, rounding against the customer, a 60-second
+  single-use quote lock, and a saga across two ledgers with holds, reversal and a resume loop. One worker runs a deal at
+  a time, enforced by an advisory lock. The rate is static configuration (VERIFY).
 
 ## Partly built
 
@@ -53,14 +68,9 @@ with 49 packages and no skipped tests.
 
 ## Not started (v1 scope)
 
-Nine services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started:
+Four services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started:
 
-- **core-bridge**: projects ledger events into Fineract and runs nightly GL reconciliation. Waits on Fineract's deployment.
-- **partner-bank-router**: routes foreign-currency operations to partner banks. The USD partner is simulated.
-- **fx-service** (FX): quotes, disclosed spreads, quote lock, FX booking legs.
 - **payouts-service** (payouts): bulk payouts as child workflows.
-- **consolidated-view**: read models for balances and statements.
-- **notifications**: email, SMS and push.
 - **workspace-api** (workspace): backend-for-frontend for the customer workspace.
 - **web**: customer workspace front end.
 - **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker).

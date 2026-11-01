@@ -713,6 +713,99 @@ func (x *RiskAlertRaised) GetObservedAt() string {
 	return ""
 }
 
+// An FX deal completed (topic forge.bank.fx.booked.v1). Both legs are posted; the spread is in the sell asset.
+type FXBooked struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	DealId          string                 `protobuf:"bytes,1,opt,name=deal_id,json=dealId,proto3" json:"deal_id,omitempty"`
+	PartyId         string                 `protobuf:"bytes,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	SellAsset       string                 `protobuf:"bytes,3,opt,name=sell_asset,json=sellAsset,proto3" json:"sell_asset,omitempty"`
+	BuyAsset        string                 `protobuf:"bytes,4,opt,name=buy_asset,json=buyAsset,proto3" json:"buy_asset,omitempty"`
+	SellAmountMinor string                 `protobuf:"bytes,5,opt,name=sell_amount_minor,json=sellAmountMinor,proto3" json:"sell_amount_minor,omitempty"`
+	BuyAmountMinor  string                 `protobuf:"bytes,6,opt,name=buy_amount_minor,json=buyAmountMinor,proto3" json:"buy_amount_minor,omitempty"`
+	SpreadMinor     string                 `protobuf:"bytes,7,opt,name=spread_minor,json=spreadMinor,proto3" json:"spread_minor,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *FXBooked) Reset() {
+	*x = FXBooked{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FXBooked) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FXBooked) ProtoMessage() {}
+
+func (x *FXBooked) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FXBooked.ProtoReflect.Descriptor instead.
+func (*FXBooked) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FXBooked) GetDealId() string {
+	if x != nil {
+		return x.DealId
+	}
+	return ""
+}
+
+func (x *FXBooked) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *FXBooked) GetSellAsset() string {
+	if x != nil {
+		return x.SellAsset
+	}
+	return ""
+}
+
+func (x *FXBooked) GetBuyAsset() string {
+	if x != nil {
+		return x.BuyAsset
+	}
+	return ""
+}
+
+func (x *FXBooked) GetSellAmountMinor() string {
+	if x != nil {
+		return x.SellAmountMinor
+	}
+	return ""
+}
+
+func (x *FXBooked) GetBuyAmountMinor() string {
+	if x != nil {
+		return x.BuyAmountMinor
+	}
+	return ""
+}
+
+func (x *FXBooked) GetSpreadMinor() string {
+	if x != nil {
+		return x.SpreadMinor
+	}
+	return ""
+}
+
 var File_forge_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_forge_events_v1_events_proto_rawDesc = "" +
@@ -792,7 +885,16 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"metric_bps\x18\a \x01(\tR\tmetricBps\x12#\n" +
 	"\rthreshold_bps\x18\b \x01(\tR\fthresholdBps\x12\x1f\n" +
 	"\vobserved_at\x18\t \x01(\tR\n" +
-	"observedAtBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
+	"observedAt\"\xf3\x01\n" +
+	"\bFXBooked\x12\x17\n" +
+	"\adeal_id\x18\x01 \x01(\tR\x06dealId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x1d\n" +
+	"\n" +
+	"sell_asset\x18\x03 \x01(\tR\tsellAsset\x12\x1b\n" +
+	"\tbuy_asset\x18\x04 \x01(\tR\bbuyAsset\x12*\n" +
+	"\x11sell_amount_minor\x18\x05 \x01(\tR\x0fsellAmountMinor\x12(\n" +
+	"\x10buy_amount_minor\x18\x06 \x01(\tR\x0ebuyAmountMinor\x12!\n" +
+	"\fspread_minor\x18\a \x01(\tR\vspreadMinorBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once
@@ -806,7 +908,7 @@ func file_forge_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_forge_events_v1_events_proto_rawDescData
 }
 
-var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_forge_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: forge.events.v1.EventEnvelope
 	(*TransferCommitted)(nil),     // 1: forge.events.v1.TransferCommitted
@@ -815,10 +917,11 @@ var file_forge_events_v1_events_proto_goTypes = []any{
 	(*ConsentChanged)(nil),        // 4: forge.events.v1.ConsentChanged
 	(*PaymentEvent)(nil),          // 5: forge.events.v1.PaymentEvent
 	(*RiskAlertRaised)(nil),       // 6: forge.events.v1.RiskAlertRaised
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*FXBooked)(nil),              // 7: forge.events.v1.FXBooked
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
 }
 var file_forge_events_v1_events_proto_depIdxs = []int32{
-	7, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	8, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -837,7 +940,7 @@ func file_forge_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_events_v1_events_proto_rawDesc), len(file_forge_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

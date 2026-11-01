@@ -8,9 +8,9 @@ GATEWAY := services/bank/ledger-gateway-bank
 # Suites that need a database or a broker. make ci refuses to pass unless every one is configured, because a skipped
 # suite proves nothing. `make ci-db` creates the databases and sources the environment for you.
 DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN AUDIT_TEST_DSN TREASURY_TEST_DSN \
-	COMPLIANCE_TEST_DSN POLICY_TEST_DSN PARTY_TEST_DSN CONSENT_TEST_DSN ONBOARDING_TEST_PG OUTBOX_TEST_DSN KAFKA_TEST_BROKERS
+	COMPLIANCE_TEST_DSN POLICY_TEST_DSN PARTY_TEST_DSN CONSENT_TEST_DSN ONBOARDING_TEST_PG OUTBOX_TEST_DSN FX_TEST_DSN KAFKA_TEST_BROKERS
 
-.PHONY: ci ci-db require-test-dbs test-outbox test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
 
 ci: require-test-dbs lint test test-isolation
 
@@ -29,10 +29,14 @@ ci-db:
 	scripts/test-databases.sh
 	set -a; . ./.test-dbs.env; set +a; $(MAKE) ci
 
-test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox
+test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
 	cd pkg/callerauth && $(GO) test ./...
+
+# FX service. The saga and service suites need FX_TEST_DSN and truncate the same tables, so packages run one at a time.
+test-fx:
+	cd services/bank/fx-service && $(GO) test -count=1 -p 1 ./...
 
 # Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg).
 test-ledger:

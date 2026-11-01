@@ -14,7 +14,7 @@ out="$root/.test-dbs.env"
 
 databases=(
   ledger_pg_test recon_test payments_test inbound_test audit_test treasury_test
-  compliance_test policy_test party_test consent_test outbox_test
+  compliance_test policy_test party_test consent_test outbox_test fx_test
 )
 
 for db in "${databases[@]}"; do
@@ -36,6 +36,7 @@ done
   echo "export CONSENT_TEST_DSN='$host/consent_test?sslmode=disable'"
   echo "export ONBOARDING_TEST_PG='$host/postgres?sslmode=disable'"
   echo "export OUTBOX_TEST_DSN='$host/outbox_test?sslmode=disable'"
+  echo "export FX_TEST_DSN='$host/fx_test?sslmode=disable'"
   echo "export KAFKA_TEST_BROKERS='$brokers'"
 } > "$out"
 echo "wrote $out for ${#databases[@]} databases and broker $brokers"

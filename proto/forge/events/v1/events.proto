@@ -87,3 +87,14 @@ message RiskAlertRaised {
   string threshold_bps = 8;
   string observed_at = 9;   // RFC 3339
 }
+
+// An FX deal completed (topic forge.bank.fx.booked.v1). Both legs are posted; the spread is in the sell asset.
+message FXBooked {
+  string deal_id = 1;
+  string party_id = 2;
+  string sell_asset = 3;
+  string buy_asset = 4;
+  string sell_amount_minor = 5;
+  string buy_amount_minor = 6;
+  string spread_minor = 7;
+}
