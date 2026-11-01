@@ -25,6 +25,7 @@ use (
 	./services/shared/audit-service
 	./services/bank/treasury-risk
 	./services/bank/core-bridge
+	./services/bank/partner-bank-router
 	./services/shared/compliance-engine
 	./services/platform/consolidated-view
 	./services/platform/notifications

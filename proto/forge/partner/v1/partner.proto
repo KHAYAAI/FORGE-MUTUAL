@@ -1,0 +1,64 @@
+// Partner bank router (ARCHITECTURE.md 12.3). Routes foreign-currency operations to a partner bank by health and cost.
+// Amounts are integer minor units carried as decimal strings.
+syntax = "proto3";
+
+package forge.partner.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/partner/v1;partnerv1";
+
+service PartnerRouterService {
+  rpc OpenAccount(OpenAccountRequest) returns (OpenAccountResponse);
+  rpc Payout(PayoutRequest) returns (PayoutResponse);
+  rpc PayoutStatus(PayoutStatusRequest) returns (PayoutStatusResponse);
+  rpc GetHealth(GetHealthRequest) returns (GetHealthResponse);
+}
+
+message OpenAccountRequest {
+  string owner = 1;
+  string asset = 2;
+}
+
+message OpenAccountResponse {
+  string partner = 1;
+  string account_id = 2;
+  string reference = 3; // the number a payer quotes
+}
+
+message PayoutRequest {
+  string payment_id = 1;   // idempotency key; a retry goes to the same partner
+  string asset = 2;
+  string amount_minor = 3;
+  string beneficiary = 4;
+  string account_number = 5;
+  string bank_code = 6;
+  string reference = 7;
+}
+
+message PayoutResponse {
+  string partner = 1;
+  string status = 2;
+}
+
+message PayoutStatusRequest {
+  string payment_id = 1;
+}
+
+message PayoutStatusResponse {
+  string partner = 1;
+  string status = 2;
+}
+
+message GetHealthRequest {}
+
+message PartnerHealth {
+  string partner = 1;
+  string asset = 2;
+  string state = 3;     // HEALTHY, DEGRADED or DOWN
+  uint32 consecutive_failures = 4;
+  uint32 recent_outcomes = 5;
+  uint32 cost_bps = 6;
+}
+
+message GetHealthResponse {
+  repeated PartnerHealth partners = 1;
+}
