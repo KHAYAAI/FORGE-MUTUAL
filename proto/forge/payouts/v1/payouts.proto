@@ -1,0 +1,94 @@
+// Payouts (ARCHITECTURE.md 9.1 BulkPayout, 15 P2-03). A batch of payouts from one customer account. A maker creates the
+// batch; a different checker approves it, and only then does it run. Each item is sent through payments with a key derived
+// from the batch and the item, so a retry never pays twice. Amounts are integer minor units, as strings, like payments.
+syntax = "proto3";
+
+package forge.payouts.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1;payoutsv1";
+
+service PayoutsService {
+  rpc CreateBatch(CreateBatchRequest) returns (CreateBatchResponse);
+  rpc GetBatch(GetBatchRequest) returns (GetBatchResponse);
+  // ApproveBatch is the checker's decision. It starts the run. The checker must not be the maker.
+  rpc ApproveBatch(ApproveBatchRequest) returns (ApproveBatchResponse);
+  // ResumeBatch runs again the items that are not yet settled or definitively failed: uncertain items, and items still
+  // waiting for their outcome. A settled item is never sent again.
+  rpc ResumeBatch(ResumeBatchRequest) returns (ResumeBatchResponse);
+}
+
+enum BatchState {
+  BATCH_STATE_UNSPECIFIED = 0;
+  BATCH_STATE_DRAFT = 1;                      // created, waiting for a checker
+  BATCH_STATE_RUNNING = 2;                    // approved; items are being sent
+  BATCH_STATE_COMPLETED = 3;                  // every item settled
+  BATCH_STATE_COMPLETED_WITH_EXCEPTIONS = 4;  // the run ended with items failed, uncertain or still pending
+}
+
+enum ItemState {
+  ITEM_STATE_UNSPECIFIED = 0;
+  ITEM_STATE_PENDING = 1;   // not yet sent
+  ITEM_STATE_SENT = 2;      // accepted by payments; the outcome is not known yet
+  ITEM_STATE_SETTLED = 3;   // paid
+  ITEM_STATE_FAILED = 4;    // refused, or the payment failed; the money was not paid
+  ITEM_STATE_UNCERTAIN = 5; // payments could not be reached after the retries; resume sends it again under the same key
+}
+
+message ItemInput {
+  string item_key = 1; // unique within the batch; part of the payment's idempotency key
+  string amount_minor = 2;
+  string beneficiary_name = 3;
+  string account_number = 4;
+  string bank_code = 5;
+  string reference = 6;
+}
+
+message Item {
+  string item_key = 1;
+  string amount_minor = 2;
+  string beneficiary_name = 3;
+  string account_number = 4;
+  string bank_code = 5;
+  string reference = 6;
+  ItemState state = 7;
+  string payment_id = 8; // set once payments has accepted the item
+  string reason = 9;     // why an item failed or is uncertain
+}
+
+message Batch {
+  string batch_id = 1;
+  string party_id = 2;
+  string from_account_id = 3;
+  string asset = 4;
+  string total_minor = 5;
+  BatchState state = 6;
+  string created_by = 7;
+  string approved_by = 8;
+  uint32 run = 9; // how many times the batch has been started
+  repeated Item items = 10;
+}
+
+message CreateBatchRequest {
+  string idempotency_key = 1; // the same key with the same request returns the same batch
+  string party_id = 2;
+  string from_account_id = 3; // must be an account the party owns
+  string asset = 4;           // "ZAR" only: domestic payments
+  repeated ItemInput items = 5;
+  string actor = 6;           // the maker
+}
+message CreateBatchResponse { Batch batch = 1; }
+
+message GetBatchRequest { string batch_id = 1; }
+message GetBatchResponse { Batch batch = 1; }
+
+message ApproveBatchRequest {
+  string batch_id = 1;
+  string actor = 2; // the checker
+}
+message ApproveBatchResponse { Batch batch = 1; }
+
+message ResumeBatchRequest {
+  string batch_id = 1;
+  string actor = 2;
+}
+message ResumeBatchResponse { Batch batch = 1; }

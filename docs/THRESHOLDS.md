@@ -20,6 +20,9 @@ recorded here.
 | 11 | KYC controlling threshold for the tier decision | 5000 bps | `services/platform/onboarding/internal/onboarding/tier.go` | Risk owner | _unassigned_ | Placeholder |
 | 12 | Reconciliation: maximum age of a conclusive run | 30 minutes (`RECON_MAX_AGE`) | `services/bank/reconciliation` | Head of Payments operations | _unassigned_ | Operational; set for the 15-minute interval |
 | 13 | Sanctions list maximum age | Set by the caller | `internal/sanctions` | MLRO | _unassigned_ | Recommend about one day |
+| 14 | Payout batch: maximum items | 500 items (`PAYOUTS_MAX_ITEMS`) | `services/bank/payouts-service` | Head of Payments operations | _unassigned_ | Placeholder |
+| 15 | Payout: maximum amount per item | R1,000,000 (100,000,000 minor, `PAYOUTS_MAX_ITEM_MINOR`) | same | Head of Payments operations | _unassigned_ | Placeholder |
+| 16 | Payout: polls before an item stays open | 120 polls at 30 seconds (`PAYOUTS_MAX_POLLS`, `PAYOUTS_POLL_INTERVAL`) | same | Head of Payments operations | _unassigned_ | Placeholder |
 
 **Not thresholds, but also owned:** the outbound reserve window of 7 days (the ledger's maximum pending timeout),
 which is set by the ledger's limits, and the inbound credit lookback of 48 hours.

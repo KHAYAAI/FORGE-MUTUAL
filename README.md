@@ -56,6 +56,10 @@ with 49 packages and no skipped tests.
 - **FX service** (`services/bank/fx-service`): quotes with a disclosed spread, rounding against the customer, a 60-second
   single-use quote lock, and a saga across two ledgers with holds, reversal and a resume loop. One worker runs a deal at
   a time, enforced by an advisory lock. The rate is static configuration (VERIFY).
+- **Payouts** (`services/bank/payouts-service`): bulk ZAR payouts. A checker other than the maker approves the batch. Each
+  item is sent to payments under a key derived from the batch and the item, so a retry or a resume cannot pay it twice. A
+  refused item is final; an unreachable one is marked uncertain and sent again on resume. Tested against Postgres and in
+  Temporal's test environment. **Not yet run against a Temporal server** (see its SPEC).
 
 ## Partly built
 
@@ -68,9 +72,8 @@ with 49 packages and no skipped tests.
 
 ## Not started (v1 scope)
 
-Four services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started:
+Three services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started:
 
-- **payouts-service** (payouts): bulk payouts as child workflows.
 - **workspace-api** (workspace): backend-for-frontend for the customer workspace.
 - **web**: customer workspace front end.
 - **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker).

@@ -27,6 +27,7 @@ use (
 	./services/bank/core-bridge
 	./services/bank/partner-bank-router
 	./services/bank/fx-service
+	./services/bank/payouts-service
 	./services/shared/compliance-engine
 	./services/platform/consolidated-view
 	./services/platform/notifications
