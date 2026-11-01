@@ -1,6 +1,8 @@
 module github.com/khayaai/forge-mutual/services/platform/consent-service
 
-go 1.24
+go 1.24.6
+
+toolchain go1.24.7
 
 require (
 	connectrpc.com/connect v1.18.1
@@ -10,7 +12,7 @@ require (
 	github.com/khayaai/forge-mutual/pkg/outbox v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
 	golang.org/x/net v0.23.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -33,3 +35,5 @@ replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/calleraut
 replace github.com/khayaai/forge-mutual/pkg/outbox => ../../../pkg/outbox
 
 replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
+
+replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events

@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"regexp"
 	"strings"
 	"time"
@@ -192,13 +193,11 @@ func (s *Service) List(ctx context.Context, req *connect.Request[consentv1.ListR
 var errIdempotencyConflict = errors.New("idempotency key reused with a different request")
 
 func appendChange(ctx context.Context, tx pgx.Tx, topic, consentID, partyID, purpose, action, actor string) error {
-	payload, err := proto.Marshal(&eventsv1.ConsentChanged{
+	eventID, payload, err := events.Wrap(events.Params{
+		Type: topic, Entity: "PLAT", Producer: "consent-service", Correlation: partyID,
+	}, &eventsv1.ConsentChanged{
 		ConsentId: consentID, PartyId: partyID, Purpose: purpose, Action: action, Actor: actor,
 	})
-	if err != nil {
-		return err
-	}
-	eventID, err := outbox.NewEventID()
 	if err != nil {
 		return err
 	}

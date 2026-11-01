@@ -3,13 +3,13 @@ package service
 import (
 	"bytes"
 	"context"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"io"
 	"log/slog"
 	"os"
 	"testing"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/proto"
 
 	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
 	partyv1 "github.com/khayaai/forge-mutual/pkg/api/forge/party/v1"
@@ -77,8 +77,12 @@ func statusEvents(t *testing.T, st *store.Store) []*eventsv1.PartyStatusChanged 
 		if err := rows.Scan(&p); err != nil {
 			t.Fatal(err)
 		}
+		env, err := events.Open(p)
+		if err != nil {
+			t.Fatal(err)
+		}
 		ev := &eventsv1.PartyStatusChanged{}
-		if err := proto.Unmarshal(p, ev); err != nil {
+		if err := events.Decode(env, TopicStatusChanged, ev); err != nil {
 			t.Fatal(err)
 		}
 		out = append(out, ev)

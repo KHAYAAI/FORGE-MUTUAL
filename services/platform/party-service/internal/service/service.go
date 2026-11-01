@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -315,13 +316,11 @@ func (s *Service) newParty(m *partyv1.CreatePartyRequest) (store.Party, error) {
 }
 
 func appendStatus(ctx context.Context, tx pgx.Tx, partyID, from, to, reason, actor string) error {
-	payload, err := proto.Marshal(&eventsv1.PartyStatusChanged{
+	eventID, payload, err := events.Wrap(events.Params{
+		Type: TopicStatusChanged, Entity: "PLAT", Producer: "party-service", Correlation: partyID,
+	}, &eventsv1.PartyStatusChanged{
 		PartyId: partyID, FromStatus: from, ToStatus: to, Reason: reason, Actor: actor,
 	})
-	if err != nil {
-		return err
-	}
-	eventID, err := outbox.NewEventID()
 	if err != nil {
 		return err
 	}

@@ -65,3 +65,5 @@ replace github.com/khayaai/forge-mutual/pkg/banklayer => ../../../pkg/banklayer
 replace github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap => ../../../pkg/banklayer/bootstrap
 
 replace github.com/khayaai/forge-mutual/pkg/systemaccounts => ../../../pkg/systemaccounts
+
+replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events

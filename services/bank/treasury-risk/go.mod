@@ -34,3 +34,5 @@ replace (
 )
 
 replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
+
+replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events

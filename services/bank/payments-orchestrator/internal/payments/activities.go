@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"strconv"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
 	"go.temporal.io/sdk/temporal"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
@@ -301,14 +301,12 @@ func (a *Activities) writeRecord(ctx context.Context, in Input, state, reason, r
 		if topic == "" {
 			return nil
 		}
-		payload, err := proto.Marshal(&eventsv1.PaymentEvent{
+		eventID, payload, err := events.Wrap(events.Params{
+			EventID: "", Type: topic, Entity: a.Entity, Producer: "payments-orchestrator", Correlation: in.PaymentID,
+		}, &eventsv1.PaymentEvent{
 			PaymentId: in.PaymentID, PartyId: in.PartyID, FromAccountId: in.FromAccountID,
 			AmountMinor: in.AmountMinor, Asset: in.Asset, Status: state, Reason: reason,
 		})
-		if err != nil {
-			return err
-		}
-		eventID, err := outbox.NewEventID()
 		if err != nil {
 			return err
 		}

@@ -10,6 +10,7 @@ use (
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
 	./pkg/systemaccounts
+	./pkg/events
 	./tools/isolation
 	./tools/banklayercheck
 	./tools/sim/sponsor

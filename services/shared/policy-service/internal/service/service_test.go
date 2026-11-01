@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
@@ -133,8 +133,12 @@ func TestEveryDecisionIsAudited(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("audit rows = %d, want 1", len(rows))
 	}
+	env, err := events.Open(rows[0])
+	if err != nil {
+		t.Fatal(err)
+	}
 	var ev eventsv1.PolicyDecision
-	if err := proto.Unmarshal(rows[0], &ev); err != nil {
+	if err := events.Decode(env, DecisionTopic, &ev); err != nil {
 		t.Fatal(err)
 	}
 	if ev.DecisionId != resp.DecisionId || !ev.Allow || ev.DecisionPoint != "sector" || ev.RequestId != "req-1" {

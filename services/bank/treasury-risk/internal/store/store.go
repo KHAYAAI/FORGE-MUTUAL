@@ -6,11 +6,11 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"google.golang.org/protobuf/proto"
 
 	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
@@ -160,7 +160,9 @@ func (s *Store) RaisedAlerts(ctx context.Context) ([]string, error) {
 }
 
 func emit(ctx context.Context, tx pgx.Tx, id string, a risk.Alert, state string, at time.Time) error {
-	payload, err := proto.Marshal(&eventsv1.RiskAlertRaised{
+	eventID, payload, err := events.Wrap(events.Params{
+		Type: TopicAlert, Entity: "BANK", Producer: "treasury-risk", Correlation: id, At: at,
+	}, &eventsv1.RiskAlertRaised{
 		AlertId: id, Kind: a.Kind, Asset: a.Asset, Severity: a.Severity, State: state, Detail: a.Detail,
 		MetricBps: fmt.Sprint(a.MetricBps), ThresholdBps: fmt.Sprint(a.ThresholdBps),
 		ObservedAt: at.UTC().Format(time.RFC3339Nano),
@@ -168,7 +170,7 @@ func emit(ctx context.Context, tx pgx.Tx, id string, a risk.Alert, state string,
 	if err != nil {
 		return err
 	}
-	return outbox.Append(ctx, tx, outbox.Event{EventID: newID(), Topic: TopicAlert, Key: []byte(id), Payload: payload})
+	return outbox.Append(ctx, tx, outbox.Event{EventID: eventID, Topic: TopicAlert, Key: []byte(id), Payload: payload})
 }
 
 // newID returns a random UUID. A failure of crypto/rand is unrecoverable.

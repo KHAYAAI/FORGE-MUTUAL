@@ -12,11 +12,11 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"google.golang.org/protobuf/proto"
 
 	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
 	policyv1 "github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
+	"github.com/khayaai/forge-mutual/pkg/events"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/engine"
 )
@@ -85,7 +85,9 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[policyv1.Ev
 		Reason:        dec.Reason,
 		InputSha256:   digest[:],
 	}
-	payload, err := proto.Marshal(event)
+	_, payload, err := events.Wrap(events.Params{
+		EventID: decisionID, Type: DecisionTopic, Entity: m.EntityCode, Producer: "policy-service", Correlation: m.RequestId,
+	}, event)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
