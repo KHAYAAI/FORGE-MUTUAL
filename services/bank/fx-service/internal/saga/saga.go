@@ -13,6 +13,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
@@ -146,31 +147,28 @@ func (s *Saga) Run(ctx context.Context, dealID string) (string, error) {
 	return d.State, nil
 }
 
-// lock takes a session advisory lock on the deal. It is held on one connection for the whole run, so a booking and the
-// resume loop, or two replicas, cannot drive the same deal at once. If the release fails, the connection is closed, so
-// the lock cannot outlive the run.
+// lock takes a session advisory lock on the deal. The lock lives on its own connection, outside the pool, for the whole
+// run, so a booking and the resume loop, or two replicas, cannot drive the same deal at once. Running out of pool
+// connections cannot block it, and closing the connection releases the lock, so a run cannot leave it behind.
 func (s *Saga) lock(ctx context.Context, dealID string) (func(), bool, error) {
-	conn, err := s.Pool.Acquire(ctx)
+	conn, err := pgx.ConnectConfig(ctx, s.Pool.Config().ConnConfig.Copy())
 	if err != nil {
 		return nil, false, err
 	}
 	key := "fx-deal:" + dealID
 	var ok bool
 	if err := conn.QueryRow(ctx, `select pg_try_advisory_lock(hashtextextended($1, 0))`, key).Scan(&ok); err != nil {
-		conn.Release()
+		_ = conn.Close(ctx)
 		return nil, false, err
 	}
 	if !ok {
-		conn.Release()
+		_ = conn.Close(ctx)
 		return nil, false, nil
 	}
 	return func() {
 		uctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if _, err := conn.Exec(uctx, `select pg_advisory_unlock(hashtextextended($1, 0))`, key); err != nil {
-			_ = conn.Conn().Close(uctx)
-		}
-		conn.Release()
+		_ = conn.Close(uctx)
 	}, true, nil
 }
 

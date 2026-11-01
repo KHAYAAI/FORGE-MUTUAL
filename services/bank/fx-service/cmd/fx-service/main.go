@@ -108,7 +108,9 @@ func run(log *slog.Logger) error {
 				log.Error("resume scan failed", "err", err)
 			}
 			for _, id := range deals {
-				if state, err := sg.Run(ctx, id); err != nil {
+				if state, err := sg.Run(ctx, id); errors.Is(err, saga.ErrBusy) {
+					// Another worker holds this deal and finishes it.
+				} else if err != nil {
 					log.Error("resume failed; will retry", "deal", id, "state", state, "err", err)
 				} else {
 					log.Info("deal advanced", "deal", id, "state", state)
