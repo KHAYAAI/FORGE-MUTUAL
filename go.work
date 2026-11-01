@@ -24,6 +24,7 @@ use (
 	./services/bank/reconciliation
 	./services/shared/audit-service
 	./services/bank/treasury-risk
+	./services/bank/core-bridge
 	./services/shared/compliance-engine
 	./services/platform/consolidated-view
 	./services/platform/notifications
