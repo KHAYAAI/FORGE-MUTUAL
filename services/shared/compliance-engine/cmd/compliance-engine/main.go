@@ -3,10 +3,20 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/eventbus"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/cases"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/feed"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/monitor"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/service"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,19 +24,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/pkg/eventbus"
-	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/cases"
-	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/feed"
-	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/monitor"
-	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/service"
 )
 
 func main() {
@@ -78,7 +75,7 @@ func run(log *slog.Logger) error {
 
 	svc := &service.Service{Store: cases.New(pool), Now: time.Now}
 	mux := http.NewServeMux()
-	path, handler := casesv1connect.NewCasesServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+	path, handler := casesv1connect.NewCasesServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -88,24 +85,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{
-		Addr:              getenv("CASES_ADDR", ":8400"),
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("compliance-engine listening", "addr", srv.Addr)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "compliance-engine")
+	if err != nil {
 		return err
-	case err := <-consumerErr:
-		return fmt.Errorf("monitoring feed stopped: %w", err)
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("CASES_ADDR", ":8400"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("compliance-engine listening", "addr", srv.Addr)
+	return serve.Run(ctx, srv, log)
 }
 
 func loadCallers(path string) (callerauth.Allowlist, error) {

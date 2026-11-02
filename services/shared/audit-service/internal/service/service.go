@@ -23,7 +23,7 @@ type Service struct {
 
 // Append writes one entry under the caller's identity.
 func (s *Service) Append(ctx context.Context, req *connect.Request[auditv1.AppendRequest]) (*connect.Response[auditv1.AppendResponse], error) {
-	actor := req.Header().Get(callerauth.DefaultHeader)
+	actor := callerauth.Caller(ctx, req.Header())
 	e, err := s.Store.Append(ctx, chain.Input{
 		Actor: actor, Action: req.Msg.Action, Entity: req.Msg.Entity, Payload: []byte(req.Msg.PayloadJson),
 	})

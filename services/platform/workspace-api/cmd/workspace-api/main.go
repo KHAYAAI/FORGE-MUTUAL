@@ -3,25 +3,21 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
 	"connectrpc.com/connect"
-
+	"context"
+	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/platform/workspace-api/internal/api"
 	"github.com/khayaai/forge-mutual/services/platform/workspace-api/internal/auth"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // callerName is what the downstream services see on every request this process makes. Each one lists it in its allowlist.
@@ -36,6 +32,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -59,32 +59,27 @@ func run(log *slog.Logger) error {
 	h := &api.API{
 		Auth: authn,
 		Services: api.Services{
-			Consolidated: consolidatedv1connect.NewConsolidatedViewServiceClient(http.DefaultClient, urls["CONSOLIDATED_URL"], caller()),
-			Payments:     paymentsv1connect.NewPaymentsServiceClient(http.DefaultClient, urls["PAYMENTS_URL"], caller()),
-			FX:           fxv1connect.NewFXServiceClient(http.DefaultClient, urls["FX_URL"], caller()),
-			Payouts:      payoutsv1connect.NewPayoutsServiceClient(http.DefaultClient, urls["PAYOUTS_URL"], caller()),
+			Consolidated: consolidatedv1connect.NewConsolidatedViewServiceClient(outbound, urls["CONSOLIDATED_URL"], caller()),
+			Payments:     paymentsv1connect.NewPaymentsServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
+			FX:           fxv1connect.NewFXServiceClient(outbound, urls["FX_URL"], caller()),
+			Payouts:      payoutsv1connect.NewPayoutsServiceClient(outbound, urls["PAYOUTS_URL"], caller()),
 		},
 	}
-	srv := &http.Server{
-		Addr:              getenv("WORKSPACE_ADDR", ":8300"),
-		Handler:           h.Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
+	stopTracing, err := serve.InitTracing(ctx, "workspace-api")
+	if err != nil {
+		return err
 	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("WORKSPACE_ADDR", ":8300"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, h.Handler(), log)
+	if err != nil {
+		return err
+	}
 	log.Info("workspace-api listening", "addr", srv.Addr, "auth", os.Getenv("WORKSPACE_AUTH"))
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
-		if !errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
-	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	return serve.Run(ctx, srv, log)
 }
 
 // caller sets the caller header on every downstream request.

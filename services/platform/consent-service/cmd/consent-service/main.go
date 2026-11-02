@@ -3,10 +3,17 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/outbox"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/platform/consent-service/internal/service"
+	"github.com/khayaai/forge-mutual/services/platform/consent-service/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,16 +21,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/pkg/outbox"
-	"github.com/khayaai/forge-mutual/services/platform/consent-service/internal/service"
-	"github.com/khayaai/forge-mutual/services/platform/consent-service/internal/store"
 )
 
 func main() {
@@ -64,7 +61,7 @@ func run(log *slog.Logger) error {
 
 	svc := service.New(st)
 	path, handler := consentv1connect.NewConsentServiceHandler(svc,
-		connect.WithInterceptors(allow.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(allow.Interceptor(callerauth.HeaderSource())))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
@@ -77,20 +74,21 @@ func run(log *slog.Logger) error {
 	})
 
 	listen := getenv("CONSENT_LISTEN", ":8080")
-	srv := &http.Server{Addr: listen, Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("consent service listening", "addr", listen)
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "consent-service")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdown)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("consent service listening", "addr", listen)
+	return serve.Run(ctx, srv, log)
 }
 
 func relay(ctx context.Context, st *store.Store, pub outbox.Publisher, log *slog.Logger) {

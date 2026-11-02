@@ -3,11 +3,20 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/outbox"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/bundle"
+	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/engine"
+	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/service"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,18 +24,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/pkg/outbox"
-	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/bundle"
-	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/engine"
-	"github.com/khayaai/forge-mutual/services/shared/policy-service/internal/service"
 )
 
 func main() {
@@ -91,7 +88,7 @@ func run(log *slog.Logger) error {
 
 	svc := service.New(pool, eng)
 	path, handler := policyv1connect.NewPolicyServiceHandler(svc,
-		connect.WithInterceptors(allow.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(allow.Interceptor(callerauth.HeaderSource())))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
@@ -104,20 +101,24 @@ func run(log *slog.Logger) error {
 	})
 
 	listen := getenv("POLICY_LISTEN", ":8080")
-	srv := &http.Server{Addr: listen, Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("policy service listening", "addr", listen, "bundle_version", b.Version)
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "policy-service")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdown)
+	defer func() { _ = stopTracing(context.Background()) }()
+	if err := serve.RefuseInProduction(serve.Switch{Name: "POLICY_DEV_UNSIGNED", Set: os.Getenv("POLICY_DEV_UNSIGNED") == "true"}); err != nil {
+		return err
+	}
+	tlsCfg, err := serve.FromEnv(listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("policy service listening", "addr", listen, "bundle_version", b.Version)
+	return serve.Run(ctx, srv, log)
 }
 
 // relay publishes audit events until ctx is cancelled.

@@ -11,8 +11,21 @@ require (
 	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
 	github.com/khayaai/forge-mutual/pkg/outbox v0.0.0
 	github.com/open-policy-agent/opa v1.13.0
-	golang.org/x/net v0.49.0
 	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.39.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.39.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.9.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/grpc v1.78.0 // indirect
 )
 
 require (
@@ -29,6 +42,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/khayaai/forge-mutual/pkg/events v0.0.0
+	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
@@ -79,3 +93,5 @@ replace github.com/khayaai/forge-mutual/pkg/outbox => ../../../pkg/outbox
 replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
 
 replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events
+
+replace github.com/khayaai/forge-mutual/pkg/serve => ../../../pkg/serve

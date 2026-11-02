@@ -4,25 +4,11 @@ package main
 
 import (
 	"bufio"
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"syscall"
-	"time"
-
-	"connectrpc.com/connect"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
@@ -33,12 +19,23 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/pkg/screening"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/inbound"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/inflight"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/payments"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/service"
 	"github.com/khayaai/forge-mutual/services/bank/payments-orchestrator/internal/store"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 )
 
 func callerAs(name string) connect.Option {
@@ -59,6 +56,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -78,7 +79,7 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	recon, err := reconFromEnv()
+	recon, err := reconFromEnv(outbound)
 	if err != nil {
 		return err
 	}
@@ -98,7 +99,7 @@ func run(log *slog.Logger) error {
 	}
 	defer st.Close()
 
-	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, urls["LEDGER_URL"], callerAs("svc-payments"))
+	ledger := ledgerv1connect.NewLedgerServiceClient(outbound, urls["LEDGER_URL"], callerAs("svc-payments"))
 	settlement, err := payments.EnsureSettlementAccount(ctx, ledger, "BANK")
 	if err != nil {
 		return fmt.Errorf("settlement account: %w", err)
@@ -119,10 +120,10 @@ func run(log *slog.Logger) error {
 
 	acts := &payments.Activities{
 		Store:       st,
-		Party:       partyv1connect.NewPartyServiceClient(http.DefaultClient, urls["PARTY_URL"], callerAs("svc-payments")),
-		Policy:      policyv1connect.NewPolicyServiceClient(http.DefaultClient, urls["POLICY_URL"], callerAs("svc-payments")),
+		Party:       partyv1connect.NewPartyServiceClient(outbound, urls["PARTY_URL"], callerAs("svc-payments")),
+		Policy:      policyv1connect.NewPolicyServiceClient(outbound, urls["POLICY_URL"], callerAs("svc-payments")),
 		Ledger:      ledger,
-		Rails:       railsv1connect.NewRailServiceClient(http.DefaultClient, urls["RAILS_URL"], callerAs("svc-payments")),
+		Rails:       railsv1connect.NewRailServiceClient(outbound, urls["RAILS_URL"], callerAs("svc-payments")),
 		Screener:    scr,
 		Recon:       recon,
 		Settlement:  settlement,
@@ -156,7 +157,7 @@ func run(log *slog.Logger) error {
 		MaxPolls:        int(intFromEnv("PAYMENTS_MAX_POLLS")),
 	})
 	path, handler := paymentsv1connect.NewPaymentsServiceHandler(svc,
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 	if err := inbound.Open(ctx, st.Pool()); err != nil {
@@ -164,7 +165,7 @@ func run(log *slog.Logger) error {
 	}
 	inflightPath, inflightHandler := paymentsv1connect.NewInFlightServiceHandler(
 		&inflight.Service{Pool: st.Pool(), Inbound: &inbound.Worker{Pool: st.Pool()}},
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(inflightPath, inflightHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -176,20 +177,24 @@ func run(log *slog.Logger) error {
 	})
 
 	listen := getenv("PAYMENTS_LISTEN", ":8080")
-	srv := &http.Server{Addr: listen, Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("payments listening", "addr", listen, "task_queue", taskQueue)
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "payments-orchestrator")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdown)
+	defer func() { _ = stopTracing(context.Background()) }()
+	if err := serve.RefuseInProduction(serve.Switch{Name: "PAYMENTS_ALLOW_SIMULATION", Set: os.Getenv("PAYMENTS_ALLOW_SIMULATION") == "true"}); err != nil {
+		return err
+	}
+	tlsCfg, err := serve.FromEnv(listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("payments listening", "addr", listen, "task_queue", taskQueue)
+	return serve.Run(ctx, srv, log)
 }
 
 func relay(ctx context.Context, pool *store.Store, pub outbox.Publisher, log *slog.Logger) {
@@ -249,12 +254,12 @@ func screenerFromEnv() (screening.Screener, error) {
 
 // reconFromEnv connects to the reconciliation gate. There is no static fallback: a missing gate must never read as
 // "no break".
-func reconFromEnv() (payments.ReconStatus, error) {
+func reconFromEnv(outbound *http.Client) (payments.ReconStatus, error) {
 	url := os.Getenv("RECON_URL")
 	if url == "" {
 		return nil, errors.New("RECON_URL is required; payments reads the reconciliation gate (invariant 9)")
 	}
-	return payments.ConnectRecon{Client: reconv1connect.NewReconServiceClient(http.DefaultClient, url, callerAs("svc-payments"))}, nil
+	return payments.ConnectRecon{Client: reconv1connect.NewReconServiceClient(outbound, url, callerAs("svc-payments"))}, nil
 }
 
 func openPublisher(log *slog.Logger) (outbox.Publisher, func(), error) {

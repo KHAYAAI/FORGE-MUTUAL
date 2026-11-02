@@ -2,10 +2,23 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
+	"github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/inflight"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/ledgerview"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/recon"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/runner"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/service"
+	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,22 +26,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
-	"github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/inflight"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/ledgerview"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/recon"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/runner"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/service"
-	"github.com/khayaai/forge-mutual/services/bank/reconciliation/internal/store"
 )
 
 func main() {
@@ -40,6 +37,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -87,12 +88,12 @@ func run(log *slog.Logger) error {
 	}
 	defer st.Close()
 
-	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, callerAs("svc-reconciliation"))
+	ledger := ledgerv1connect.NewLedgerServiceClient(outbound, ledgerURL, callerAs("svc-reconciliation"))
 	paymentsURL := os.Getenv("PAYMENTS_INFLIGHT_URL")
 	if paymentsURL == "" {
 		return errors.New("PAYMENTS_INFLIGHT_URL is required: the in-flight terms live in payments")
 	}
-	inflightSource := inflight.Client{Client: paymentsv1connect.NewInFlightServiceClient(http.DefaultClient, paymentsURL, callerAs("svc-reconciliation"))}
+	inflightSource := inflight.Client{Client: paymentsv1connect.NewInFlightServiceClient(outbound, paymentsURL, callerAs("svc-reconciliation"))}
 	rn := &runner.Runner{
 		Ledger:   ledgerview.Reader{Client: ledger, Entity: "BANK"},
 		Bank:     bank,
@@ -110,7 +111,7 @@ func run(log *slog.Logger) error {
 
 	mux := http.NewServeMux()
 	path, handler := reconv1connect.NewReconServiceHandler(svc,
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -121,22 +122,21 @@ func run(log *slog.Logger) error {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	srv := &http.Server{
-		Addr:              getenv("RECON_ADDR", ":8093"),
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("reconciliation listening", "addr", srv.Addr, "interval", interval, "max_age", maxAge)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "reconciliation")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("RECON_ADDR", ":8093"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("reconciliation listening", "addr", srv.Addr, "interval", interval, "max_age", maxAge)
+	return serve.Run(ctx, srv, log)
 }
 
 // loop runs every asset on the interval. A failed run is logged and retried on the next tick. The gate ages out

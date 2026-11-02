@@ -5,6 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/khayaai/forge-mutual/pkg/eventbus"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/crypt"
+	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/handler"
+	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/sender"
+	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/store"
+	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/templates"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,15 +20,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/khayaai/forge-mutual/pkg/eventbus"
-	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/crypt"
-	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/handler"
-	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/sender"
-	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/store"
-	"github.com/khayaai/forge-mutual/services/platform/notifications/internal/templates"
 )
 
 func main() {
@@ -107,17 +106,20 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{Addr: getenv("NOTIFICATIONS_ADDR", ":8097"), Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "notifications")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("NOTIFICATIONS_ADDR", ":8097"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	return serve.Run(ctx, srv, log)
 }
 
 func splitList(s string) []string {

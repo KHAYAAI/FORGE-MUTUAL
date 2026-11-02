@@ -63,7 +63,7 @@ func (s *Service) ListBreaks(ctx context.Context, req *connect.Request[reconv1.L
 
 // InvestigateBreak records who looked at a break and what they found. The actor is the authenticated caller.
 func (s *Service) InvestigateBreak(ctx context.Context, req *connect.Request[reconv1.InvestigateBreakRequest]) (*connect.Response[reconv1.InvestigateBreakResponse], error) {
-	actor := req.Header().Get(callerauth.DefaultHeader)
+	actor := callerauth.Caller(ctx, req.Header())
 	b, err := s.Store.Investigate(ctx, req.Msg.BreakId, actor, req.Msg.Note)
 	switch {
 	case errors.Is(err, store.ErrNotFound):

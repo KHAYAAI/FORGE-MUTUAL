@@ -3,9 +3,21 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/eventbus"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/chart"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/fineract"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/poster"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/projection"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/recon"
+	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,19 +25,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/eventbus"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/chart"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/fineract"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/poster"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/projection"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/recon"
-	"github.com/khayaai/forge-mutual/services/bank/core-bridge/internal/store"
 )
 
 func main() {
@@ -37,6 +36,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -94,7 +97,7 @@ func run(log *slog.Logger) error {
 		return fmt.Errorf("general ledger accounts: %w", err)
 	}
 
-	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, callerAs("svc-core-bridge"))
+	ledger := ledgerv1connect.NewLedgerServiceClient(outbound, ledgerURL, callerAs("svc-core-bridge"))
 	entity := getenv("CORE_BRIDGE_ENTITY", "BANK")
 	refresh := func(ctx context.Context) error { return refreshAccounts(ctx, pool, ledger, entity) }
 	resolver := projection.LedgerResolver{
@@ -143,18 +146,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{Addr: getenv("CORE_BRIDGE_ADDR", ":8098"), Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("core-bridge running", "office", officeID)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "core-bridge")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("CORE_BRIDGE_ADDR", ":8098"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("core-bridge running", "office", officeID)
+	return serve.Run(ctx, srv, log)
 }
 
 // ensureGLAccounts creates any missing mirrored GL account and returns the Fineract id of each.

@@ -4,25 +4,12 @@ package main
 
 import (
 	"bufio"
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
-
-	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
@@ -30,10 +17,20 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/screening"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/service"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/store"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 )
 
 // callerAs stamps the outgoing requests with this service's identity.
@@ -55,6 +52,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -103,10 +104,10 @@ func run(log *slog.Logger) error {
 	}
 
 	acts := &onboarding.Activities{
-		Party:           partyv1connect.NewPartyServiceClient(http.DefaultClient, urls["PARTY_URL"], callerAs("svc-onboarding")),
-		Consent:         consentv1connect.NewConsentServiceClient(http.DefaultClient, urls["CONSENT_URL"], callerAs("svc-onboarding")),
-		Policy:          policyv1connect.NewPolicyServiceClient(http.DefaultClient, urls["POLICY_URL"], callerAs("svc-onboarding")),
-		Ledger:          ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, urls["LEDGER_URL"], callerAs("svc-onboarding")),
+		Party:           partyv1connect.NewPartyServiceClient(outbound, urls["PARTY_URL"], callerAs("svc-onboarding")),
+		Consent:         consentv1connect.NewConsentServiceClient(outbound, urls["CONSENT_URL"], callerAs("svc-onboarding")),
+		Policy:          policyv1connect.NewPolicyServiceClient(outbound, urls["POLICY_URL"], callerAs("svc-onboarding")),
+		Ledger:          ledgerv1connect.NewLedgerServiceClient(outbound, urls["LEDGER_URL"], callerAs("svc-onboarding")),
 		KYC:             provider,
 		Screener:        scr,
 		InsuredDeposits: os.Getenv("INSURED_DEPOSITS") == "true",
@@ -124,27 +125,31 @@ func run(log *slog.Logger) error {
 
 	svc := service.New(tc, provider, taskQueue).WithReviews(reviews)
 	path, handler := onboardingv1connect.NewOnboardingServiceHandler(svc,
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 	mux.Handle("/webhooks/kyc", svc.WebhookHandler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 
 	listen := getenv("ONBOARDING_LISTEN", ":8080")
-	srv := &http.Server{Addr: listen, Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("onboarding listening", "addr", listen, "task_queue", taskQueue, "kyc", os.Getenv("KYC_PROVIDER"))
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "onboarding")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdown)
+	defer func() { _ = stopTracing(context.Background()) }()
+	if err := serve.RefuseInProduction(serve.Switch{Name: "KYC_PROVIDER=fake", Set: getenv("KYC_PROVIDER", "didit") == "fake"}); err != nil {
+		return err
+	}
+	tlsCfg, err := serve.FromEnv(listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("onboarding listening", "addr", listen, "task_queue", taskQueue, "kyc", os.Getenv("KYC_PROVIDER"))
+	return serve.Run(ctx, srv, log)
 }
 
 // providerFromEnv selects the identity provider. The fake needs an explicit secret; Didit is not

@@ -3,10 +3,21 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/eventbus"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/projection"
+	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/recon"
+	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/service"
+	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,20 +25,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/pkg/eventbus"
-	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/projection"
-	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/recon"
-	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/service"
-	"github.com/khayaai/forge-mutual/services/platform/consolidated-view/internal/store"
 )
 
 func main() {
@@ -39,6 +36,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -89,14 +90,14 @@ func run(log *slog.Logger) error {
 	}()
 
 	rec := &recon.Reconciler{
-		Ledger: ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, callerAs("svc-consolidated-view")),
+		Ledger: ledgerv1connect.NewLedgerServiceClient(outbound, ledgerURL, callerAs("svc-consolidated-view")),
 		Entity: entity, Store: st, Now: time.Now,
 	}
 	go reconLoop(ctx, log, rec, every)
 
 	mux := http.NewServeMux()
 	path, handler := consolidatedv1connect.NewConsolidatedViewServiceHandler(&service.Service{Store: st},
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -106,18 +107,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{Addr: getenv("CONSOLIDATED_ADDR", ":8096"), Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("consolidated-view listening", "addr", srv.Addr)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "consolidated-view")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("CONSOLIDATED_ADDR", ":8096"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("consolidated-view listening", "addr", srv.Addr)
+	return serve.Run(ctx, srv, log)
 }
 
 // reconLoop corrects the read model on the schedule. A failed run is logged; the next tick tries again.

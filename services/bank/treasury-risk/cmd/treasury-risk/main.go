@@ -3,9 +3,16 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/ledgerread"
+	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/risk"
+	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,14 +20,6 @@ import (
 	"strconv"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/ledgerread"
-	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/risk"
-	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/store"
 )
 
 // assets are the monitored ledgers: ZAR on the sponsor pool, USD on the partner mirror.
@@ -38,6 +37,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -63,7 +66,7 @@ func run(log *slog.Logger) error {
 	}
 	defer st.Close()
 
-	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, connect.WithInterceptors(
+	ledger := ledgerv1connect.NewLedgerServiceClient(outbound, ledgerURL, connect.WithInterceptors(
 		connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 			return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 				req.Header().Set(callerauth.DefaultHeader, "svc-treasury-risk")
@@ -84,17 +87,20 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{Addr: getenv("TREASURY_ADDR", ":8095"), Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "treasury-risk")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("TREASURY_ADDR", ":8095"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	return serve.Run(ctx, srv, log)
 }
 
 // loop snapshots and evaluates every asset on the interval. A failed pass is logged; the next pass tries again.

@@ -3,25 +3,21 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
 	"connectrpc.com/connect"
-
+	"context"
+	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/shared/backoffice-api/internal/api"
 	"github.com/khayaai/forge-mutual/services/shared/backoffice-api/internal/auth"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // callerName is what the downstream services see on every request this process makes. Each one lists it in its allowlist.
@@ -36,6 +32,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -59,32 +59,27 @@ func run(log *slog.Logger) error {
 	h := &api.API{
 		Auth: authn,
 		Services: api.Services{
-			Cases:      casesv1connect.NewCasesServiceClient(http.DefaultClient, urls["CASES_URL"], caller()),
-			Payments:   paymentsv1connect.NewPaymentsServiceClient(http.DefaultClient, urls["PAYMENTS_URL"], caller()),
-			Recon:      reconv1connect.NewReconServiceClient(http.DefaultClient, urls["RECON_URL"], caller()),
-			Onboarding: onboardingv1connect.NewOnboardingServiceClient(http.DefaultClient, urls["ONBOARDING_URL"], caller()),
+			Cases:      casesv1connect.NewCasesServiceClient(outbound, urls["CASES_URL"], caller()),
+			Payments:   paymentsv1connect.NewPaymentsServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
+			Recon:      reconv1connect.NewReconServiceClient(outbound, urls["RECON_URL"], caller()),
+			Onboarding: onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
 		},
 	}
-	srv := &http.Server{
-		Addr:              getenv("BACKOFFICE_ADDR", ":8500"),
-		Handler:           h.Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
+	stopTracing, err := serve.InitTracing(ctx, "backoffice-api")
+	if err != nil {
+		return err
 	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("BACKOFFICE_ADDR", ":8500"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, h.Handler(), log)
+	if err != nil {
+		return err
+	}
 	log.Info("backoffice-api listening", "addr", srv.Addr, "auth", os.Getenv("BACKOFFICE_AUTH"))
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
-		if !errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
-	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	return serve.Run(ctx, srv, log)
 }
 
 // caller sets the caller header on every downstream request.

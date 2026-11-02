@@ -3,6 +3,7 @@ go 1.24.6
 use (
 	./pkg/api
 	./pkg/callerauth
+	./pkg/serve
 	./pkg/outbox
 	./pkg/uuid
 	./pkg/screening

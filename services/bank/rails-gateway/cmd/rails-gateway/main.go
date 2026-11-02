@@ -7,17 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"connectrpc.com/connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"github.com/khayaai/forge-mutual/pkg/api/forge/rails/v1/railsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
@@ -51,28 +49,32 @@ func run(log *slog.Logger) error {
 	r := rail.NewSim(simulation)
 
 	path, handler := railsv1connect.NewRailServiceHandler(service.New(r),
-		connect.WithInterceptors(allow.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(allow.Interceptor(callerauth.HeaderSource())))
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 
 	listen := getenv("RAILS_LISTEN", ":8080")
-	srv := &http.Server{Addr: listen, Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
+	if err := serve.RefuseInProduction(serve.Switch{Name: "RAILS_SIMULATION", Set: os.Getenv("RAILS_SIMULATION") == "true"}); err != nil {
+		return err
+	}
+	tlsCfg, err := serve.FromEnv(listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("rails gateway listening", "addr", listen, "simulation", simulation)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("rails gateway listening", "addr", listen, "simulation", simulation)
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "rails-gateway")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdown)
+	defer func() { _ = stopTracing(context.Background()) }()
+	return serve.Run(ctx, srv, log)
 }
 
 func loadCallers(path string) (callerauth.Allowlist, error) {

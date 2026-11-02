@@ -2,10 +2,17 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/audit/v1/auditv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/anchor"
+	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/service"
+	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,17 +20,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"connectrpc.com/connect"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/audit/v1/auditv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/anchor"
-	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/service"
-	"github.com/khayaai/forge-mutual/services/shared/audit-service/internal/store"
 )
 
 func main() {
@@ -66,7 +62,7 @@ func run(log *slog.Logger) error {
 
 	mux := http.NewServeMux()
 	path, h := auditv1connect.NewAuditServiceHandler(&service.Service{Store: st},
-		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, h)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -76,22 +72,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{
-		Addr:              getenv("AUDIT_ADDR", ":8094"),
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("audit-service listening", "addr", srv.Addr)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "audit-service")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("AUDIT_ADDR", ":8094"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("audit-service listening", "addr", srv.Addr)
+	return serve.Run(ctx, srv, log)
 }
 
 func anchorLoop(ctx context.Context, log *slog.Logger, a *anchor.Anchorer, every time.Duration) {

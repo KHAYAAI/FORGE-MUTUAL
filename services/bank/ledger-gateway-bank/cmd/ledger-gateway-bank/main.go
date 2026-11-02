@@ -3,10 +3,21 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/metrics"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/outbox"
+	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/postgres"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,21 +26,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"connectrpc.com/connect"
-
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/gateway"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/ledger"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/metrics"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/outbox"
-	"github.com/khayaai/forge-mutual/services/bank/ledger-gateway-bank/internal/postgres"
 )
 
 type settings struct {
@@ -143,7 +139,7 @@ func run(log *slog.Logger) error {
 
 	svc := gateway.NewService(gateway.DefaultConfig(), store, repo)
 	path, handler := ledgerv1connect.NewLedgerServiceHandler(svc,
-		connect.WithInterceptors(m.Interceptor(), allow.Interceptor(callerauth.DefaultHeader)))
+		connect.WithInterceptors(m.Interceptor(), allow.Interceptor(callerauth.HeaderSource())))
 
 	mux := http.NewServeMux()
 	mux.Handle(path, handler)
@@ -158,24 +154,24 @@ func run(log *slog.Logger) error {
 	})
 
 	// h2c serves HTTP/2 without TLS for traffic from the mesh sidecar, which terminates mTLS.
-	srv := &http.Server{
-		Addr:              s.listen,
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	errc := make(chan error, 1)
-	go func() {
-		log.Info("ledger gateway listening", "addr", s.listen, "store", s.store, "publisher", s.publisher)
-		errc <- srv.ListenAndServe()
-	}()
-	select {
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "ledger-gateway-bank")
+	if err != nil {
 		return err
-	case <-ctx.Done():
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	if err := serve.RefuseInProduction(serve.Switch{Name: "LEDGER_STORE=memory", Set: getenv("LEDGER_STORE", "tigerbeetle") == "memory"}); err != nil {
+		return err
+	}
+	tlsCfg, err := serve.FromEnv(s.listen)
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("ledger gateway listening", "addr", s.listen, "store", s.store, "publisher", s.publisher)
+	return serve.Run(ctx, srv, log)
 }
 
 func openStore(s settings, log *slog.Logger) (ledger.Store, func(), error) {

@@ -2,10 +2,23 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/service"
+	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/store"
+	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/workflow"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,22 +26,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/service"
-	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/store"
-	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/workflow"
 )
 
 func main() {
@@ -40,6 +37,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -95,7 +96,7 @@ func run(log *slog.Logger) error {
 	}
 	defer tc.Close()
 
-	payments := workflow.ConnectPayments{Client: paymentsv1connect.NewPaymentsServiceClient(http.DefaultClient, paymentsURL, callerAs("svc-payouts"))}
+	payments := workflow.ConnectPayments{Client: paymentsv1connect.NewPaymentsServiceClient(outbound, paymentsURL, callerAs("svc-payouts"))}
 	acts := &workflow.Activities{Pool: pool, Payments: payments}
 
 	w := worker.New(tc, taskQueue, worker.Options{})
@@ -107,7 +108,7 @@ func run(log *slog.Logger) error {
 	}
 	defer w.Stop()
 
-	owners := consolidatedOwners{client: consolidatedv1connect.NewConsolidatedViewServiceClient(http.DefaultClient, consolidatedURL, callerAs("svc-payouts"))}
+	owners := consolidatedOwners{client: consolidatedv1connect.NewConsolidatedViewServiceClient(outbound, consolidatedURL, callerAs("svc-payouts"))}
 	svc := &service.Service{
 		Pool:   pool,
 		Owners: owners,
@@ -118,7 +119,7 @@ func run(log *slog.Logger) error {
 	}
 
 	mux := http.NewServeMux()
-	path, handler := payoutsv1connect.NewPayoutsServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+	path, handler := payoutsv1connect.NewPayoutsServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -128,20 +129,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{
-		Addr: getenv("PAYOUTS_ADDR", ":8200"), Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second,
-	}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("payouts-service listening", "addr", srv.Addr, "task_queue", taskQueue)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "payouts-service")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("PAYOUTS_ADDR", ":8200"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("payouts-service listening", "addr", srv.Addr, "task_queue", taskQueue)
+	return serve.Run(ctx, srv, log)
 }
 
 // consolidatedOwners asks the consolidated view which accounts a party owns.

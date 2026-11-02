@@ -2,10 +2,23 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
+	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/rates"
+	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/saga"
+	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/service"
+	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,22 +26,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
-	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
-	"github.com/khayaai/forge-mutual/pkg/callerauth"
-	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
-	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/rates"
-	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/saga"
-	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/service"
-	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/store"
 )
 
 func main() {
@@ -40,6 +37,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -87,7 +88,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	ledger := ledgerv1connect.NewLedgerServiceClient(http.DefaultClient, ledgerURL, callerAs("svc-fx"))
+	ledger := ledgerv1connect.NewLedgerServiceClient(outbound, ledgerURL, callerAs("svc-fx"))
 	accounts := func(ctx context.Context, asset string) (string, string, error) {
 		p, err := systemaccounts.Ensure(ctx, ledger, "BANK", asset, 2003, "system:fx-pool:"+asset+":v1")
 		if err != nil {
@@ -97,7 +98,7 @@ func run(log *slog.Logger) error {
 		return p, f, err
 	}
 	sg := &saga.Saga{Pool: pool, Ledger: ledger, Entity: "BANK", Accounts: accounts}
-	owners := consolidatedOwners{client: consolidatedv1connect.NewConsolidatedViewServiceClient(http.DefaultClient, consolidatedURL, callerAs("svc-fx"))}
+	owners := consolidatedOwners{client: consolidatedv1connect.NewConsolidatedViewServiceClient(outbound, consolidatedURL, callerAs("svc-fx"))}
 
 	go func() {
 		tick := time.NewTicker(resumeEvery)
@@ -129,7 +130,7 @@ func run(log *slog.Logger) error {
 		Owners: owners, Saga: sg,
 	}
 	mux := http.NewServeMux()
-	path, handler := fxv1connect.NewFXServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
+	path, handler := fxv1connect.NewFXServiceHandler(svc, connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -139,18 +140,21 @@ func run(log *slog.Logger) error {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	srv := &http.Server{Addr: getenv("FX_ADDR", ":8100"), Handler: h2c.NewHandler(mux, &http2.Server{}), ReadHeaderTimeout: 5 * time.Second}
-	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("fx-service listening", "addr", srv.Addr, "spread_bps", spread)
-	select {
-	case <-ctx.Done():
-	case err := <-errc:
+	stopTracing, err := serve.InitTracing(ctx, "fx-service")
+	if err != nil {
 		return err
 	}
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	defer func() { _ = stopTracing(context.Background()) }()
+	tlsCfg, err := serve.FromEnv(getenv("FX_ADDR", ":8100"))
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, mux, log)
+	if err != nil {
+		return err
+	}
+	log.Info("fx-service listening", "addr", srv.Addr, "spread_bps", spread)
+	return serve.Run(ctx, srv, log)
 }
 
 // consolidatedOwners asks the consolidated view which accounts a party owns.
