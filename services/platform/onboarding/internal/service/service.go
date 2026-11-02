@@ -47,6 +47,7 @@ type Service struct {
 	tc        Temporal
 	kyc       kyc.Provider
 	taskQueue string
+	reviews   ReviewQueue
 }
 
 var (

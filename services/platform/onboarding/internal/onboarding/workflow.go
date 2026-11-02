@@ -12,6 +12,7 @@ import (
 // Signal and query names.
 const (
 	SignalKYCResult = "kyc-result"
+	SignalKYCReview = "kyc-review"
 	QueryStatus     = "status"
 )
 
@@ -54,6 +55,14 @@ type KYCSignal struct {
 	SubjectPartyID string
 	Verdict        string // APPROVED or DECLINED
 	SessionID      string
+}
+
+// KYCReviewSignal is delivered when a person decides a review the provider could not decide.
+type KYCReviewSignal struct {
+	SubjectPartyID string
+	Decision       string // APPROVED or DECLINED
+	Reviewer       string
+	Note           string
 }
 
 // Status is the workflow's state. It is returned as the final result and by the status query.
@@ -144,26 +153,56 @@ func OnboardBusiness(ctx workflow.Context, in Input) (Status, error) {
 		pending[id] = true
 	}
 	signals := workflow.GetSignalChannel(ctx, SignalKYCResult)
+	reviews := workflow.GetSignalChannel(ctx, SignalKYCReview)
 	kycTimeout := KYCTimeout
 	if in.KYCTimeoutSeconds > 0 {
 		kycTimeout = time.Duration(in.KYCTimeoutSeconds) * time.Second
 	}
 	timer := workflow.NewTimer(ctx, kycTimeout)
+	inReview := map[string]bool{} // subjects a person is deciding
 	for len(pending) > 0 {
 		var sig KYCSignal
-		timedOut := false
+		var rev KYCReviewSignal
+		gotVerdict, gotReview, timedOut := false, false, false
 		sel := workflow.NewSelector(ctx)
-		sel.AddReceive(signals, func(c workflow.ReceiveChannel, _ bool) { c.Receive(ctx, &sig) })
+		sel.AddReceive(signals, func(c workflow.ReceiveChannel, _ bool) { c.Receive(ctx, &sig); gotVerdict = true })
+		sel.AddReceive(reviews, func(c workflow.ReceiveChannel, _ bool) { c.Receive(ctx, &rev); gotReview = true })
 		sel.AddFuture(timer, func(workflow.Future) { timedOut = true })
 		sel.Select(ctx)
 		if timedOut {
 			return decline("kyc_timeout")
+		}
+		if gotReview {
+			// A decision counts only for a subject a person is reviewing. Anything else is ignored.
+			if !inReview[rev.SubjectPartyID] {
+				continue
+			}
+			switch rev.Decision {
+			case "DECLINED":
+				return decline("kyc_review_declined:" + rev.SubjectPartyID)
+			case "APPROVED":
+				delete(pending, rev.SubjectPartyID)
+				delete(inReview, rev.SubjectPartyID)
+			}
+			continue
+		}
+		if !gotVerdict {
+			continue
 		}
 		switch sig.Verdict {
 		case "DECLINED":
 			return decline("kyc_declined:" + sig.SubjectPartyID)
 		case "APPROVED":
 			delete(pending, sig.SubjectPartyID)
+		case "REVIEW":
+			// The provider cannot decide, so a person must. The application waits for them under the same timeout.
+			if !pending[sig.SubjectPartyID] || inReview[sig.SubjectPartyID] {
+				continue
+			}
+			if err := workflow.ExecuteActivity(actx, acts.OpenKYCReview, in, sig.SubjectPartyID).Get(actx, nil); err != nil {
+				return fail(err)
+			}
+			inReview[sig.SubjectPartyID] = true
 		}
 	}
 	st.Steps = append(st.Steps, "kyc_approved")

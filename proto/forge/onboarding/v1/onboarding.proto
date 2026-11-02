@@ -8,6 +8,10 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1
 service OnboardingService {
   rpc StartBusinessOnboarding(StartBusinessOnboardingRequest) returns (StartBusinessOnboardingResponse);
   rpc GetOnboarding(GetOnboardingRequest) returns (GetOnboardingResponse);
+  // ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
+  rpc ListKYCReviews(ListKYCReviewsRequest) returns (ListKYCReviewsResponse);
+  // DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
+  rpc DecideKYCReview(DecideKYCReviewRequest) returns (DecideKYCReviewResponse);
 }
 
 message Director {
@@ -56,4 +60,36 @@ message OnboardingStatus {
 
 message GetOnboardingResponse {
   OnboardingStatus status = 1;
+}
+
+message KYCReview {
+  string review_id = 1;
+  string onboarding_id = 2;
+  string subject_party_id = 3;
+  string reason = 4;
+  string status = 5;       // OPEN or DECIDED
+  string opened_at = 6;    // RFC 3339
+  string decision = 7;     // APPROVED or DECLINED once decided
+  string reviewer = 8;
+  string note = 9;
+  string decided_at = 10;  // RFC 3339
+}
+
+message ListKYCReviewsRequest {
+  bool open_only = 1;
+}
+
+message ListKYCReviewsResponse {
+  repeated KYCReview reviews = 1;
+}
+
+message DecideKYCReviewRequest {
+  string review_id = 1;
+  string decision = 2; // APPROVED or DECLINED
+  string reviewer = 3;
+  string note = 4;     // at least 20 characters: what was checked and why
+}
+
+message DecideKYCReviewResponse {
+  KYCReview review = 1;
 }

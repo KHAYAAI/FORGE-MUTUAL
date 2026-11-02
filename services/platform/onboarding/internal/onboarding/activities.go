@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"connectrpc.com/connect"
 	"go.temporal.io/sdk/temporal"
@@ -20,6 +21,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/screening"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/store"
 )
 
 // ProspectsResult carries the party IDs created in the first step.
@@ -45,6 +47,16 @@ type Activities struct {
 	Screener        screening.Screener
 	InsuredDeposits bool   // whether customer deposit accounts are marked insured (VERIFY CODI)
 	PolicyEntity    string // entity code for policy decisions made on behalf of onboarding
+	Reviews         *store.Store
+}
+
+// OpenKYCReview queues a subject's verification for a person to decide. A repeat returns the open review.
+func (a *Activities) OpenKYCReview(ctx context.Context, in Input, subjectID string) error {
+	if a.Reviews == nil {
+		return errors.New("onboarding: no review store configured")
+	}
+	_, err := a.Reviews.OpenReview(ctx, in.OnboardingID, subjectID, "provider could not decide", time.Now())
+	return err
 }
 
 // CreateProspects creates the company and each director as PROSPECT parties. The keys are derived from

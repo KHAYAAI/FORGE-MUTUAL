@@ -22,9 +22,10 @@ import (
 // fakeTemporal records starts and signals in memory. A second start of the same ID is refused as
 // already started, as the Temporal server does with REJECT_DUPLICATE.
 type fakeTemporal struct {
-	started   map[string]onboarding.Input
-	signals   []onboarding.KYCSignal
-	signalErr error
+	started       map[string]onboarding.Input
+	signals       []onboarding.KYCSignal
+	reviewSignals []onboarding.KYCReviewSignal
+	signalErr     error
 }
 
 func newFakeTemporal() *fakeTemporal { return &fakeTemporal{started: map[string]onboarding.Input{}} }
@@ -44,7 +45,12 @@ func (f *fakeTemporal) SignalWorkflow(_ context.Context, workflowID, _, _ string
 	if _, ok := f.started[workflowID]; !ok {
 		return serviceerror.NewNotFound("workflow not found")
 	}
-	f.signals = append(f.signals, arg.(onboarding.KYCSignal))
+	switch v := arg.(type) {
+	case onboarding.KYCSignal:
+		f.signals = append(f.signals, v)
+	case onboarding.KYCReviewSignal:
+		f.reviewSignals = append(f.reviewSignals, v)
+	}
 	return nil
 }
 

@@ -86,7 +86,8 @@ func verify(secret, body []byte, signature string) (Event, error) {
 	if err := json.Unmarshal(body, &ev); err != nil {
 		return Event{}, fmt.Errorf("kyc: webhook body: %w", err)
 	}
-	if ev.Verdict != "APPROVED" && ev.Verdict != "DECLINED" {
+	// REVIEW means the provider cannot decide: a person must (see the onboarding workflow).
+	if ev.Verdict != "APPROVED" && ev.Verdict != "DECLINED" && ev.Verdict != "REVIEW" {
 		return Event{}, fmt.Errorf("kyc: unknown verdict %q", ev.Verdict)
 	}
 	return ev, nil

@@ -32,6 +32,9 @@ export default function Nav() {
             <Link href="/payments/lookup" className="text-stone-700 hover:text-stone-950">
               Payments
             </Link>
+            <Link href="/kyc" className="text-stone-700 hover:text-stone-950">
+              KYC
+            </Link>
             <span className="text-stone-700" data-testid="staff-name">
               {staff.name}
             </span>

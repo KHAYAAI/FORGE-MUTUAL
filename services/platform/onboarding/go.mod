@@ -14,6 +14,8 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
+require github.com/jackc/puddle/v2 v2.2.2 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect

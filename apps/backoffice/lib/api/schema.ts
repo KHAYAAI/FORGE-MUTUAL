@@ -174,10 +174,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/kyc/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KYC reviews a person must decide. Open only by default. */
+        get: operations["listKycReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/kyc/reviews/{review}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a KYC review. The onboarding resumes on approval and ends on decline. Requires the compliance role; the reviewer is the signed-in person. */
+        post: operations["decideKycReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        KycReview: {
+            review_id: string;
+            onboarding_id?: string;
+            subject_party_id?: string;
+            reason?: string;
+            /** @enum {string} */
+            status: "OPEN" | "DECIDED";
+            opened_at?: string;
+            /** @enum {string} */
+            decision?: "" | "APPROVED" | "DECLINED";
+            reviewer?: string;
+            note?: string;
+            decided_at?: string;
+        };
+        KycDecisionRequest: {
+            /** @enum {string} */
+            decision: "APPROVED" | "DECLINED";
+            /** @description What was checked and why. */
+            note: string;
+        };
         Error: {
             error: {
                 code: string;
@@ -527,6 +581,59 @@ export interface operations {
                 };
             };
             403: components["responses"]["Error"];
+        };
+    };
+    listKycReviews: {
+        parameters: {
+            query?: {
+                open_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reviews, oldest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reviews: components["schemas"]["KycReview"][];
+                    };
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    decideKycReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                review: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KycDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided review. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KycReview"];
+                };
+            };
+            403: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
 }

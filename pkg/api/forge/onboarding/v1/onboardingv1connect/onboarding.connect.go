@@ -41,12 +41,22 @@ const (
 	// OnboardingServiceGetOnboardingProcedure is the fully-qualified name of the OnboardingService's
 	// GetOnboarding RPC.
 	OnboardingServiceGetOnboardingProcedure = "/forge.onboarding.v1.OnboardingService/GetOnboarding"
+	// OnboardingServiceListKYCReviewsProcedure is the fully-qualified name of the OnboardingService's
+	// ListKYCReviews RPC.
+	OnboardingServiceListKYCReviewsProcedure = "/forge.onboarding.v1.OnboardingService/ListKYCReviews"
+	// OnboardingServiceDecideKYCReviewProcedure is the fully-qualified name of the OnboardingService's
+	// DecideKYCReview RPC.
+	OnboardingServiceDecideKYCReviewProcedure = "/forge.onboarding.v1.OnboardingService/DecideKYCReview"
 )
 
 // OnboardingServiceClient is a client for the forge.onboarding.v1.OnboardingService service.
 type OnboardingServiceClient interface {
 	StartBusinessOnboarding(context.Context, *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error)
 	GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error)
+	// ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
+	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
+	// DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
+	DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error)
 }
 
 // NewOnboardingServiceClient constructs a client for the forge.onboarding.v1.OnboardingService
@@ -72,6 +82,18 @@ func NewOnboardingServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(onboardingServiceMethods.ByName("GetOnboarding")),
 			connect.WithClientOptions(opts...),
 		),
+		listKYCReviews: connect.NewClient[v1.ListKYCReviewsRequest, v1.ListKYCReviewsResponse](
+			httpClient,
+			baseURL+OnboardingServiceListKYCReviewsProcedure,
+			connect.WithSchema(onboardingServiceMethods.ByName("ListKYCReviews")),
+			connect.WithClientOptions(opts...),
+		),
+		decideKYCReview: connect.NewClient[v1.DecideKYCReviewRequest, v1.DecideKYCReviewResponse](
+			httpClient,
+			baseURL+OnboardingServiceDecideKYCReviewProcedure,
+			connect.WithSchema(onboardingServiceMethods.ByName("DecideKYCReview")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -79,6 +101,8 @@ func NewOnboardingServiceClient(httpClient connect.HTTPClient, baseURL string, o
 type onboardingServiceClient struct {
 	startBusinessOnboarding *connect.Client[v1.StartBusinessOnboardingRequest, v1.StartBusinessOnboardingResponse]
 	getOnboarding           *connect.Client[v1.GetOnboardingRequest, v1.GetOnboardingResponse]
+	listKYCReviews          *connect.Client[v1.ListKYCReviewsRequest, v1.ListKYCReviewsResponse]
+	decideKYCReview         *connect.Client[v1.DecideKYCReviewRequest, v1.DecideKYCReviewResponse]
 }
 
 // StartBusinessOnboarding calls forge.onboarding.v1.OnboardingService.StartBusinessOnboarding.
@@ -91,11 +115,25 @@ func (c *onboardingServiceClient) GetOnboarding(ctx context.Context, req *connec
 	return c.getOnboarding.CallUnary(ctx, req)
 }
 
+// ListKYCReviews calls forge.onboarding.v1.OnboardingService.ListKYCReviews.
+func (c *onboardingServiceClient) ListKYCReviews(ctx context.Context, req *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error) {
+	return c.listKYCReviews.CallUnary(ctx, req)
+}
+
+// DecideKYCReview calls forge.onboarding.v1.OnboardingService.DecideKYCReview.
+func (c *onboardingServiceClient) DecideKYCReview(ctx context.Context, req *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error) {
+	return c.decideKYCReview.CallUnary(ctx, req)
+}
+
 // OnboardingServiceHandler is an implementation of the forge.onboarding.v1.OnboardingService
 // service.
 type OnboardingServiceHandler interface {
 	StartBusinessOnboarding(context.Context, *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error)
 	GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error)
+	// ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
+	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
+	// DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
+	DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error)
 }
 
 // NewOnboardingServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -117,12 +155,28 @@ func NewOnboardingServiceHandler(svc OnboardingServiceHandler, opts ...connect.H
 		connect.WithSchema(onboardingServiceMethods.ByName("GetOnboarding")),
 		connect.WithHandlerOptions(opts...),
 	)
+	onboardingServiceListKYCReviewsHandler := connect.NewUnaryHandler(
+		OnboardingServiceListKYCReviewsProcedure,
+		svc.ListKYCReviews,
+		connect.WithSchema(onboardingServiceMethods.ByName("ListKYCReviews")),
+		connect.WithHandlerOptions(opts...),
+	)
+	onboardingServiceDecideKYCReviewHandler := connect.NewUnaryHandler(
+		OnboardingServiceDecideKYCReviewProcedure,
+		svc.DecideKYCReview,
+		connect.WithSchema(onboardingServiceMethods.ByName("DecideKYCReview")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.onboarding.v1.OnboardingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OnboardingServiceStartBusinessOnboardingProcedure:
 			onboardingServiceStartBusinessOnboardingHandler.ServeHTTP(w, r)
 		case OnboardingServiceGetOnboardingProcedure:
 			onboardingServiceGetOnboardingHandler.ServeHTTP(w, r)
+		case OnboardingServiceListKYCReviewsProcedure:
+			onboardingServiceListKYCReviewsHandler.ServeHTTP(w, r)
+		case OnboardingServiceDecideKYCReviewProcedure:
+			onboardingServiceDecideKYCReviewHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -138,4 +192,12 @@ func (UnimplementedOnboardingServiceHandler) StartBusinessOnboarding(context.Con
 
 func (UnimplementedOnboardingServiceHandler) GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.GetOnboarding is not implemented"))
+}
+
+func (UnimplementedOnboardingServiceHandler) ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.ListKYCReviews is not implemented"))
+}
+
+func (UnimplementedOnboardingServiceHandler) DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.DecideKYCReview is not implemented"))
 }

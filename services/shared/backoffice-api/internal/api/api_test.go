@@ -14,6 +14,8 @@ import (
 
 	casesv1 "github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	onboardingv1 "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	paymentsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	reconv1 "github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1"
@@ -105,19 +107,41 @@ func (f *fakeRecon) InvestigateBreak(_ context.Context, req *connect.Request[rec
 	return connect.NewResponse(&reconv1.InvestigateBreakResponse{Break: &reconv1.Break{BreakId: req.Msg.BreakId, InvestigatedBy: "x"}}), nil
 }
 
+type fakeOnboarding struct {
+	onboardingv1connect.OnboardingServiceClient
+	listed    *onboardingv1.ListKYCReviewsRequest
+	decided   *onboardingv1.DecideKYCReviewRequest
+	decideErr error
+}
+
+func (f *fakeOnboarding) ListKYCReviews(_ context.Context, req *connect.Request[onboardingv1.ListKYCReviewsRequest]) (*connect.Response[onboardingv1.ListKYCReviewsResponse], error) {
+	f.listed = req.Msg
+	return connect.NewResponse(&onboardingv1.ListKYCReviewsResponse{Reviews: []*onboardingv1.KYCReview{{ReviewId: "r-1", Status: "OPEN"}}}), nil
+}
+
+func (f *fakeOnboarding) DecideKYCReview(_ context.Context, req *connect.Request[onboardingv1.DecideKYCReviewRequest]) (*connect.Response[onboardingv1.DecideKYCReviewResponse], error) {
+	f.decided = req.Msg
+	if f.decideErr != nil {
+		return nil, f.decideErr
+	}
+	return connect.NewResponse(&onboardingv1.DecideKYCReviewResponse{Review: &onboardingv1.KYCReview{ReviewId: req.Msg.ReviewId, Status: "DECIDED", Decision: req.Msg.Decision}}), nil
+}
+
 type rig struct {
-	h        http.Handler
-	cases    *fakeCases
-	payments *fakePayments
-	recon    *fakeRecon
+	h          http.Handler
+	cases      *fakeCases
+	payments   *fakePayments
+	recon      *fakeRecon
+	onboarding *fakeOnboarding
 }
 
 func newRig() *rig {
 	c := &fakeCases{}
 	p := &fakePayments{}
 	rc := &fakeRecon{}
-	a := &API{Auth: fakeAuth{}, Services: Services{Cases: c, Payments: p, Recon: rc}}
-	return &rig{h: a.Handler(), cases: c, payments: p, recon: rc}
+	ob := &fakeOnboarding{}
+	a := &API{Auth: fakeAuth{}, Services: Services{Cases: c, Payments: p, Recon: rc, Onboarding: ob}}
+	return &rig{h: a.Handler(), cases: c, payments: p, recon: rc, onboarding: ob}
 }
 
 func (r *rig) do(t *testing.T, method, path, name, roles string, body any) *httptest.ResponseRecorder {
@@ -317,5 +341,48 @@ func TestBreaksDefaultToOpen(t *testing.T) {
 	r.do(t, "GET", "/v1/recon/breaks?open_only=false", "Sipho", ops, nil)
 	if r.recon.listed.OpenOnly {
 		t.Fatal("open_only=false must list all breaks")
+	}
+}
+
+const reviewNote = "Checked the register extract and the ID document against the applicant."
+
+// Deciding a KYC review is a compliance decision. An operations person is refused before onboarding is asked.
+func TestOperationsCannotDecideAKYCReview(t *testing.T) {
+	r := newRig()
+	rec := r.do(t, "POST", "/v1/kyc/reviews/r-1/decision", "Sipho", ops, map[string]any{"decision": "APPROVED", "note": reviewNote})
+	if rec.Code != http.StatusForbidden || r.onboarding.decided != nil {
+		t.Fatalf("status %d; the onboarding service must not be asked", rec.Code)
+	}
+}
+
+// The reviewer is the signed-in person. A body that names a reviewer is refused, not used.
+func TestKYCReviewerComesFromTheSession(t *testing.T) {
+	r := newRig()
+	rec := r.do(t, "POST", "/v1/kyc/reviews/r-1/decision", "Naledi", comp, map[string]any{
+		"decision": "APPROVED", "note": reviewNote, "reviewer": "someone-else"})
+	if rec.Code != http.StatusBadRequest || r.onboarding.decided != nil {
+		t.Fatalf("a body with a reviewer: status %d", rec.Code)
+	}
+	rec = r.do(t, "POST", "/v1/kyc/reviews/r-1/decision", "Naledi", comp, map[string]any{"decision": "APPROVED", "note": reviewNote})
+	if rec.Code != http.StatusOK || r.onboarding.decided.Reviewer != "Naledi" || r.onboarding.decided.ReviewId != "r-1" {
+		t.Fatalf("status %d, forwarded %+v", rec.Code, r.onboarding.decided)
+	}
+}
+
+// A refusal from onboarding reaches the client with its meaning: a decided review is a precondition failure.
+func TestDecidedKYCReviewIsAConflict(t *testing.T) {
+	r := newRig()
+	r.onboarding.decideErr = connect.NewError(connect.CodeFailedPrecondition, errors.New("the review is already decided"))
+	rec := r.do(t, "POST", "/v1/kyc/reviews/r-1/decision", "Naledi", comp, map[string]any{"decision": "DECLINED", "note": reviewNote})
+	if rec.Code != http.StatusConflict || errorCode(t, rec) != "failed_precondition" {
+		t.Fatalf("status %d code %s, want 409", rec.Code, errorCode(t, rec))
+	}
+}
+
+func TestKYCReviewListDefaultsToOpen(t *testing.T) {
+	r := newRig()
+	rec := r.do(t, "GET", "/v1/kyc/reviews", "Sipho", ops, nil)
+	if rec.Code != http.StatusOK || r.onboarding.listed == nil || !r.onboarding.listed.OpenOnly {
+		t.Fatalf("status %d, request %+v", rec.Code, r.onboarding.listed)
 	}
 }

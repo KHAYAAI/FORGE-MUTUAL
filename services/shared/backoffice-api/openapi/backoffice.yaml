@@ -216,6 +216,59 @@ paths:
                 $ref: "#/components/schemas/Break"
         "403":
           $ref: "#/components/responses/Error"
+  /v1/kyc/reviews:
+    get:
+      operationId: listKycReviews
+      summary: KYC reviews a person must decide. Open only by default.
+      parameters:
+        - name: open_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Reviews, oldest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reviews]
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/KycReview"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/kyc/reviews/{review}/decision:
+    post:
+      operationId: decideKycReview
+      summary: "Decide a KYC review. The onboarding resumes on approval and ends on decline. Requires the compliance role; the reviewer is the signed-in person."
+      parameters:
+        - name: review
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycDecisionRequest"
+      responses:
+        "200":
+          description: The decided review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KycReview"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     CaseId:
@@ -240,6 +293,44 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
   schemas:
+    KycReview:
+      type: object
+      required: [review_id, status]
+      properties:
+        review_id:
+          type: string
+        onboarding_id:
+          type: string
+        subject_party_id:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, DECIDED]
+        opened_at:
+          type: string
+        decision:
+          type: string
+          enum: ["", APPROVED, DECLINED]
+        reviewer:
+          type: string
+        note:
+          type: string
+        decided_at:
+          type: string
+    KycDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision, note]
+      properties:
+        decision:
+          type: string
+          enum: [APPROVED, DECLINED]
+        note:
+          type: string
+          minLength: 20
+          description: What was checked and why.
     Error:
       type: object
       required: [error]

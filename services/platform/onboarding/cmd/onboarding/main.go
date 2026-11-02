@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"golang.org/x/net/http2"
@@ -32,6 +33,7 @@ import (
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/service"
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/store"
 )
 
 // callerAs stamps the outgoing requests with this service's identity.
@@ -69,6 +71,20 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return errors.New("DATABASE_URL is required: KYC reviews are kept in Postgres")
+	}
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	reviews, err := store.Open(ctx, pool)
+	if err != nil {
+		return err
+	}
+
 	hostPort := getenv("TEMPORAL_HOST", "localhost:7233")
 	tc, err := client.Dial(client.Options{HostPort: hostPort, Namespace: getenv("TEMPORAL_NAMESPACE", "default")})
 	if err != nil {
@@ -95,6 +111,7 @@ func run(log *slog.Logger) error {
 		Screener:        scr,
 		InsuredDeposits: os.Getenv("INSURED_DEPOSITS") == "true",
 		PolicyEntity:    getenv("POLICY_ENTITY", "PLAT"),
+		Reviews:         reviews,
 	}
 
 	w := worker.New(tc, taskQueue, worker.Options{})
@@ -105,7 +122,7 @@ func run(log *slog.Logger) error {
 	}
 	defer w.Stop()
 
-	svc := service.New(tc, provider, taskQueue)
+	svc := service.New(tc, provider, taskQueue).WithReviews(reviews)
 	path, handler := onboardingv1connect.NewOnboardingServiceHandler(svc,
 		connect.WithInterceptors(callers.Interceptor(callerauth.DefaultHeader)))
 	mux := http.NewServeMux()

@@ -16,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
@@ -47,7 +48,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	urls := map[string]string{}
-	for _, name := range []string{"CASES_URL", "PAYMENTS_URL", "RECON_URL"} {
+	for _, name := range []string{"CASES_URL", "PAYMENTS_URL", "RECON_URL", "ONBOARDING_URL"} {
 		v := os.Getenv(name)
 		if v == "" {
 			return fmt.Errorf("%s is required", name)
@@ -58,9 +59,10 @@ func run(log *slog.Logger) error {
 	h := &api.API{
 		Auth: authn,
 		Services: api.Services{
-			Cases:    casesv1connect.NewCasesServiceClient(http.DefaultClient, urls["CASES_URL"], caller()),
-			Payments: paymentsv1connect.NewPaymentsServiceClient(http.DefaultClient, urls["PAYMENTS_URL"], caller()),
-			Recon:    reconv1connect.NewReconServiceClient(http.DefaultClient, urls["RECON_URL"], caller()),
+			Cases:      casesv1connect.NewCasesServiceClient(http.DefaultClient, urls["CASES_URL"], caller()),
+			Payments:   paymentsv1connect.NewPaymentsServiceClient(http.DefaultClient, urls["PAYMENTS_URL"], caller()),
+			Recon:      reconv1connect.NewReconServiceClient(http.DefaultClient, urls["RECON_URL"], caller()),
+			Onboarding: onboardingv1connect.NewOnboardingServiceClient(http.DefaultClient, urls["ONBOARDING_URL"], caller()),
 		},
 	}
 	srv := &http.Server{

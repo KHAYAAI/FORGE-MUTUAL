@@ -14,6 +14,8 @@ import (
 
 	casesv1 "github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	onboardingv1 "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	paymentsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	reconv1 "github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1"
@@ -39,9 +41,10 @@ type Authenticator interface {
 
 // Services are the downstream clients the back office calls.
 type Services struct {
-	Cases    casesv1connect.CasesServiceClient
-	Payments paymentsv1connect.PaymentsServiceClient
-	Recon    reconv1connect.ReconServiceClient
+	Cases      casesv1connect.CasesServiceClient
+	Payments   paymentsv1connect.PaymentsServiceClient
+	Recon      reconv1connect.ReconServiceClient
+	Onboarding onboardingv1connect.OnboardingServiceClient
 }
 
 // API serves the back-office routes.
@@ -63,6 +66,8 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/recon/gate", a.staff(a.getGate))
 	mux.HandleFunc("GET /v1/recon/breaks", a.staff(a.listBreaks))
 	mux.HandleFunc("POST /v1/recon/breaks/{break}/investigate", a.staff(needRole(RoleOperations, a.investigate)))
+	mux.HandleFunc("GET /v1/kyc/reviews", a.staff(a.listKYCReviews))
+	mux.HandleFunc("POST /v1/kyc/reviews/{review}/decision", a.staff(needRole(RoleCompliance, a.decideKYCReview)))
 	return mux
 }
 
@@ -371,4 +376,61 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// ---- KYC reviews ----
+
+type reviewJSON struct {
+	ReviewID       string `json:"review_id"`
+	OnboardingID   string `json:"onboarding_id"`
+	SubjectPartyID string `json:"subject_party_id"`
+	Reason         string `json:"reason"`
+	Status         string `json:"status"`
+	OpenedAt       string `json:"opened_at"`
+	Decision       string `json:"decision"`
+	Reviewer       string `json:"reviewer"`
+	Note           string `json:"note"`
+	DecidedAt      string `json:"decided_at"`
+}
+
+func reviewOut(r *onboardingv1.KYCReview) reviewJSON {
+	return reviewJSON{
+		ReviewID: r.ReviewId, OnboardingID: r.OnboardingId, SubjectPartyID: r.SubjectPartyId, Reason: r.Reason,
+		Status: r.Status, OpenedAt: r.OpenedAt, Decision: r.Decision, Reviewer: r.Reviewer, Note: r.Note, DecidedAt: r.DecidedAt,
+	}
+}
+
+func (a *API) listKYCReviews(w http.ResponseWriter, r *http.Request, s Session) {
+	openOnly := r.URL.Query().Get("open_only") != "false"
+	res, err := a.Services.Onboarding.ListKYCReviews(r.Context(), connect.NewRequest(&onboardingv1.ListKYCReviewsRequest{OpenOnly: openOnly}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	out := make([]reviewJSON, 0, len(res.Msg.Reviews))
+	for _, rv := range res.Msg.Reviews {
+		out = append(out, reviewOut(rv))
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"reviews": out})
+}
+
+type decisionRequest struct {
+	Decision string `json:"decision"`
+	Note     string `json:"note"`
+}
+
+// decideKYCReview records a person's decision on a review. The reviewer is the signed-in person, never the body.
+func (a *API) decideKYCReview(w http.ResponseWriter, r *http.Request, s Session) {
+	var req decisionRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	res, err := a.Services.Onboarding.DecideKYCReview(r.Context(), connect.NewRequest(&onboardingv1.DecideKYCReviewRequest{
+		ReviewId: r.PathValue("review"), Decision: req.Decision, Reviewer: s.Actor, Note: req.Note,
+	}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, reviewOut(res.Msg.Review))
 }
