@@ -10,8 +10,8 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 ## Built and tested
 
 Each service is its own Go module. `make ci-db` creates throwaway databases on the compose Postgres 17, then runs the
-full gate: lint, every module's tests against real Postgres and a real Kafka broker, and the isolation check. It passes
-with 49 packages and no skipped tests.
+full gate: lint, every module's tests against real Postgres and a real Kafka broker, and the isolation check. Every
+database-backed suite runs; the only opt-in suite is the live Fineract test, which needs `FINERACT_TEST_URL`.
 
 - **Ledger gateway** (`services/bank/ledger-gateway-bank`): the only writer to the bank ledger. Linked transfer chains,
   pending, post and void, idempotency, transactional outbox, and `ListAccounts` over the account directory. Passes one
@@ -60,6 +60,12 @@ with 49 packages and no skipped tests.
   item is sent to payments under a key derived from the batch and the item, so a retry or a resume cannot pay it twice. A
   refused item is final; an unreachable one is marked uncertain and sent again on resume. Tested against Postgres and in
   Temporal's test environment. **Not yet run against a Temporal server** (see its SPEC).
+- **Workspace API** (`services/platform/workspace-api`): the customer REST surface, with the OpenAPI contract in
+  `openapi/workspace.yaml`. The party comes from the session and request bodies are strict. Only development sign-in
+  exists. Tested with fake downstream clients; not yet run against the real services.
+- **Customer web app** (`apps/web`): accounts with entity and insurance on every balance, activity, payments, FX with a
+  disclosure that must be accepted, and bulk payouts with maker-checker. Fourteen Playwright journeys pass against the
+  production build, with the API mocked in the browser. Development sign-in only. See its SPEC.
 
 ## Partly built
 
@@ -72,11 +78,10 @@ with 49 packages and no skipped tests.
 
 ## Not started (v1 scope)
 
-Three services in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 are not started:
+One service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 is not started:
 
-- **workspace-api** (workspace): backend-for-frontend for the customer workspace.
-- **web**: customer workspace front end.
-- **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker).
+- **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker). It
+  also needs a compliance-engine API for cases, which does not exist yet.
 
 Also not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`, the customer
 USD account flow, and the Didit adapter beyond its stub.
