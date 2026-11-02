@@ -38,7 +38,8 @@ now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 sed -i -e '/^SCREENING_LIST_AS_OF=/d' -e '/^FX_RATE_AS_OF=/d' "$env_file"
 printf 'SCREENING_LIST_AS_OF=%s\nFX_RATE_AS_OF=%s\n' "$now" "$now" >> "$env_file"
 
-# Images: name, module path, command directory under cmd/.
+# Images: name, module path, command directory under cmd/, and CGO (1 only for the ledger: the TigerBeetle client
+# links a native library and its Go files are excluded without cgo).
 images=(
   "forge/party-service:dev services/platform/party-service party-service"
   "forge/consent-service:dev services/platform/consent-service consent-service"
@@ -47,7 +48,7 @@ images=(
   "forge/consolidated-view:dev services/platform/consolidated-view consolidated-view"
   "forge/notifications:dev services/platform/notifications notifications"
   "forge/audit-service:dev services/shared/audit-service audit-service"
-  "forge/ledger-gateway-bank:dev services/bank/ledger-gateway-bank ledger-gateway-bank"
+  "forge/ledger-gateway-bank:dev services/bank/ledger-gateway-bank ledger-gateway-bank 1"
   "forge/fx-service:dev services/bank/fx-service fx-service"
   "forge/rails-gateway:dev services/bank/rails-gateway rails-gateway"
   "forge/partner-bank-router:dev services/bank/partner-bank-router partner-bank-router"
@@ -63,11 +64,12 @@ images=(
 
 logs="$(mktemp -d)"
 build_one() {
-  local image module cmd
-  read -r image module cmd <<<"$1"
+  local image module cmd cgo
+  read -r image module cmd cgo <<<"$1"
+  cgo="${cgo:-0}"
   local log="$logs/$(echo "$image" | tr '/:' '__').log"
   if ! docker build --network host -f "$root/deploy/docker/service.Dockerfile" \
-      --build-arg MODULE="$module" --build-arg CMD="$cmd" -t "$image" "$root" >"$log" 2>&1; then
+      --build-arg MODULE="$module" --build-arg CMD="$cmd" --build-arg CGO_ENABLED="$cgo" -t "$image" "$root" >"$log" 2>&1; then
     echo "up: build failed for $image; log: $log" >&2
     return 1
   fi
