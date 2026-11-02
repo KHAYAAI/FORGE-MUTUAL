@@ -186,6 +186,9 @@ services:
       CONSOLIDATED_CALLERS_FILE: /stack/callers/consolidated.json
       CONSOLIDATED_ADDR: ":8096"
       CONSOLIDATED_ENTITY: BANK
+      # The reconciler names each account's owner (fail closed until it has). 15 minutes by default; the local
+      # stack runs it every 10 seconds so a journey sees a new account without waiting.
+      CONSOLIDATED_RECON_INTERVAL: 10s
       LEDGER_URL: http://127.0.0.1:8070
     volumes: ["./config/callers:/stack/callers:ro"]
 

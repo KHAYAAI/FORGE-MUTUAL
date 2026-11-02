@@ -91,6 +91,13 @@ test-web:
 test-backoffice-web:
 	cd apps/backoffice && npm ci && npm run typecheck && npm run build && npx playwright test
 
+# The customer and back-office journeys against the running local stack. Start the stack first with
+# deploy/compose/up.sh; this target does not start it, so a failure is a failure of the real services. Nothing is
+# mocked here. Not part of `make test`, which runs without the stack.
+test-stack:
+	cd apps/web && npm run build && npx playwright test -c playwright.stack.config.ts
+	cd apps/backoffice && npm run build && npx playwright test -c playwright.stack.config.ts
+
 # Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg).
 test-ledger:
 	cd $(GATEWAY) && $(GO) test -count=1 ./...

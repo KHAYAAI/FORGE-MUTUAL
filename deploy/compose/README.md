@@ -77,3 +77,24 @@ Not real, on purpose:
 `scripts/pg-backup.sh` and `scripts/pg-restore-check.sh` back up and verify a database on this stack. Use
 `PG_TOOLS_IMAGE=postgres:17` when the local client is a different major version, which is the normal case on a
 machine with an older `pg_dump`.
+
+## Journeys against the running stack
+
+```bash
+deploy/compose/up.sh && make test-stack
+```
+
+`make test-stack` runs two suites against the running services, with nothing mocked:
+
+- **Customer** (`apps/web/tests/stack`): a company is onboarded through the real onboarding workflow; the provider
+  approves its subjects; the account it opens is visible to the company in the workspace, and not to the director.
+- **Back office** (`apps/backoffice/tests/stack`): the provider's REVIEW verdict puts a review in the compliance
+  queue; a compliance person decides it in the app; the onboarding workflow resumes and completes.
+
+`deploy/compose/journeys/seed.cjs` does the seeding through the same APIs the apps use. It signs each provider webhook
+with the stack's secret from `.env`, as the provider would. Each journey creates its own company with a new,
+valid identity number, so the suites can run again without resetting the stack.
+
+Two settings differ from production on purpose: the consolidated view reconciles every ten seconds
+(`CONSOLIDATED_RECON_INTERVAL`, 15 minutes in production), so a new account appears in the workspace without a wait; and
+the ledger is in memory, so a restart of the ledger removes the accounts the journeys created.

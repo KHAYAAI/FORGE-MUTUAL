@@ -23,7 +23,7 @@ export default defineConfig({
   projects: [
     {
       name: "dev",
-      testIgnore: /oidc\//,
+      testIgnore: [/oidc\//, /stack\//],
       use: { ...devices["Desktop Chrome"], baseURL: `http://127.0.0.1:${DEV}` },
     },
     {
