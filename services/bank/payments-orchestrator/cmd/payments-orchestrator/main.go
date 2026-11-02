@@ -353,7 +353,10 @@ func startInbound(ctx context.Context, log *slog.Logger, st *store.Store, ledger
 	if err != nil {
 		return err
 	}
-	bank, err := bootstrap.Open(ctx, cfg, bootstrap.Options{Getenv: os.Getenv})
+	if err := serve.RefuseInProduction(serve.Switch{Name: "BANK_ALLOW_SIMULATION", Set: os.Getenv("BANK_ALLOW_SIMULATION") == "true"}); err != nil {
+		return fmt.Errorf("bank layer: %w", err)
+	}
+	bank, err := bootstrap.Open(ctx, cfg, bootstrap.Options{Getenv: os.Getenv, AllowSimulation: os.Getenv("BANK_ALLOW_SIMULATION") == "true"})
 	if err != nil {
 		return fmt.Errorf("inbound: bank layer: %w", err)
 	}

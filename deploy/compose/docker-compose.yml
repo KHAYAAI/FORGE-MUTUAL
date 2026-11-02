@@ -265,6 +265,7 @@ services:
       PARTNER_CALLERS_FILE: /stack/callers/partner.json
       PARTNER_ROUTER_ADDR: ":8099"
       PARTNER_COSTS_BPS: "sponsor=0"
+      BANK_ALLOW_SIMULATION: "true"
       BANK_CONFIG: /stack/banklayer.yaml
     volumes:
       - ./config/callers:/stack/callers:ro
@@ -287,6 +288,7 @@ services:
       PAYMENTS_CALLERS_FILE: /stack/callers/payments.json
       PAYMENTS_LISTEN: ":8085"
       PAYMENTS_ALLOW_SIMULATION: "true"
+      BANK_ALLOW_SIMULATION: "true"
       TEMPORAL_HOST: 127.0.0.1:7233
       TEMPORAL_NAMESPACE: default
       TEMPORAL_TASK_QUEUE: payments
@@ -335,6 +337,7 @@ services:
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/recon?sslmode=disable
       RECON_CALLERS_FILE: /stack/callers/recon.json
       RECON_ADDR: ":8093"
+      BANK_ALLOW_SIMULATION: "true"
       BANK_CONFIG: /stack/banklayer.yaml
       LEDGER_URL: http://127.0.0.1:8070
       PAYMENTS_INFLIGHT_URL: http://127.0.0.1:8085
