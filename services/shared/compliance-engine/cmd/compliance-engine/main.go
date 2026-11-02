@@ -22,7 +22,10 @@ import (
 
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/eventbus"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/cases"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/feed"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/monitor"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/service"
 )
 
@@ -54,6 +57,24 @@ func run(log *slog.Logger) error {
 	if err := cases.Open(ctx, pool); err != nil {
 		return err
 	}
+	brokers := splitList(os.Getenv("KAFKA_BROKERS"))
+	if len(brokers) == 0 {
+		return errors.New("KAFKA_BROKERS is required: the monitoring rules read the event bus")
+	}
+	if err := eventbus.Migrate(ctx, pool); err != nil {
+		return err
+	}
+	if err := feed.Open(ctx, pool); err != nil {
+		return err
+	}
+	consumer := &eventbus.Consumer{
+		Name: "compliance-engine", Pool: pool, Brokers: brokers, Group: "compliance-engine",
+		Topics: []string{feed.TopicPaymentSettled, feed.TopicCreditBooked},
+		Handle: (&feed.Feed{Cfg: monitor.DefaultConfig(), Now: time.Now}).Handle,
+		Log:    log,
+	}
+	consumerErr := make(chan error, 1)
+	go func() { consumerErr <- consumer.Run(ctx) }()
 
 	svc := &service.Service{Store: cases.New(pool), Now: time.Now}
 	mux := http.NewServeMux()
@@ -79,6 +100,8 @@ func run(log *slog.Logger) error {
 	case <-ctx.Done():
 	case err := <-errc:
 		return err
+	case err := <-consumerErr:
+		return fmt.Errorf("monitoring feed stopped: %w", err)
 	}
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -105,6 +128,16 @@ func loadCallers(path string) (callerauth.Allowlist, error) {
 		}
 	}
 	return out, nil
+}
+
+func splitList(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func getenv(name, def string) string {

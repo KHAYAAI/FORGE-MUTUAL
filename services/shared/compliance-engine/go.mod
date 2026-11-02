@@ -4,8 +4,17 @@ go 1.24.6
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/khayaai/forge-mutual/pkg/eventbus v0.0.0-00010101000000-000000000000
+	github.com/khayaai/forge-mutual/pkg/outbox v0.0.0-00010101000000-000000000000
 	github.com/khayaai/forge-mutual/pkg/screening v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
+	github.com/twmb/franz-go v1.18.1
+)
+
+require (
+	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/pierrec/lz4/v4 v4.1.22 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
 )
 
 require (
@@ -15,11 +24,13 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/khayaai/forge-mutual/pkg/api v0.0.0
 	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
+	github.com/khayaai/forge-mutual/pkg/events v0.0.0
+	github.com/twmb/franz-go/pkg/kadm v1.15.0
 	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/net v0.49.0
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.11
 )
 
 replace (
@@ -31,3 +42,7 @@ replace (
 replace github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
 
 replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
+
+replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events
+
+replace github.com/khayaai/forge-mutual/pkg/eventbus => ../../../pkg/eventbus

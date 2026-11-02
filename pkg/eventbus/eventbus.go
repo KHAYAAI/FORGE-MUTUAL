@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -37,7 +38,7 @@ type Consumer struct {
 	Attempts int           // handler attempts before dead-lettering; default 5
 	Backoff  time.Duration // between attempts; default 500ms
 	Log      *slog.Logger
-	// Ready, if set, is closed once the group has joined and the first poll has returned.
+	// Ready, if set, is closed once the group has joined and this consumer has been assigned partitions.
 	Ready chan struct{}
 }
 
@@ -64,29 +65,30 @@ func (c *Consumer) Run(ctx context.Context) error {
 	if log == nil {
 		log = slog.Default()
 	}
+	// Ready is signalled on partition assignment, not on the first poll: a poll on an idle topic blocks until a record
+	// arrives, so a signal sent after it would never come on a quiet topic.
+	var readyOnce sync.Once
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(c.Brokers...),
 		kgo.ConsumerGroup(c.Group),
 		kgo.ConsumeTopics(c.Topics...),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.DisableAutoCommit(),
+		kgo.OnPartitionsAssigned(func(context.Context, *kgo.Client, map[string][]int32) {
+			if c.Ready != nil {
+				readyOnce.Do(func() { close(c.Ready) })
+			}
+		}),
 	)
 	if err != nil {
 		return fmt.Errorf("eventbus: client: %w", err)
 	}
 	defer cl.Close()
 
-	first := true
 	for {
 		fetches := cl.PollFetches(ctx)
 		if ctx.Err() != nil {
 			return nil
-		}
-		if first {
-			first = false
-			if c.Ready != nil {
-				close(c.Ready)
-			}
 		}
 		if errs := fetches.Errors(); len(errs) > 0 {
 			for _, e := range errs {

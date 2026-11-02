@@ -2,6 +2,8 @@ package payments
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/events"
@@ -306,6 +308,7 @@ func (a *Activities) writeRecord(ctx context.Context, in Input, state, reason, r
 		}, &eventsv1.PaymentEvent{
 			PaymentId: in.PaymentID, PartyId: in.PartyID, FromAccountId: in.FromAccountID,
 			AmountMinor: in.AmountMinor, Asset: in.Asset, Status: state, Reason: reason,
+			BeneficiaryKey: beneficiaryKey(in.BankCode, in.AccountNumber),
 		})
 		if err != nil {
 			return err
@@ -328,4 +331,11 @@ func retryable(err error) error {
 		}
 	}
 	return err
+}
+
+// beneficiaryKey identifies a payee on the event bus without carrying the account number: monitoring counts payments to
+// the same payee by it.
+func beneficiaryKey(bankCode, accountNumber string) string {
+	sum := sha256.Sum256([]byte(bankCode + "|" + accountNumber))
+	return hex.EncodeToString(sum[:])
 }

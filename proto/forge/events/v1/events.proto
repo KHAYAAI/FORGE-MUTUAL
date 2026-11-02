@@ -71,6 +71,8 @@ message PaymentEvent {
   string asset = 5;
   string status = 6; // REQUESTED, SETTLED or FAILED
   string reason = 7;
+  // Identifies the payee without carrying the account number on the bus: sha256 of bank code and account number, hex.
+  string beneficiary_key = 8;
 }
 
 
@@ -97,4 +99,15 @@ message FXBooked {
   string sell_amount_minor = 5;
   string buy_amount_minor = 6;
   string spread_minor = 7;
+}
+
+// A credit booked to a customer's account (topic forge.bank.inbound.credit.booked.v1). Credits held in suspense belong to
+// no party and are not published.
+message InboundCreditBooked {
+  string movement_id = 1;
+  string party_id = 2;
+  string account_id = 3;
+  string asset = 4;
+  string amount_minor = 5;
+  string booked_at = 6; // RFC 3339
 }

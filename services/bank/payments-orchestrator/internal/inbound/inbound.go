@@ -14,12 +14,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	eventsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/events/v1"
 	ledgerv1 "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/banklayer"
+	"github.com/khayaai/forge-mutual/pkg/events"
+	"github.com/khayaai/forge-mutual/pkg/outbox"
 	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/pkg/uuid"
 )
+
+// TopicCreditBooked carries a credit booked to a customer's account (eventsv1.InboundCreditBooked).
+const TopicCreditBooked = "forge.bank.inbound.credit.booked.v1"
 
 //go:embed schema.sql
 var schema string
@@ -58,13 +64,20 @@ type systemAccounts struct {
 
 // Open applies the schema. It is idempotent.
 func Open(ctx context.Context, pool *pgxpool.Pool) error {
-	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+	if err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `select pg_advisory_xact_lock(7741)`); err != nil {
 			return err
 		}
 		_, err := tx.Exec(ctx, schema)
 		return err
-	})
+	}); err != nil {
+		return err
+	}
+	// Credits to customers are published through the outbox, which lives in the same database.
+	if err := outbox.Migrate(ctx, pool); err != nil {
+		return fmt.Errorf("inbound: outbox: %w", err)
+	}
+	return nil
 }
 
 // RegisterReference binds a bank reference to a customer account. Re-registering the same binding is a no-op;
@@ -158,14 +171,44 @@ func (w *Worker) Ingest(ctx context.Context, asset string, lookback time.Duratio
 		if err := w.post(ctx, asset, p.id, p.amount, p.ref, target, sys); err != nil {
 			return booked, err
 		}
-		if _, err := w.Pool.Exec(ctx, `
-			update inbound_credit set status = $3, booked_to = $4, booked_at = $5
-			where asset = $1 and movement_id = $2`, asset, p.id, status, target, now().UTC()); err != nil {
-			return booked, fmt.Errorf("inbound: mark booked: %w", err)
+		var partyID string
+		if status == StatusBooked {
+			if err := w.Pool.QueryRow(ctx, `select party_id from inbound_reference where reference = $1`, p.ref).Scan(&partyID); err != nil {
+				return booked, fmt.Errorf("inbound: party: %w", err)
+			}
+		}
+		if err := w.markBooked(ctx, asset, p.id, status, target, partyID, p.amount, now().UTC()); err != nil {
+			return booked, err
 		}
 		booked++
 	}
 	return booked, nil
+}
+
+// markBooked records a posted credit. For a customer's account it also publishes the credit, in the same transaction, so
+// the event goes out if and only if the booking is recorded. A credit held in suspense belongs to no party and is not
+// published.
+func (w *Worker) markBooked(ctx context.Context, asset, movementID, status, target, partyID string, amount int64, at time.Time) error {
+	return pgx.BeginFunc(ctx, w.Pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `
+			update inbound_credit set status = $3, booked_to = $4, booked_at = $5
+			where asset = $1 and movement_id = $2`, asset, movementID, status, target, at); err != nil {
+			return fmt.Errorf("inbound: mark booked: %w", err)
+		}
+		if status != StatusBooked {
+			return nil
+		}
+		eventID, payload, err := events.Wrap(events.Params{
+			Type: TopicCreditBooked, Entity: w.Entity, Producer: "payments-orchestrator", Correlation: movementID,
+		}, &eventsv1.InboundCreditBooked{
+			MovementId: movementID, PartyId: partyID, AccountId: target, Asset: asset,
+			AmountMinor: strconv.FormatInt(amount, 10), BookedAt: at.Format(time.RFC3339),
+		})
+		if err != nil {
+			return err
+		}
+		return outbox.Append(ctx, tx, outbox.Event{EventID: eventID, Topic: TopicCreditBooked, Key: []byte(partyID), Payload: payload})
+	})
 }
 
 // resolve finds the account a reference names. Anything unmatched goes to suspense, where it waits for an operator.

@@ -520,8 +520,10 @@ type PaymentEvent struct {
 	Asset         string                 `protobuf:"bytes,5,opt,name=asset,proto3" json:"asset,omitempty"`
 	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"` // REQUESTED, SETTLED or FAILED
 	Reason        string                 `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Identifies the payee without carrying the account number on the bus: sha256 of bank code and account number, hex.
+	BeneficiaryKey string `protobuf:"bytes,8,opt,name=beneficiary_key,json=beneficiaryKey,proto3" json:"beneficiary_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *PaymentEvent) Reset() {
@@ -599,6 +601,13 @@ func (x *PaymentEvent) GetStatus() string {
 func (x *PaymentEvent) GetReason() string {
 	if x != nil {
 		return x.Reason
+	}
+	return ""
+}
+
+func (x *PaymentEvent) GetBeneficiaryKey() string {
+	if x != nil {
+		return x.BeneficiaryKey
 	}
 	return ""
 }
@@ -806,6 +815,92 @@ func (x *FXBooked) GetSpreadMinor() string {
 	return ""
 }
 
+// A credit booked to a customer's account (topic forge.bank.inbound.credit.booked.v1). Credits held in suspense belong to
+// no party and are not published.
+type InboundCreditBooked struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MovementId    string                 `protobuf:"bytes,1,opt,name=movement_id,json=movementId,proto3" json:"movement_id,omitempty"`
+	PartyId       string                 `protobuf:"bytes,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	AccountId     string                 `protobuf:"bytes,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Asset         string                 `protobuf:"bytes,4,opt,name=asset,proto3" json:"asset,omitempty"`
+	AmountMinor   string                 `protobuf:"bytes,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	BookedAt      string                 `protobuf:"bytes,6,opt,name=booked_at,json=bookedAt,proto3" json:"booked_at,omitempty"` // RFC 3339
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InboundCreditBooked) Reset() {
+	*x = InboundCreditBooked{}
+	mi := &file_forge_events_v1_events_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InboundCreditBooked) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InboundCreditBooked) ProtoMessage() {}
+
+func (x *InboundCreditBooked) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_events_v1_events_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InboundCreditBooked.ProtoReflect.Descriptor instead.
+func (*InboundCreditBooked) Descriptor() ([]byte, []int) {
+	return file_forge_events_v1_events_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *InboundCreditBooked) GetMovementId() string {
+	if x != nil {
+		return x.MovementId
+	}
+	return ""
+}
+
+func (x *InboundCreditBooked) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *InboundCreditBooked) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *InboundCreditBooked) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *InboundCreditBooked) GetAmountMinor() string {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return ""
+}
+
+func (x *InboundCreditBooked) GetBookedAt() string {
+	if x != nil {
+		return x.BookedAt
+	}
+	return ""
+}
+
 var File_forge_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_forge_events_v1_events_proto_rawDesc = "" +
@@ -864,7 +959,7 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x18\n" +
 	"\apurpose\x18\x03 \x01(\tR\apurpose\x12\x16\n" +
 	"\x06action\x18\x04 \x01(\tR\x06action\x12\x14\n" +
-	"\x05actor\x18\x05 \x01(\tR\x05actor\"\xd9\x01\n" +
+	"\x05actor\x18\x05 \x01(\tR\x05actor\"\x82\x02\n" +
 	"\fPaymentEvent\x12\x1d\n" +
 	"\n" +
 	"payment_id\x18\x01 \x01(\tR\tpaymentId\x12\x19\n" +
@@ -873,7 +968,8 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\famount_minor\x18\x04 \x01(\tR\vamountMinor\x12\x14\n" +
 	"\x05asset\x18\x05 \x01(\tR\x05asset\x12\x16\n" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12\x16\n" +
-	"\x06reason\x18\a \x01(\tR\x06reason\"\x85\x02\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\x12'\n" +
+	"\x0fbeneficiary_key\x18\b \x01(\tR\x0ebeneficiaryKey\"\x85\x02\n" +
 	"\x0fRiskAlertRaised\x12\x19\n" +
 	"\balert_id\x18\x01 \x01(\tR\aalertId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x14\n" +
@@ -894,7 +990,16 @@ const file_forge_events_v1_events_proto_rawDesc = "" +
 	"\tbuy_asset\x18\x04 \x01(\tR\bbuyAsset\x12*\n" +
 	"\x11sell_amount_minor\x18\x05 \x01(\tR\x0fsellAmountMinor\x12(\n" +
 	"\x10buy_amount_minor\x18\x06 \x01(\tR\x0ebuyAmountMinor\x12!\n" +
-	"\fspread_minor\x18\a \x01(\tR\vspreadMinorBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
+	"\fspread_minor\x18\a \x01(\tR\vspreadMinor\"\xc6\x01\n" +
+	"\x13InboundCreditBooked\x12\x1f\n" +
+	"\vmovement_id\x18\x01 \x01(\tR\n" +
+	"movementId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x03 \x01(\tR\taccountId\x12\x14\n" +
+	"\x05asset\x18\x04 \x01(\tR\x05asset\x12!\n" +
+	"\famount_minor\x18\x05 \x01(\tR\vamountMinor\x12\x1b\n" +
+	"\tbooked_at\x18\x06 \x01(\tR\bbookedAtBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/events/v1;eventsv1b\x06proto3"
 
 var (
 	file_forge_events_v1_events_proto_rawDescOnce sync.Once
@@ -908,7 +1013,7 @@ func file_forge_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_forge_events_v1_events_proto_rawDescData
 }
 
-var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_forge_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_forge_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: forge.events.v1.EventEnvelope
 	(*TransferCommitted)(nil),     // 1: forge.events.v1.TransferCommitted
@@ -918,10 +1023,11 @@ var file_forge_events_v1_events_proto_goTypes = []any{
 	(*PaymentEvent)(nil),          // 5: forge.events.v1.PaymentEvent
 	(*RiskAlertRaised)(nil),       // 6: forge.events.v1.RiskAlertRaised
 	(*FXBooked)(nil),              // 7: forge.events.v1.FXBooked
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*InboundCreditBooked)(nil),   // 8: forge.events.v1.InboundCreditBooked
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_forge_events_v1_events_proto_depIdxs = []int32{
-	8, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	9, // 0: forge.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -940,7 +1046,7 @@ func file_forge_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_events_v1_events_proto_rawDesc), len(file_forge_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

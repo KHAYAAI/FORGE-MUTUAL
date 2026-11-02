@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/khayaai/forge-mutual/pkg/uuid"
@@ -71,6 +72,20 @@ func New(pool *pgxpool.Pool) *Store { return &Store{pool: pool} }
 // OpenFromFindings opens a case for each finding that has no open case for the same party and rule. It returns how
 // many cases it opened. A repeat finding for a party already under review does not open a second case.
 func (s *Store) OpenFromFindings(ctx context.Context, findings []monitor.Finding, actor string, now time.Time) (int, error) {
+	return openFindings(ctx, s.pool, findings, actor, now)
+}
+
+// OpenFromFindingsTx is OpenFromFindings inside the caller's transaction, so a case commits with the event that raised it.
+func OpenFromFindingsTx(ctx context.Context, tx pgx.Tx, findings []monitor.Finding, actor string, now time.Time) (int, error) {
+	return openFindings(ctx, tx, findings, actor, now)
+}
+
+// execer is what both a pool and a transaction can run.
+type execer interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
+func openFindings(ctx context.Context, ex execer, findings []monitor.Finding, actor string, now time.Time) (int, error) {
 	opened := 0
 	for _, f := range findings {
 		sla, ok := SLA[f.Severity]
@@ -81,7 +96,7 @@ func (s *Store) OpenFromFindings(ctx context.Context, findings []monitor.Finding
 		if err != nil {
 			return opened, err
 		}
-		tag, err := s.pool.Exec(ctx, `
+		tag, err := ex.Exec(ctx, `
 			insert into compliance_case (case_id, party_id, rule, severity, detail, evidence, status, opened_by, opened_at, sla_due_at)
 			values ($1, $2, $3, $4, $5, $6, 'OPEN', $7, $8, $9)
 			on conflict (party_id, rule) where status = 'OPEN' do nothing`,
