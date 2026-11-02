@@ -8,8 +8,14 @@ require (
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
 )
 
-require google.golang.org/protobuf v1.36.11 // indirect
+require (
+	github.com/golang-jwt/jwt/v5 v5.2.3
+	github.com/khayaai/forge-mutual/pkg/oidc v0.0.0
+	google.golang.org/protobuf v1.36.11 // indirect
+)
 
 replace github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
 
 replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
+
+replace github.com/khayaai/forge-mutual/pkg/oidc => ../../../pkg/oidc

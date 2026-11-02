@@ -1,27 +1,34 @@
 import { cookies } from "next/headers";
+import { config } from "@/lib/config";
+import { ACCESS_COOKIE } from "@/lib/oidc";
 import { SESSION_COOKIE, parseSession } from "@/lib/session";
 
-// Forwards a page's request to workspace-api with the session's identity. Only the headers listed here are copied, so a
-// page cannot set X-Forge-Party or X-Forge-Actor itself.
-const FORWARDED = ["content-type", "idempotency-key"];
-
+// Forwards a page's request to workspace-api. In oidc mode the access token is sent as a bearer token, and the API verifies
+// it. In dev mode the session's party and name are sent as headers. Only content-type is copied from the page, so a page
+// cannot set identity itself.
 async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
-  const session = parseSession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!session) {
-    return Response.json({ error: { code: "unauthenticated", message: "sign in to continue" } }, { status: 401 });
-  }
-  const { path } = await ctx.params;
-  const base = process.env.WORKSPACE_API_URL ?? "http://127.0.0.1:8300";
-  const url = new URL(`/v1/${path.map(encodeURIComponent).join("/")}`, base);
-  url.search = new URL(req.url).search;
-
+  const cfg = config();
+  const jar = await cookies();
   const headers = new Headers();
-  for (const name of FORWARDED) {
-    const value = req.headers.get(name);
-    if (value) headers.set(name, value);
+  const contentType = req.headers.get("content-type");
+  if (contentType) headers.set("content-type", contentType);
+  const idem = req.headers.get("idempotency-key");
+  if (idem) headers.set("idempotency-key", idem);
+
+  if (cfg.mode === "oidc") {
+    const token = jar.get(ACCESS_COOKIE)?.value;
+    if (!token) return unauthenticated();
+    headers.set("authorization", `Bearer ${token}`);
+  } else {
+    const session = parseSession(jar.get(SESSION_COOKIE)?.value);
+    if (!session) return unauthenticated();
+    headers.set("x-forge-party", session.party);
+    headers.set("x-forge-actor", session.actor);
   }
-  headers.set("x-forge-party", session.party);
-  headers.set("x-forge-actor", session.actor);
+
+  const { path } = await ctx.params;
+  const url = new URL(`/v1/${path.map(encodeURIComponent).join("/")}`, process.env.WORKSPACE_API_URL ?? "http://127.0.0.1:8300");
+  url.search = new URL(req.url).search;
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
   let upstream: Response;
@@ -43,6 +50,10 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
     status: upstream.status,
     headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },
   });
+}
+
+function unauthenticated() {
+  return Response.json({ error: { code: "unauthenticated", message: "sign in to continue" } }, { status: 401 });
 }
 
 export { forward as GET, forward as POST };

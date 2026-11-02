@@ -6,6 +6,7 @@ use (
 	./pkg/outbox
 	./pkg/uuid
 	./pkg/screening
+	./pkg/oidc
 	./pkg/money
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
@@ -14,6 +15,7 @@ use (
 	./pkg/eventbus
 	./tools/isolation
 	./tools/banklayercheck
+	./tools/devidp
 	./tools/sim/sponsor
 	./services/shared/policy-service
 	./services/platform/party-service

@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "jose": "6.1.0",
     "next": "16.4.1",
     "openapi-fetch": "0.17.0",
     "react": "19.3.1",

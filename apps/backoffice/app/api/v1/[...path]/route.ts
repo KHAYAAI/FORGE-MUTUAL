@@ -1,23 +1,32 @@
 import { cookies } from "next/headers";
+import { config } from "@/lib/config";
+import { ACCESS_COOKIE } from "@/lib/oidc";
 import { SESSION_COOKIE, parseStaff } from "@/lib/session";
 
-// Forwards a page's request to backoffice-api with the staff session's name and roles. Only content-type is copied
-// from the page, so a page cannot set the identity headers itself.
+// Forwards a page's request to backoffice-api. In oidc mode the access token is sent as a bearer token, and the API
+// verifies it. In dev mode the staff member's name and roles are sent as headers. Only content-type and the idempotency
+// key are copied from the page, so a page cannot set identity itself.
 async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
-  const session = parseStaff((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!session) {
-    return Response.json({ error: { code: "unauthenticated", message: "sign in to continue" } }, { status: 401 });
-  }
-  const { path } = await ctx.params;
-  const base = process.env.BACKOFFICE_API_URL ?? "http://127.0.0.1:8500";
-  const url = new URL(`/v1/${path.map(encodeURIComponent).join("/")}`, base);
-  url.search = new URL(req.url).search;
-
+  const cfg = config();
+  const jar = await cookies();
   const headers = new Headers();
   const contentType = req.headers.get("content-type");
   if (contentType) headers.set("content-type", contentType);
-  headers.set("x-forge-staff", session.name);
-  headers.set("x-forge-roles", session.roles.join(","));
+
+  if (cfg.mode === "oidc") {
+    const token = jar.get(ACCESS_COOKIE)?.value;
+    if (!token) return unauthenticated();
+    headers.set("authorization", `Bearer ${token}`);
+  } else {
+    const session = parseStaff(jar.get(SESSION_COOKIE)?.value);
+    if (!session) return unauthenticated();
+    headers.set("x-forge-staff", session.name);
+    headers.set("x-forge-roles", session.roles.join(","));
+  }
+
+  const { path } = await ctx.params;
+  const url = new URL(`/v1/${path.map(encodeURIComponent).join("/")}`, process.env.BACKOFFICE_API_URL ?? "http://127.0.0.1:8500");
+  url.search = new URL(req.url).search;
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
   let upstream: Response;
@@ -29,7 +38,6 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
       cache: "no-store",
     });
   } catch {
-    // The page can say what happened, rather than failing without a message.
     return Response.json(
       { error: { code: "unavailable", message: "the back office service is not reachable; try again shortly" } },
       { status: 503 },
@@ -39,6 +47,10 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
     status: upstream.status,
     headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },
   });
+}
+
+function unauthenticated() {
+  return Response.json({ error: { code: "unauthenticated", message: "sign in to continue" } }, { status: 401 });
 }
 
 export { forward as GET, forward as POST };

@@ -18,6 +18,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
+	"github.com/khayaai/forge-mutual/pkg/oidc"
 	"github.com/khayaai/forge-mutual/services/shared/backoffice-api/internal/api"
 	"github.com/khayaai/forge-mutual/services/shared/backoffice-api/internal/auth"
 )
@@ -37,7 +38,11 @@ func run(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	authn, err := auth.Select(os.Getenv("BACKOFFICE_AUTH"), getenv("FORGE_ENV", "development"))
+	authn, err := auth.Build(ctx, auth.Config{
+		Mode: os.Getenv("BACKOFFICE_AUTH"),
+		Env:  getenv("FORGE_ENV", "development"),
+		OIDC: oidcConfig(),
+	})
 	if err != nil {
 		return err
 	}
@@ -95,4 +100,14 @@ func getenv(name, def string) string {
 		return v
 	}
 	return def
+}
+
+// oidcConfig reads the identity provider's settings. OIDC_ALLOW_HTTP exists for local stacks only; production refuses it.
+func oidcConfig() oidc.Config {
+	return oidc.Config{
+		Issuer:    os.Getenv("OIDC_ISSUER"),
+		Audience:  os.Getenv("OIDC_AUDIENCE"),
+		JWKSURL:   os.Getenv("OIDC_JWKS_URL"),
+		AllowHTTP: os.Getenv("OIDC_ALLOW_HTTP") == "true",
+	}
 }
