@@ -1,77 +1,406 @@
-# Local stack for `make up` (ARCHITECTURE.md section 21.4). OPA runs inside policy-service as a library,
-# so there is no separate OPA container.
-# Image tags are placeholders pinned to major versions. Each must be verified
-# against the vendor's current stable release before use (see docs/QUESTIONS.md, VERIFY-IMG).
+# The local stack: infrastructure and every Go service that the customer and back-office journeys use, running the
+# real code. Start it with deploy/compose/up.sh, which generates the local secrets in .env (never committed).
+#
+# What is real here: Postgres 17, Kafka 3.9 (one broker, topics created explicitly), the Temporal server, and every
+# service's own logic, inter-service calls (ConnectRPC, with the caller allow-lists in config/callers), the event bus
+# and the outbox.
+#
+# What is NOT real here, and why (see deploy/compose/README.md):
+#   - TigerBeetle: the ledger runs LEDGER_STORE=memory. Balances do not survive a restart. Production refuses this.
+#   - The bank: the bank layer runs its simulator (PAYMENTS_ALLOW_SIMULATION, RAILS_SIMULATION). No sponsor sandbox.
+#   - Identity: the customer and staff apps sign in with the development sign-in (WORKSPACE_AUTH=dev,
+#     BACKOFFICE_AUTH=dev). The OIDC path is exercised by tests against tools/devidp (profile "oidc").
+#   - KYC: the fake provider with a local secret. Didit is not configured in this build.
+#   - Core banking (core-bridge): not started; it needs a live Apache Fineract.
+#   - Service-to-service identity: plain headers (development). Production uses mutual TLS (pkg/serve).
 name: forge-local
 
+x-go: &go
+  restart: on-failure
+  depends_on:
+    postgres:
+      condition: service_healthy
+    kafka-init:
+      condition: service_completed_successfully
+
+x-env: &dev
+  FORGE_ENV: development
+  KAFKA_BROKERS: 127.0.0.1:9192
+  PAYMENTS_PUBLISHER: kafka
+
 services:
+  # ---- infrastructure -----------------------------------------------------------------------------------------------
   postgres:
-    image: postgres:17                              # run by the test suites (make ci-db) at 17.11
+    image: postgres:17
+    network_mode: host
+    # Ports here are chosen to avoid the machine's own servers: Postgres 5433 (5432 is often a local server),
+    # Kafka 9192 (9092 often is), ledger 8070 (8080 often is). With host networking they are on the loopback
+    # interface. Every service's address names these ports.
+    command: ["postgres", "-p", "5433"]
     environment:
       POSTGRES_PASSWORD: forge-local-only
-    ports: ["5432:5432"]
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      retries: 20
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1 -p 5433"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
 
-  tigerbeetle:
-    image: ghcr.io/tigerbeetle/tigerbeetle:latest   # VERIFY-IMG: pin exact version
-    command: start --addresses=0.0.0.0:3000 --development /data/0_0.tigerbeetle
-    volumes: ["tb-data:/data"]
-    security_opt: ["seccomp:unconfined"]
-    ports: ["3000:3000"]
-
-  # Single-node KRaft broker. Pinned to a version the outbox integration test has run against (make ci-db). Topics
-  # are not auto-created, so every topic is created explicitly.
   kafka:
     image: apache/kafka:3.9.0
+    network_mode: host
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9192,CONTROLLER://:9194
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9192
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@127.0.0.1:9194
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-    ports: ["9092:9092"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:9192 >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 10s
+      retries: 40
 
-  valkey:
-    image: valkey/valkey:8                          # VERIFY-IMG
-    ports: ["6379:6379"]
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest         # VERIFY-IMG
-    command: start-dev
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: forge-local-only
-    ports: ["8080:8080"]
+  # Creates every topic the services use. The broker does not auto-create them, and a consumer on a missing topic
+  # never gets partitions. The list is config/kafka-topics.txt.
+  kafka-init:
+    image: apache/kafka:3.9.0
+    network_mode: host
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./config/kafka-topics.txt:/topics.txt:ro
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        while read -r t; do
+          [ -z "$$t" ] && continue
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9192 --create --if-not-exists --topic "$$t" --partitions 1 --replication-factor 1
+        done < /topics.txt
+    restart: "no"
 
   temporal:
-    image: temporalio/auto-setup:latest            # VERIFY-IMG
+    image: temporalio/auto-setup:1.26.2
+    network_mode: host
     environment:
       DB: postgres12
-      POSTGRES_SEEDS: postgres
+      DB_PORT: "5433"
+      POSTGRES_SEEDS: 127.0.0.1
       POSTGRES_USER: postgres
       POSTGRES_PWD: forge-local-only
     depends_on:
-      postgres: { condition: service_healthy }
-    ports: ["7233:7233"]
+      postgres:
+        condition: service_healthy
+    restart: on-failure
 
-  openbao:
-    image: ghcr.io/openbao/openbao:latest          # VERIFY-IMG
-    command: server -dev -dev-root-token-id=forge-local-only -dev-listen-address=0.0.0.0:8200
-    ports: ["8200:8200"]
+  # ---- platform -----------------------------------------------------------------------------------------------------
+  party:
+    <<: *go
+    image: forge/party-service:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/party?sslmode=disable
+      PARTY_CALLERS_FILE: /stack/callers/party.json
+      PARTY_LISTEN: ":8081"
+      PARTY_PUBLISHER: kafka
+      PARTY_SEAL_KEY: ${PARTY_SEAL_KEY}
+      PARTY_INDEX_KEY: ${PARTY_INDEX_KEY}
+    volumes: ["./config/callers:/stack/callers:ro"]
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest  # VERIFY-IMG
-    ports: ["4317:4317", "4318:4318"]
+  consent:
+    <<: *go
+    image: forge/consent-service:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/consent?sslmode=disable
+      CONSENT_CALLERS_FILE: /stack/callers/consent.json
+      CONSENT_LISTEN: ":8082"
+      CONSENT_PUBLISHER: kafka
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  policy:
+    <<: *go
+    image: forge/policy-service:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/policy?sslmode=disable
+      POLICY_CALLERS_FILE: /stack/callers/policy.json
+      POLICY_LISTEN: ":8084"
+      POLICY_BUNDLE_DIR: /app/policy
+      POLICY_DEV_UNSIGNED: "true"
+      POLICY_PUBLISHER: kafka
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  onboarding:
+    <<: *go
+    image: forge/onboarding:dev
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_started
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/onboarding?sslmode=disable
+      ONBOARDING_CALLERS_FILE: /stack/callers/onboarding.json
+      ONBOARDING_LISTEN: ":8083"
+      TEMPORAL_HOST: 127.0.0.1:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_TASK_QUEUE: onboarding
+      KYC_PROVIDER: fake
+      KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
+      SCREENING_LIST_FILE: /stack/screening-list.txt
+      SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
+      PARTY_URL: http://127.0.0.1:8081
+      CONSENT_URL: http://127.0.0.1:8082
+      POLICY_URL: http://127.0.0.1:8084
+      LEDGER_URL: http://127.0.0.1:8070
+    volumes:
+      - ./config/callers:/stack/callers:ro
+      - ./config/screening-list.txt:/stack/screening-list.txt:ro
+
+  consolidated:
+    <<: *go
+    image: forge/consolidated-view:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/consolidated?sslmode=disable
+      CONSOLIDATED_CALLERS_FILE: /stack/callers/consolidated.json
+      CONSOLIDATED_ADDR: ":8096"
+      CONSOLIDATED_ENTITY: BANK
+      LEDGER_URL: http://127.0.0.1:8070
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  notifications:
+    <<: *go
+    image: forge/notifications:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/notifications?sslmode=disable
+      NOTIFICATIONS_ADDR: ":8097"
+      NOTIFICATIONS_KEY: ${NOTIFICATIONS_KEY}
+      NOTIFICATIONS_SINK_FILE: /tmp/notifications-sink.log
+
+  audit:
+    <<: *go
+    image: forge/audit-service:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/audit?sslmode=disable
+      AUDIT_CALLERS_FILE: /stack/callers/audit.json
+      AUDIT_ANCHOR_FILE: /stack/audit-anchor.txt
+      AUDIT_ADDR: ":8094"
+    volumes:
+      - ./config/callers:/stack/callers:ro
+      - ./audit-anchor.txt:/stack/audit-anchor.txt
+
+  # ---- ledger (memory store: see the header) -----------------------------------------------------------------------
+  ledger:
+    <<: *go
+    image: forge/ledger-gateway-bank:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/ledger?sslmode=disable
+      LEDGER_LISTEN: ":8070"
+      LEDGER_STORE: memory
+      LEDGER_PUBLISHER: kafka
+      LEDGER_CALLERS_FILE: /stack/callers/ledger.json
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  # ---- bank -------------------------------------------------------------------------------------------------------
+  fx:
+    <<: *go
+    image: forge/fx-service:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/fx?sslmode=disable
+      FX_CALLERS_FILE: /stack/callers/fx.json
+      FX_ADDR: ":8100"
+      FX_RATE_ZAR_PER_USD: "18.25"
+      FX_RATE_AS_OF: ${FX_RATE_AS_OF}
+      LEDGER_URL: http://127.0.0.1:8070
+      CONSOLIDATED_URL: http://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  rails:
+    <<: *go
+    image: forge/rails-gateway:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      RAILS_CALLERS_FILE: /stack/callers/rails.json
+      RAILS_LISTEN: ":8086"
+      RAILS_SIMULATION: "true"
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  partner-router:
+    <<: *go
+    image: forge/partner-bank-router:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/partner_router?sslmode=disable
+      PARTNER_CALLERS_FILE: /stack/callers/partner.json
+      PARTNER_ROUTER_ADDR: ":8099"
+      PARTNER_COSTS_BPS: "sponsor=0"
+      BANK_CONFIG: /stack/banklayer.yaml
+    volumes:
+      - ./config/callers:/stack/callers:ro
+      - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
+
+  payments:
+    <<: *go
+    image: forge/payments-orchestrator:dev
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_started
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/payments?sslmode=disable
+      PAYMENTS_CALLERS_FILE: /stack/callers/payments.json
+      PAYMENTS_LISTEN: ":8085"
+      PAYMENTS_ALLOW_SIMULATION: "true"
+      TEMPORAL_HOST: 127.0.0.1:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_TASK_QUEUE: payments
+      BANK_CONFIG: /stack/banklayer.yaml
+      SCREENING_LIST_FILE: /stack/screening-list.txt
+      SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
+      LEDGER_URL: http://127.0.0.1:8070
+      PARTY_URL: http://127.0.0.1:8081
+      POLICY_URL: http://127.0.0.1:8084
+      RAILS_URL: http://127.0.0.1:8086
+      RECON_URL: http://127.0.0.1:8093
+    volumes:
+      - ./config/callers:/stack/callers:ro
+      - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
+      - ./config/screening-list.txt:/stack/screening-list.txt:ro
+
+  payouts:
+    <<: *go
+    image: forge/payouts-service:dev
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_started
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/payouts?sslmode=disable
+      PAYOUTS_CALLERS_FILE: /stack/callers/payouts.json
+      PAYOUTS_ADDR: ":8200"
+      TEMPORAL_HOST: 127.0.0.1:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_TASK_QUEUE: payouts
+      PAYMENTS_URL: http://127.0.0.1:8085
+      CONSOLIDATED_URL: http://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  recon:
+    <<: *go
+    image: forge/reconciliation:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/recon?sslmode=disable
+      RECON_CALLERS_FILE: /stack/callers/recon.json
+      RECON_ADDR: ":8093"
+      BANK_CONFIG: /stack/banklayer.yaml
+      LEDGER_URL: http://127.0.0.1:8070
+      PAYMENTS_INFLIGHT_URL: http://127.0.0.1:8085
+    volumes:
+      - ./config/callers:/stack/callers:ro
+      - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
+
+  treasury:
+    <<: *go
+    image: forge/treasury-risk:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/treasury?sslmode=disable
+      TREASURY_ADDR: ":8095"
+      TREASURY_ENTITY: BANK
+      LEDGER_URL: http://127.0.0.1:8070
+
+  # ---- shared: compliance, back office ------------------------------------------------------------------------------
+  compliance:
+    <<: *go
+    image: forge/compliance-engine:dev
+    network_mode: host
+    environment:
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/cases?sslmode=disable
+      CASES_CALLERS_FILE: /stack/callers/cases.json
+      CASES_ADDR: ":8400"
+    volumes: ["./config/callers:/stack/callers:ro"]
+
+  backoffice:
+    image: forge/backoffice-api:dev
+    network_mode: host
+    restart: on-failure
+    environment:
+      FORGE_ENV: development
+      BACKOFFICE_AUTH: dev
+      BACKOFFICE_ADDR: ":8500"
+      CASES_URL: http://127.0.0.1:8400
+      ONBOARDING_URL: http://127.0.0.1:8083
+      PAYMENTS_URL: http://127.0.0.1:8085
+      RECON_URL: http://127.0.0.1:8093
+
+  workspace:
+    image: forge/workspace-api:dev
+    network_mode: host
+    restart: on-failure
+    environment:
+      FORGE_ENV: development
+      WORKSPACE_AUTH: dev
+      WORKSPACE_ADDR: ":8300"
+      CONSOLIDATED_URL: http://127.0.0.1:8096
+      PAYMENTS_URL: http://127.0.0.1:8085
+      FX_URL: http://127.0.0.1:8100
+      PAYOUTS_URL: http://127.0.0.1:8200
+
+  # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.
+  devidp:
+    profiles: ["oidc"]
+    image: forge/devidp:dev
+    network_mode: host
+    environment:
+      DEVIDP_ISSUER: http://127.0.0.1:3300
+      DEVIDP_ADDR: ":3300"
+      DEVIDP_AUDIENCE: forge
+      DEVIDP_REDIRECT_URIS: http://127.0.0.1:3101/api/auth/callback
 
 volumes:
-  tb-data:
+  pg-data:

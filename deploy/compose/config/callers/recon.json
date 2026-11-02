@@ -1,0 +1,14 @@
+{
+  "svc-backoffice-api": [
+    "GetGate",
+    "InvestigateBreak",
+    "ListBreaks",
+    "RunRecon"
+  ],
+  "svc-payments": [
+    "GetGate",
+    "InvestigateBreak",
+    "ListBreaks",
+    "RunRecon"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "svc-backoffice-api": [
+    "Append",
+    "Head",
+    "Query"
+  ],
+  "svc-onboarding": [
+    "Append",
+    "Head",
+    "Query"
+  ],
+  "svc-payments": [
+    "Append",
+    "Head",
+    "Query"
+  ],
+  "svc-payouts": [
+    "Append",
+    "Head",
+    "Query"
+  ],
+  "svc-reconciliation": [
+    "Append",
+    "Head",
+    "Query"
+  ]
+}

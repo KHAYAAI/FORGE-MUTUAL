@@ -1,0 +1,8 @@
+{
+  "svc-payments": [
+    "GetHealth",
+    "OpenAccount",
+    "Payout",
+    "PayoutStatus"
+  ]
+}

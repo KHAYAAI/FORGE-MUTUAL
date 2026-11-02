@@ -1,0 +1,6 @@
+# The bank layer for the local stack. The simulator stands in for the sponsor bank, which has no sandbox here
+# (see docs/QUESTIONS.md). Production refuses the simulator: the sponsor configuration is the production one.
+route: sponsor
+implementation: sim
+sponsor:
+  base_url_env: SPONSOR_BASE_URL

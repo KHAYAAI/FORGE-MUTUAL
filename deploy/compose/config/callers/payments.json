@@ -1,0 +1,30 @@
+{
+  "svc-backoffice-api": [
+    "ApprovePayment",
+    "CreatePayment",
+    "GetPayment",
+    "ResolveRepair",
+    "GetInFlight"
+  ],
+  "svc-payouts": [
+    "ApprovePayment",
+    "CreatePayment",
+    "GetPayment",
+    "ResolveRepair",
+    "GetInFlight"
+  ],
+  "svc-reconciliation": [
+    "ApprovePayment",
+    "CreatePayment",
+    "GetPayment",
+    "ResolveRepair",
+    "GetInFlight"
+  ],
+  "svc-workspace": [
+    "ApprovePayment",
+    "CreatePayment",
+    "GetPayment",
+    "ResolveRepair",
+    "GetInFlight"
+  ]
+}

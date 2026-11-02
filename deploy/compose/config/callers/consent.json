@@ -1,0 +1,8 @@
+{
+  "svc-onboarding": [
+    "Check",
+    "Grant",
+    "List",
+    "Revoke"
+  ]
+}

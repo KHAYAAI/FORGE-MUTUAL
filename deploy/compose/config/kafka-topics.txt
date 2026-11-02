@@ -1,0 +1,11 @@
+forge.bank.fx.booked.v1
+forge.shared.policy.decision.v1
+forge.bank.risk.alert.v1
+forge.bank.inbound.credit.booked.v1
+forge.bank.payment.failed.v1
+forge.bank.payment.settled.v1
+forge.bank.payment.requested.v1
+forge.bank.ledger.transfer.committed.v1
+forge.plat.consent.granted.v1
+forge.plat.consent.revoked.v1
+forge.plat.party.status_changed.v1

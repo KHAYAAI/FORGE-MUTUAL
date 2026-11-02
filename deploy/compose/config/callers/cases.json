@@ -1,0 +1,7 @@
+{
+  "svc-backoffice-api": [
+    "CloseCase",
+    "GetCase",
+    "ListCases"
+  ]
+}

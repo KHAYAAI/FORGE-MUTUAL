@@ -1,0 +1,9 @@
+# The Go services need only the Go tree and the policy and config files they read at run time.
+.git
+**/node_modules
+**/test-results
+apps
+docs
+bin
+.test-dbs.env
+.env

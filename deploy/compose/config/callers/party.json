@@ -1,0 +1,18 @@
+{
+  "svc-onboarding": [
+    "AddRelationship",
+    "CreateParty",
+    "GetParty",
+    "ListRelationships",
+    "SetStatus",
+    "SetTier"
+  ],
+  "svc-payments": [
+    "AddRelationship",
+    "CreateParty",
+    "GetParty",
+    "ListRelationships",
+    "SetStatus",
+    "SetTier"
+  ]
+}

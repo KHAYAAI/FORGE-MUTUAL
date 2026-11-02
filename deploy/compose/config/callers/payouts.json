@@ -1,0 +1,8 @@
+{
+  "svc-workspace": [
+    "ApproveBatch",
+    "CreateBatch",
+    "GetBatch",
+    "ResumeBatch"
+  ]
+}
