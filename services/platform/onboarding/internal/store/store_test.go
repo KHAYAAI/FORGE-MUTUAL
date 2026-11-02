@@ -2,23 +2,21 @@ package store
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/testdb"
 )
 
-// These tests need PostgreSQL. Set ONBOARDING_TEST_PG to a throwaway database; kyc_review is truncated.
+// These tests need PostgreSQL. Set ONBOARDING_TEST_PG to a base DSN; each test gets its own fresh database.
 
 var now = time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
 
 func openTest(t *testing.T) *Store {
 	t.Helper()
-	dsn := os.Getenv("ONBOARDING_TEST_PG")
-	if dsn == "" {
-		t.Skip("ONBOARDING_TEST_PG not set")
-	}
+	dsn := testdb.Scratch(t, "ONBOARDING_TEST_PG")
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -27,9 +25,6 @@ func openTest(t *testing.T) *Store {
 	t.Cleanup(pool.Close)
 	st, err := Open(ctx, pool)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pool.Exec(ctx, `truncate kyc_review`); err != nil {
 		t.Fatal(err)
 	}
 	return st

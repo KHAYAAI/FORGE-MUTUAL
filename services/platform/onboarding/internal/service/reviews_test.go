@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -12,18 +11,16 @@ import (
 	onboardingv1 "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/store"
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/testdb"
 )
 
-// These tests need PostgreSQL. Set ONBOARDING_TEST_PG to a throwaway database; kyc_review is truncated.
+// These tests need PostgreSQL. Set ONBOARDING_TEST_PG to a base DSN; each test gets its own fresh database.
 
 const note = "Checked the register extract and the ID document against the applicant."
 
 func reviewRig(t *testing.T) (*Service, *fakeTemporal, *store.Store, string) {
 	t.Helper()
-	dsn := os.Getenv("ONBOARDING_TEST_PG")
-	if dsn == "" {
-		t.Skip("ONBOARDING_TEST_PG not set")
-	}
+	dsn := testdb.Scratch(t, "ONBOARDING_TEST_PG")
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -32,9 +29,6 @@ func reviewRig(t *testing.T) (*Service, *fakeTemporal, *store.Store, string) {
 	t.Cleanup(pool.Close)
 	st, err := store.Open(ctx, pool)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pool.Exec(ctx, `truncate kyc_review`); err != nil {
 		t.Fatal(err)
 	}
 	tc := newFakeTemporal()
