@@ -1,0 +1,396 @@
+openapi: 3.1.0
+info:
+  title: Forge back-office API
+  version: 1.0.0
+  description: |
+    The back office's API for staff. It keeps no state. The acting person and their roles come from the session, never
+    from the request. A route that needs a role is refused with 403 before any downstream call.
+
+    Roles: `compliance` closes compliance cases (as a checker, never on a case they opened). `operations` decides payment
+    approvals, resolves repairs, and investigates reconciliation breaks.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Liveness. Open.
+      responses:
+        "200":
+          description: The process is up.
+  /v1/cases:
+    get:
+      operationId: listCases
+      summary: Compliance cases, oldest SLA first.
+      parameters:
+        - name: status
+          in: query
+          description: open (default) or all.
+          schema:
+            type: string
+            enum: [open, all]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Cases.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cases]
+                properties:
+                  cases:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Case"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/cases/{case}:
+    get:
+      operationId: getCase
+      summary: One compliance case.
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: The case.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Case"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cases/{case}/close:
+    post:
+      operationId: closeCase
+      summary: Close an open case as a checker. The person who opened it cannot close it. Requires the compliance role.
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseCaseRequest"
+      responses:
+        "200":
+          description: The closed case.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Case"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payments/{payment}:
+    get:
+      operationId: getPayment
+      summary: A payment's state, for a decision or a repair.
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: The payment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/payments/{payment}/approval:
+    post:
+      operationId: decidePaymentApproval
+      summary: Approve or refuse a payment that is awaiting approval. Requires the operations role.
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalRequest"
+      responses:
+        "200":
+          description: The decision.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payments/{payment}/repair:
+    post:
+      operationId: resolvePaymentRepair
+      summary: Record whether the rail confirmed a payment whose outcome is unknown. Requires the operations role.
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairRequest"
+      responses:
+        "200":
+          description: The recorded outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairOutcome"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/recon/gate:
+    get:
+      operationId: getReconGate
+      summary: Whether the payments gate is open, and why it is closed if it is.
+      responses:
+        "200":
+          description: The gate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gate"
+  /v1/recon/breaks:
+    get:
+      operationId: listReconBreaks
+      summary: Reconciliation breaks. Open only by default.
+      parameters:
+        - name: open_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Breaks.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [breaks]
+                properties:
+                  breaks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Break"
+  /v1/recon/breaks/{break}/investigate:
+    post:
+      operationId: investigateReconBreak
+      summary: "Record an investigation. It does not clear the break; only a later matching run can do that. Requires the operations role."
+      parameters:
+        - name: break
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestigateRequest"
+      responses:
+        "200":
+          description: The break, with the investigation recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Break"
+        "403":
+          $ref: "#/components/responses/Error"
+components:
+  parameters:
+    CaseId:
+      name: case
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PaymentId:
+      name: payment
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: An error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    Case:
+      type: object
+      required: [case_id, status, overdue]
+      properties:
+        case_id:
+          type: string
+        party_id:
+          type: string
+        rule:
+          type: string
+        severity:
+          type: string
+          enum: [WARNING, CRITICAL]
+        detail:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+        opened_by:
+          type: string
+        opened_at:
+          type: string
+          format: date-time
+        sla_due_at:
+          type: string
+          format: date-time
+        overdue:
+          type: boolean
+          description: Open and past its SLA at the time of the read.
+        closed_by:
+          type: string
+        closed_at:
+          type: string
+        closing_note:
+          type: string
+    CloseCaseRequest:
+      type: object
+      additionalProperties: false
+      required: [note]
+      properties:
+        note:
+          type: string
+          minLength: 20
+          description: What was found and why the case is closed.
+    Payment:
+      type: object
+      required: [payment_id, state]
+      properties:
+        payment_id:
+          type: string
+        state:
+          type: string
+          enum: [PAYMENT_STATE_RUNNING, PAYMENT_STATE_AWAITING_APPROVAL, PAYMENT_STATE_COMPLETED, PAYMENT_STATE_DECLINED, PAYMENT_STATE_FAILED, PAYMENT_STATE_CANCELLED, PAYMENT_STATE_REPAIR_REQUIRED, PAYMENT_STATE_RESERVED]
+        reason:
+          type: string
+        amount_minor:
+          type: string
+        asset:
+          type: string
+        initiated_by:
+          type: string
+    ApprovalRequest:
+      type: object
+      additionalProperties: false
+      required: [approve]
+      properties:
+        approve:
+          type: boolean
+    Decision:
+      type: object
+      required: [payment_id, decision]
+      properties:
+        payment_id:
+          type: string
+        decision:
+          type: string
+          enum: [APPROVED, REFUSED]
+    RepairRequest:
+      type: object
+      additionalProperties: false
+      required: [settled]
+      properties:
+        settled:
+          type: boolean
+          description: true if the rail confirms the money moved; false if it did not.
+    RepairOutcome:
+      type: object
+      required: [payment_id, outcome]
+      properties:
+        payment_id:
+          type: string
+        outcome:
+          type: string
+          enum: [SETTLED, NOT_SETTLED]
+    Gate:
+      type: object
+      required: [break_active, reasons]
+      properties:
+        break_active:
+          type: boolean
+        reasons:
+          type: array
+          items:
+            type: string
+        as_of:
+          type: string
+    Break:
+      type: object
+      required: [break_id, status]
+      properties:
+        break_id:
+          type: string
+        asset:
+          type: string
+        check:
+          type: string
+        difference_minor:
+          type: string
+        detail:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, CLEARED]
+        opened_at:
+          type: string
+        last_seen_at:
+          type: string
+        cleared_at:
+          type: string
+        investigation_note:
+          type: string
+        investigated_by:
+          type: string
+        investigated_at:
+          type: string
+    InvestigateRequest:
+      type: object
+      additionalProperties: false
+      required: [note]
+      properties:
+        note:
+          type: string

@@ -155,3 +155,29 @@ func (s *Store) Get(ctx context.Context, caseID string) (Case, error) {
 	}
 	return c, err
 }
+
+// List returns cases, oldest SLA first. With openOnly, only open cases are returned. Limit bounds the result.
+func (s *Store) List(ctx context.Context, openOnly bool, limit int) ([]Case, error) {
+	q := `select case_id, party_id, rule, severity, detail, evidence, status, opened_by, opened_at, sla_due_at,
+		coalesce(closed_by, ''), closed_at, coalesce(closing_note, '')
+		from compliance_case`
+	if openOnly {
+		q += ` where status = 'OPEN'`
+	}
+	q += ` order by sla_due_at, case_id limit $1`
+	rows, err := s.pool.Query(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("cases: list: %w", err)
+	}
+	defer rows.Close()
+	var out []Case
+	for rows.Next() {
+		var c Case
+		if err := rows.Scan(&c.CaseID, &c.PartyID, &c.Rule, &c.Severity, &c.Detail, &c.Evidence, &c.Status, &c.OpenedBy,
+			&c.OpenedAt, &c.SLADueAt, &c.ClosedBy, &c.ClosedAt, &c.Closing); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
