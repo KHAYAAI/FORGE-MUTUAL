@@ -28,6 +28,7 @@ use (
 	./services/bank/partner-bank-router
 	./services/bank/fx-service
 	./services/bank/payouts-service
+	./services/platform/workspace-api
 	./services/shared/compliance-engine
 	./services/platform/consolidated-view
 	./services/platform/notifications

@@ -1,0 +1,537 @@
+openapi: 3.1.0
+info:
+  title: Forge customer workspace API
+  version: 1.0.0
+  description: |
+    The backend for the customer workspace. It keeps no state: each route is a view for the signed-in session's party,
+    forwarded to the service that owns the data.
+
+    Money is always a string of integer minor units (cents for ZAR and USD). Rates are integers scaled by 10^8.
+
+    The party comes from the session. A request body that names a party is refused with 400. Writes that create money
+    movement require an Idempotency-Key header; the key is scoped to the party, so two customers cannot collide.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Liveness. Open; needs no session.
+      responses:
+        "200":
+          description: The process is up.
+  /v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: The session party's accounts and balances.
+      responses:
+        "200":
+          description: Accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/accounts/{account}/activity:
+    get:
+      operationId: listActivity
+      summary: Postings to one of the session party's accounts, oldest first after a cursor.
+      parameters:
+        - name: account
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: after
+          in: query
+          description: Return entries with a sequence number greater than this.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        "200":
+          description: Entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entries, next_after]
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityEntry"
+                  next_after:
+                    type: integer
+                    description: Pass as `after` to read the next page.
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /v1/payments:
+    post:
+      operationId: createPayment
+      summary: Send a domestic ZAR payment from one of the session party's accounts.
+      description: The source account is checked against the session party before payments is asked.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentRequest"
+      responses:
+        "202":
+          description: Accepted. The payment's outcome arrives through GET.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [payment_id]
+                properties:
+                  payment_id:
+                    type: string
+                    format: uuid
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payments/{payment}:
+    get:
+      operationId: getPayment
+      summary: A payment's state.
+      parameters:
+        - name: payment
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The payment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/fx/quotes:
+    post:
+      operationId: quoteFx
+      summary: Price a conversion between the session party's currencies. The quote is valid for 60 seconds and books once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRequest"
+      responses:
+        "200":
+          description: The quote, with its disclosure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          $ref: "#/components/responses/Error"
+  /v1/fx/deals:
+    post:
+      operationId: bookFx
+      summary: Book a quote between two of the session party's accounts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+      responses:
+        "202":
+          description: Booked. The deal's state moves on as its legs post.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deal_id, state]
+                properties:
+                  deal_id:
+                    type: string
+                  state:
+                    type: string
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/fx/deals/{deal}:
+    get:
+      operationId: getFxDeal
+      summary: A conversion's state.
+      parameters:
+        - name: deal
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches:
+    post:
+      operationId: createPayoutBatch
+      summary: Create a bulk payout as the maker. A different person must approve it before anything is sent.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRequest"
+      responses:
+        "201":
+          description: Created in DRAFT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches/{batch}:
+    get:
+      operationId: getPayoutBatch
+      summary: A batch with each item's state.
+      parameters:
+        - name: batch
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The batch.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches/{batch}/approve:
+    post:
+      operationId: approvePayoutBatch
+      summary: Approve a batch as the checker. The checker must not be the maker. Starts the run.
+      parameters:
+        - name: batch
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The batch, now RUNNING.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    devParty:
+      type: apiKey
+      in: header
+      name: X-Forge-Party
+      description: Development only. Refused in production. A canonical UUID.
+    devActor:
+      type: apiKey
+      in: header
+      name: X-Forge-Actor
+      description: Development only. Refused in production. The signed-in person, up to 64 characters.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Up to 100 characters. The same key with the same request returns the same result.
+      schema:
+        type: string
+        maxLength: 100
+  responses:
+    Error:
+      description: An error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [invalid_argument, unauthenticated, permission_denied, not_found, already_exists, failed_precondition, unavailable, internal]
+            message:
+              type: string
+    Account:
+      type: object
+      required: [account_id, asset, available_minor, holding_entity, insured]
+      properties:
+        account_id:
+          type: string
+        asset:
+          type: string
+          enum: [ZAR, USD]
+        available_minor:
+          type: string
+        holding_entity:
+          type: string
+          description: The entity that holds the money. Every balance names it.
+        insured:
+          type: boolean
+        product_id:
+          type: string
+        as_of:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [EVENT, LEDGER]
+    ActivityEntry:
+      type: object
+      required: [seq, transfer_id, direction, amount_minor, asset, at]
+      properties:
+        seq:
+          type: integer
+        transfer_id:
+          type: string
+        direction:
+          type: string
+          enum: [IN, OUT]
+        amount_minor:
+          type: string
+        asset:
+          type: string
+        at:
+          type: string
+          format: date-time
+    PaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [account_id, amount_minor, asset, beneficiary_name, account_number, bank_code, reference]
+      properties:
+        account_id:
+          type: string
+        amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+        asset:
+          type: string
+          enum: [ZAR]
+        beneficiary_name:
+          type: string
+          maxLength: 140
+        account_number:
+          type: string
+          pattern: "^[A-Za-z0-9]{4,34}$"
+        bank_code:
+          type: string
+          pattern: "^[A-Za-z0-9]{1,11}$"
+        reference:
+          type: string
+          maxLength: 140
+    Payment:
+      type: object
+      required: [payment_id, state]
+      properties:
+        payment_id:
+          type: string
+        state:
+          type: string
+          enum: [PAYMENT_STATE_RUNNING, PAYMENT_STATE_AWAITING_APPROVAL, PAYMENT_STATE_COMPLETED, PAYMENT_STATE_DECLINED, PAYMENT_STATE_FAILED, PAYMENT_STATE_CANCELLED, PAYMENT_STATE_REPAIR_REQUIRED, PAYMENT_STATE_RESERVED]
+        reason:
+          type: string
+        amount_minor:
+          type: string
+        asset:
+          type: string
+    QuoteRequest:
+      type: object
+      additionalProperties: false
+      required: [sell_asset, buy_asset, sell_amount_minor]
+      properties:
+        sell_asset:
+          type: string
+          enum: [ZAR, USD]
+        buy_asset:
+          type: string
+          enum: [ZAR, USD]
+        sell_amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+    Quote:
+      type: object
+      required: [quote_id, sell_asset, buy_asset, sell_amount_minor, buy_amount_minor, rate_scaled, mid_rate_scaled, spread_bps, spread_minor, expires_at, disclosure]
+      properties:
+        quote_id:
+          type: string
+        sell_asset:
+          type: string
+        buy_asset:
+          type: string
+        sell_amount_minor:
+          type: string
+        buy_amount_minor:
+          type: string
+        rate_scaled:
+          type: string
+          description: The rate the customer gets, scaled by 10^8.
+        mid_rate_scaled:
+          type: string
+        spread_bps:
+          type: integer
+        spread_minor:
+          type: string
+          description: The spread the bank keeps, in the sell asset.
+        expires_at:
+          type: string
+          format: date-time
+        disclosure:
+          type: string
+          description: The text the customer must see before booking.
+    BookRequest:
+      type: object
+      additionalProperties: false
+      required: [quote_id, sell_account_id, buy_account_id]
+      properties:
+        quote_id:
+          type: string
+        sell_account_id:
+          type: string
+        buy_account_id:
+          type: string
+    Deal:
+      type: object
+      required: [deal_id, state]
+      properties:
+        deal_id:
+          type: string
+        state:
+          type: string
+          enum: [BOOKED, SELL_PENDING, BUY_PENDING, BUY_POSTED, COMPLETED, VOIDED, REVERSED]
+        reason:
+          type: string
+    BatchRequest:
+      type: object
+      additionalProperties: false
+      required: [from_account_id, asset, items]
+      properties:
+        from_account_id:
+          type: string
+        asset:
+          type: string
+          enum: [ZAR]
+        items:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/BatchItemRequest"
+    BatchItemRequest:
+      type: object
+      additionalProperties: false
+      required: [item_key, amount_minor, beneficiary_name, account_number, bank_code, reference]
+      properties:
+        item_key:
+          type: string
+          pattern: "^[A-Za-z0-9._-]{1,64}$"
+        amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+        beneficiary_name:
+          type: string
+          maxLength: 140
+        account_number:
+          type: string
+        bank_code:
+          type: string
+        reference:
+          type: string
+          maxLength: 140
+    Batch:
+      type: object
+      required: [batch_id, from_account_id, asset, total_minor, state, created_by, run, items]
+      properties:
+        batch_id:
+          type: string
+        from_account_id:
+          type: string
+        asset:
+          type: string
+        total_minor:
+          type: string
+        state:
+          type: string
+          enum: [BATCH_STATE_DRAFT, BATCH_STATE_RUNNING, BATCH_STATE_COMPLETED, BATCH_STATE_COMPLETED_WITH_EXCEPTIONS]
+        created_by:
+          type: string
+        approved_by:
+          type: string
+        run:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            required: [item_key, amount_minor, state]
+            properties:
+              item_key:
+                type: string
+              amount_minor:
+                type: string
+              state:
+                type: string
+                enum: [ITEM_STATE_PENDING, ITEM_STATE_SENT, ITEM_STATE_SETTLED, ITEM_STATE_FAILED, ITEM_STATE_UNCERTAIN]
+              payment_id:
+                type: string
+              reason:
+                type: string
