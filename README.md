@@ -23,7 +23,9 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 - **Party and consent services** (`services/platform/party-service`, `consent-service`): national IDs encrypted
   (AES-256-GCM) with a keyed index, founder and company separation enforced, consent checked live.
 - **Onboarding** (`services/platform/onboarding`): Temporal workflow `OnboardBusiness`, tested on a real Temporal dev
-  server. KYC uses a **fake provider**; the Didit adapter is a stub (see *Blocked*).
+  server and run on the local stack. A provider's REVIEW verdict parks the workflow until a compliance person decides
+  it; the decision is recorded once and the workflow resumes. KYC uses a **fake provider**; the Didit adapter is a stub
+  (see *Blocked*).
 - **Rails gateway** (`services/bank/rails-gateway`) and **payments orchestrator** (`services/bank/payments-orchestrator`):
   domestic payment saga with reserve, initiate, settle or release, and repair. Settlement posts the hold, then records
   the sponsor's debit as a clearing leg into the pool. Each rail status is recorded when it is seen. Inbound credits
@@ -62,34 +64,47 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
   Temporal's test environment. **Not yet run against a Temporal server** (see its SPEC).
 - **Workspace API** (`services/platform/workspace-api`): the customer REST surface, with the OpenAPI contract in
   `openapi/workspace.yaml`. The party comes from the session and request bodies are strict. Only development sign-in
-  exists. Tested with fake downstream clients; not yet run against the real services.
+  exists. Its downstream calls are tested with fakes, and it runs against the real services on the local stack.
 - **Back office** (`services/shared/backoffice-api`, `apps/backoffice`): staff tools for compliance cases (close as a second
   person), payment approval and repair, and the reconciliation gate and breaks. Each action checks the role before any
-  downstream call. The cases service is part of compliance-engine and is tested against Postgres. Development sign-in only,
-  and the app has no KYC review screen. Sixteen Playwright journeys pass against the production build.
+  downstream call. The cases service is part of compliance-engine and is tested against Postgres. Development sign-in only.
+  The app has a KYC review screen, which decides real reviews on the local stack. Sixteen Playwright journeys pass
+  against the production build, and two more run against the local stack with nothing mocked.
 - **Customer web app** (`apps/web`): accounts with entity and insurance on every balance, activity, payments, FX with a
   disclosure that must be accepted, and bulk payouts with maker-checker. Fourteen Playwright journeys pass against the
-  production build, with the API mocked in the browser. Development sign-in only. See its SPEC.
+  production build, with the API mocked in the browser. One more runs against the local stack, where an account opened
+  by a real onboarding is visible to its owner. Development sign-in only. See its SPEC.
 
 ## Partly built
 
 - **Compliance engine** (`services/shared/compliance-engine`): a sanctions loader that checks integrity and freshness
-  and fails closed, four monitoring rules, and a case store with maker-checker and SLA timers. These are building
-  blocks, not a running service. There is no event feed for the rules, and no API. The list source is a recommendation
-  (`docs/SANCTIONS_SOURCES.md`), not a decision.
+  and fails closed, monitoring rules over the event bus that open cases, and a case store with maker-checker and SLA
+  timers, served to the back office. Cases open from settled payments and customer credits on the local stack. The
+  rules' thresholds are placeholders (`docs/THRESHOLDS.md`). The list source is a recommendation
+  (`docs/SANCTIONS_SOURCES.md`), not a decision; the local stack uses a one-name fixture.
 - **Reg-reporting** (`services/bank/reg-reporting`): immutable evidence packs with stable digests and maker-checker.
   goAML submission is **deliberately refused** until its schema is verified (VERIFY-GOAML). No report builders yet.
 
 ## Not started (v1 scope)
 
-Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists. Two parts of the back office are
-missing, and both are gaps in the services they depend on:
+Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists, and the back office has its
+KYC review screen and live cases. Not yet built: moving the payments orchestrator's rails from the rails-gateway
+simulator onto `BankLayer`, the customer USD account flow, the Didit adapter beyond its stub, and the core-bridge on the
+local stack (it needs a live Apache Fineract there).
 
-- **KYC review** in the back office: the onboarding service has no review API to call.
-- **Live cases**: the monitoring rules have no event feed, so nothing opens compliance cases yet.
+## Production configuration
 
-Also not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`, the customer
-USD account flow, and the Didit adapter beyond its stub.
+Done and tested: TLS and mutual TLS between services (`pkg/serve`: production refuses to start without certificates,
+and the caller is the service named in its certificate, not a header); request IDs, timeouts and security headers on
+every service and both web apps (CSP keeps `'unsafe-inline'` for scripts, a known gap until there is a nonce); a
+production refusal of every development switch (memory ledger, simulators, unsigned policy, fake KYC); OpenTelemetry
+spans, with OTLP export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; a backup and restore check that proves a dump
+restores (`scripts/pg-backup.sh`, `scripts/pg-restore-check.sh`); and an axe accessibility scan of every page in both
+apps, failing on serious and critical violations.
+
+Not done: the OTLP export has not been run against a collector; the local stack runs in development mode, so mutual TLS
+is covered by `pkg/serve`'s tests, not by the stack; backups are not scheduled and there is no point-in-time recovery;
+secrets are environment variables, with no secret store integrated.
 
 ## Blocked
 
@@ -102,7 +117,7 @@ USD account flow, and the Didit adapter beyond its stub.
   server, `make test-ledger-tb` cannot run. Obtain the server binary by another route, or run the test on a host that
   can reach the release artefacts.
 - **Kafka: runs in the dev stack, but only single-node.** `apache/kafka:3.9.0` in KRaft mode is verified by the outbox
-  tests. Not verified: a multi-broker cluster, TLS and SASL, topic creation policy in production, and the Kafka wiring of
+  tests and by the local stack (on port 9192, so it does not clash with a broker on 9092). Not verified: a multi-broker cluster, TLS and SASL, topic creation policy in production, and the Kafka wiring of
   the other services' relays.
 - **Sponsor, partner-bank and FIC list formats**: unverified (VERIFY-SPONSOR, VERIFY-PARTNER, VERIFY-FIC). The simulators
   define Forge's own wire formats. The government and UN sites were not reachable from the build environment, so the
@@ -118,8 +133,11 @@ USD account flow, and the Didit adapter beyond its stub.
 ## Running it
 
 ```sh
-make up               # local stack: Postgres 17, Kafka 3.9.0, and the others in deploy/compose
-make ci-db            # the full gate, with throwaway databases on the compose Postgres and the broker from make up
+make up               # the local stack: builds every service and starts it (deploy/compose/README.md)
+make test-stack       # the customer and back-office journeys against the running stack, with nothing mocked
+make ci-db            # the full gate, with throwaway databases (defaults: Postgres on 5432, broker on 9092; for the
+                      # stack's own, set FORGE_PG_HOST_DSN=postgres://postgres:forge-local-only@127.0.0.1:5433 and
+                      # FORGE_KAFKA_BROKERS=127.0.0.1:9192)
 make ci               # the same gate, if you have set every database and broker variable yourself
 make test-outbox      # the outbox against a real broker
 make test-recon       # reconciliation (serial: packages share a database)

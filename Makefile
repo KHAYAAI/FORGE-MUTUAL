@@ -226,8 +226,9 @@ test-banklayer:
 proto:
 	cd proto && $(BUF) lint && $(BUF) generate
 
+# The local stack: builds the images and starts every service (deploy/compose/README.md).
 up:
-	$(COMPOSE) up -d --wait
+	deploy/compose/up.sh
 
 down:
 	$(COMPOSE) down -v
