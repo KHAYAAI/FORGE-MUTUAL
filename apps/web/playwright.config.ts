@@ -21,5 +21,7 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}/sign-in`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Closed port: the proxy's unreachable path is tested for real, without a backend.
+    env: { WORKSPACE_API_URL: "http://127.0.0.1:9" },
   },
 });

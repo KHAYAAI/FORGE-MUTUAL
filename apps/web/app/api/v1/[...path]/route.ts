@@ -24,12 +24,21 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
   headers.set("x-forge-actor", session.actor);
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
-  const upstream = await fetch(url, {
-    method: req.method,
-    headers,
-    body: hasBody ? await req.text() : undefined,
-    cache: "no-store",
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, {
+      method: req.method,
+      headers,
+      body: hasBody ? await req.text() : undefined,
+      cache: "no-store",
+    });
+  } catch {
+    // The page can say what happened, rather than failing without a message.
+    return Response.json(
+      { error: { code: "unavailable", message: "the workspace service is not reachable; try again shortly" } },
+      { status: 503 },
+    );
+  }
   return new Response(await upstream.text(), {
     status: upstream.status,
     headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },

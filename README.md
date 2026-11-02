@@ -63,6 +63,10 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 - **Workspace API** (`services/platform/workspace-api`): the customer REST surface, with the OpenAPI contract in
   `openapi/workspace.yaml`. The party comes from the session and request bodies are strict. Only development sign-in
   exists. Tested with fake downstream clients; not yet run against the real services.
+- **Back office** (`services/shared/backoffice-api`, `apps/backoffice`): staff tools for compliance cases (close as a second
+  person), payment approval and repair, and the reconciliation gate and breaks. Each action checks the role before any
+  downstream call. The cases service is part of compliance-engine and is tested against Postgres. Development sign-in only,
+  and the app has no KYC review screen. Sixteen Playwright journeys pass against the production build.
 - **Customer web app** (`apps/web`): accounts with entity and insurance on every balance, activity, payments, FX with a
   disclosure that must be accepted, and bulk payouts with maker-checker. Fourteen Playwright journeys pass against the
   production build, with the API mocked in the browser. Development sign-in only. See its SPEC.
@@ -78,10 +82,11 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 
 ## Not started (v1 scope)
 
-One service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 is not started:
+Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists. Two parts of the back office are
+missing, and both are gaps in the services they depend on:
 
-- **backoffice**: operations front end (KYC review, cases, payment repair, reconciliation dashboard, maker-checker). It
-  also needs a compliance-engine API for cases, which does not exist yet.
+- **KYC review** in the back office: the onboarding service has no review API to call.
+- **Live cases**: the monitoring rules have no event feed, so nothing opens compliance cases yet.
 
 Also not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto `BankLayer`, the customer
 USD account flow, and the Didit adapter beyond its stub.

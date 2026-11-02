@@ -66,3 +66,11 @@ test("the activity of an account pages forward with the cursor", async ({ page }
   await expect(page.getByRole("button", { name: "Load more" })).toHaveCount(0);
   expect(afters).toEqual(["0", "51"]);
 });
+
+// No API route is mocked here. The proxy points at a closed port, so this exercises its unreachable path for real.
+test("when the workspace service is unreachable, the page says so", async ({ page }) => {
+  await signIn(page);
+  await expect(page.locator('[data-testid="notice"][role="alert"]')).toHaveText(
+    "the workspace service is not reachable; try again shortly",
+  );
+});

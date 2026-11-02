@@ -11,7 +11,7 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	COMPLIANCE_TEST_DSN POLICY_TEST_DSN PARTY_TEST_DSN CONSENT_TEST_DSN ONBOARDING_TEST_PG OUTBOX_TEST_DSN FX_TEST_DSN PAYOUTS_TEST_DSN \
 	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
 
 ci: require-test-dbs lint test test-isolation
 
@@ -30,7 +30,7 @@ ci-db:
 	scripts/test-databases.sh
 	set -a; . ./.test-dbs.env; set +a; $(MAKE) ci
 
-test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-web
+test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-web test-backoffice-web
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
 	cd pkg/callerauth && $(GO) test ./...
@@ -77,6 +77,10 @@ test-pkg:
 # PLAYWRIGHT_BROWSERS_PATH, or CHROMIUM_PATH to a Chromium that is already installed. The suite never skips.
 test-web:
 	cd apps/web && npm ci && npm run typecheck && npm run build && npx playwright test
+
+# The back-office web app: the same checks as test-web, for the staff screens.
+test-backoffice-web:
+	cd apps/backoffice && npm ci && npm run typecheck && npm run build && npx playwright test
 
 # Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg).
 test-ledger:

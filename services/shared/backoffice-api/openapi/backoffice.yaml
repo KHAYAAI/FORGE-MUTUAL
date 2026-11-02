@@ -163,6 +163,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Gate"
+        "401":
+          $ref: "#/components/responses/Error"
   /v1/recon/breaks:
     get:
       operationId: listReconBreaks
@@ -186,6 +188,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Break"
+        "401":
+          $ref: "#/components/responses/Error"
   /v1/recon/breaks/{break}/investigate:
     post:
       operationId: investigateReconBreak
