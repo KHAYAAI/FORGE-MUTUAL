@@ -7,6 +7,69 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 > **Status: concept, pre-licence.** Forge is unlicensed and has no customers. Nothing here moves real money.
 > Every external integration is either a simulator or unverified (see *Blocked* below).
 
+## Launch readiness
+
+**Not ready to launch.** The v1 software is built, tested, and runs end to end on a local stack. Launch is blocked by
+decisions that only people can make, by external systems this build could not run, and by the engineering gaps below.
+Assessed 2026-11-03.
+
+**Verified**
+
+- The full gate passes on `b5e69d5`: lint, 81 test packages against real Postgres 17 and Kafka 3.9, and the isolation
+  check.
+- 422 Go test functions in 37 modules. Playwright: 58 journeys across the two apps, including the accessibility scans
+  and the security-header checks.
+- The local stack starts from nothing in one command (`make up`). `make test-stack` passes on a fresh stack: a customer
+  onboarded through the real workflow sees the account it opened, and a compliance person decides a real review and
+  the onboarding completes.
+- Production refusals, mutual TLS, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
+
+**Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
+
+- Threshold owners: the 16 placeholder thresholds each need a named owner who confirms them. None is named.
+- Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
+- Identity provider: undecided. The apps sign in with development sign-in only. OIDC is built and tested against the
+  development provider.
+- Didit organisation for KYC: not created. The fake provider is in use.
+- ADR-0020 (legal form of the bank layer) and ADR-0012 (sector appetite): open human decisions.
+- goAML schema (VERIFY-GOAML): submission is refused until it is confirmed.
+- WORM storage for audit anchors and evidence packs (VERIFY-WORM): local files only.
+- Regulatory review of the policy and reporting rules: not started, and not in this repository.
+
+**Blocked by external systems**
+
+- TigerBeetle has never run. Production balances are meant to live there, so this is the largest technical blocker. The
+  stack runs the ledger in memory.
+- Sponsor bank: no sandbox, and the wire format is unverified (VERIFY-SPONSOR). Partner and FIC formats too
+  (VERIFY-PARTNER, VERIFY-FIC).
+- Kafka runs as a single node everywhere. A multi-broker cluster is unverified.
+- Temporal runs as a single development server. No production cluster is set up.
+- core-bridge's posting path was checked once against a live Fineract. It is not on the stack.
+
+**Engineering gaps**
+
+- A KYC decision whose store write fails after the workflow signal leaves the review open while the onboarding moves on.
+  Known and recorded in the commit; not fixed.
+- An account reaches its owner only after reconciliation names the owner, every 15 minutes by default. Shorten it or
+  accept it: a product decision.
+- Mutual TLS is covered by unit tests. The stack runs in development mode, so it is not exercised end to end.
+- Tracing creates spans but has not been exported to a collector.
+- The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
+- Secrets are environment variables. No secret store is integrated.
+- Backups are verified to restore but are not scheduled, and there is no point-in-time recovery.
+- No load test and no external security review.
+- The development-only npm audit findings are not triaged.
+- Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
+
+**Suggested order**
+
+1. Name the threshold owners, and decide the sanctions source.
+2. Choose the identity provider, and create the Didit organisation.
+3. Get TigerBeetle running, by a route that works (see *Blocked*).
+4. Obtain sponsor sandbox access and the wire formats.
+5. Fix the KYC decision ordering, and decide the reconciliation latency.
+6. Security review and load test.
+
 ## Built and tested
 
 Each service is its own Go module. `make ci-db` creates throwaway databases on the compose Postgres 17, then runs the
@@ -68,11 +131,12 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 - **Back office** (`services/shared/backoffice-api`, `apps/backoffice`): staff tools for compliance cases (close as a second
   person), payment approval and repair, and the reconciliation gate and breaks. Each action checks the role before any
   downstream call. The cases service is part of compliance-engine and is tested against Postgres. Development sign-in only.
-  The app has a KYC review screen, which decides real reviews on the local stack. Sixteen Playwright journeys pass
-  against the production build, and two more run against the local stack with nothing mocked.
+  The app has a KYC review screen, which decides real reviews on the local stack. Twenty-two Playwright journeys pass
+  against the production build, including the accessibility and security-header checks. One more runs against the
+  local stack with nothing mocked.
 - **Customer web app** (`apps/web`): accounts with entity and insurance on every balance, activity, payments, FX with a
-  disclosure that must be accepted, and bulk payouts with maker-checker. Fourteen Playwright journeys pass against the
-  production build, with the API mocked in the browser. One more runs against the local stack, where an account opened
+  disclosure that must be accepted, and bulk payouts with maker-checker. Twenty-two Playwright journeys pass against the
+  production build, with the API mocked in the browser. Two run against the local stack, where an account opened
   by a real onboarding is visible to its owner. Development sign-in only. See its SPEC.
 
 ## Partly built
