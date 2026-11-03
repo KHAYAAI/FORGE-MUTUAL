@@ -23,14 +23,18 @@ Assessed 2026-11-03.
   onboarded through the real workflow sees the account it opened, and a compliance person decides a real review and
   the onboarding completes.
 - Production refusals, mutual TLS, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
+- A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
+  Temporal stopped, a decision was recorded and the reviewer was told it would be retried; once Temporal was back, the
+  onboarding completed within 20 seconds with no further action.
 
 **Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
 
 - Threshold owners: the 16 placeholder thresholds each need a named owner who confirms them. None is named.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
-- Identity provider: undecided. The apps sign in with development sign-in only. OIDC is built and tested against the
-  development provider.
-- Didit organisation for KYC: not created. The fake provider is in use.
+- Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
+  it. The apps sign in with development sign-in only.
+- Didit for KYC and KYB: decided on 2026-11-03, in a new account the owner creates. The organisation does not exist and
+  the adapter is a stub, so the fake provider is in use. The owner's steps are in `docs/PROVIDERS.md`.
 - ADR-0020 (legal form of the bank layer) and ADR-0012 (sector appetite): open human decisions.
 - goAML schema (VERIFY-GOAML): submission is refused until it is confirmed.
 - WORM storage for audit anchors and evidence packs (VERIFY-WORM): local files only.
@@ -48,8 +52,10 @@ Assessed 2026-11-03.
 
 **Engineering gaps**
 
-- A KYC decision whose store write fails after the workflow signal leaves the review open while the onboarding moves on.
-  Known and recorded in the commit; not fixed.
+- There is no customer application flow: no public onboarding endpoint and no apply page. An onboarding can only be
+  started by calling the onboarding service directly.
+- Only businesses can onboard. The `OnboardPerson` workflow in the design does not exist.
+- Onboarding does not create the Fineract client the design lists, and nothing gives an approved director a login.
 - An account reaches its owner only after reconciliation names the owner, every 15 minutes by default. Shorten it or
   accept it: a product decision.
 - Mutual TLS is covered by unit tests. The stack runs in development mode, so it is not exercised end to end.
@@ -64,11 +70,12 @@ Assessed 2026-11-03.
 **Suggested order**
 
 1. Name the threshold owners, and decide the sanctions source.
-2. Choose the identity provider, and create the Didit organisation.
-3. Get TigerBeetle running, by a route that works (see *Blocked*).
-4. Obtain sponsor sandbox access and the wire formats.
-5. Fix the KYC decision ordering, and decide the reconciliation latency.
-6. Security review and load test.
+2. Create the WorkOS and Didit accounts and allow their hosts (`docs/PROVIDERS.md`), then run the first live checks.
+3. Build the customer application flow and the person onboarding on top of them.
+4. Get TigerBeetle running, by a route that works (see *Blocked*).
+5. Obtain sponsor sandbox access and the wire formats.
+6. Decide the reconciliation latency.
+7. Security review and load test.
 
 ## Built and tested
 
@@ -87,7 +94,7 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
   (AES-256-GCM) with a keyed index, founder and company separation enforced, consent checked live.
 - **Onboarding** (`services/platform/onboarding`): Temporal workflow `OnboardBusiness`, tested on a real Temporal dev
   server and run on the local stack. A provider's REVIEW verdict parks the workflow until a compliance person decides
-  it; the decision is recorded once and the workflow resumes. KYC uses a **fake provider**; the Didit adapter is a stub
+  it; the decision is recorded once, then delivered to the workflow until it has been told. KYC uses a **fake provider**; the Didit adapter is a stub
   (see *Blocked*).
 - **Rails gateway** (`services/bank/rails-gateway`) and **payments orchestrator** (`services/bank/payments-orchestrator`):
   domestic payment saga with reserve, initiate, settle or release, and repair. Settlement posts the hold, then records
@@ -152,9 +159,10 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 ## Not started (v1 scope)
 
 Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists, and the back office has its
-KYC review screen and live cases. Not yet built: moving the payments orchestrator's rails from the rails-gateway
-simulator onto `BankLayer`, the customer USD account flow, the Didit adapter beyond its stub, and the core-bridge on the
-local stack (it needs a live Apache Fineract there).
+KYC review screen and live cases. Not yet built: the customer application flow (a public onboarding endpoint and an apply
+page), the `OnboardPerson` workflow, moving the payments orchestrator's rails from the rails-gateway simulator onto
+`BankLayer`, the customer USD account flow, the Didit adapter beyond its stub, and the core-bridge on the local stack (it
+needs a live Apache Fineract there).
 
 ## Production configuration
 

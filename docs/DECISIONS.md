@@ -29,7 +29,27 @@ environment can create an organisation. The owner must create it, grant access t
 me the sandbox application's identifier through the secret store, not in chat. No verification session has been
 created, and creating one is not yet approved.
 
+**2026-11-03: sign-in uses WorkOS (AuthKit).**
+Taken by the owner in session. The apps already verify tokens from any OIDC provider (`pkg/oidc`), so the choice changes
+configuration and a claim mapping, not the verifier. **Not yet done:** no WorkOS account exists for this project, the
+integration has not been run against WorkOS, and the claims the apps need (`forge_party` for a customer, `forge_roles`
+for staff) are a proposal until a real token has been inspected. Details and the owner's steps: `docs/PROVIDERS.md`.
+
+**2026-11-03: KYC and KYB use Didit, in a new account the owner creates.**
+Taken by the owner in session, and it confirms the 2026-10-31 decision: a new organisation, not A-CARD. The owner signs
+up with a personal email address (given in session, not recorded here). **Not yet done:** the account does not exist.
+Sign-up needs an emailed code that only the owner can read, and the Didit and WorkOS connectors in the build session are
+signed in to A-CARD, so they must not be used for this project. The adapter in `services/platform/onboarding` is still a
+stub that refuses every verification. No verification session is approved until the new organisation exists.
+
 ## Open (need a named owner or a decision)
+
+- **Provider accounts.** The WorkOS account and the Didit organisation are decided but not created. The build session's
+  network policy also blocks the providers' hosts (`docs/PROVIDERS.md` lists them), so nothing can be run against either
+  until the owner allows them.
+- **How an applicant gets in.** Decide whether an applicant signs in with WorkOS before applying (recommended: a verified
+  email, and rate-limiting by account) or applies anonymously and receives credentials after approval. The customer
+  application flow cannot be designed until this is decided.
 
 - **Sanctions list source and licence.** Recommendation in `docs/SANCTIONS_SOURCES.md`. Not decided.
 - **Threshold owners.** Every placeholder, with its required owner role, is in `docs/THRESHOLDS.md`. No owner is named.
