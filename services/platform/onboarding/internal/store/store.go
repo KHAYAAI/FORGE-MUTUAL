@@ -35,6 +35,19 @@ type Review struct {
 	Reviewer       string
 	Note           string
 	DecidedAt      *time.Time
+	// SignalledAt is when the onboarding workflow was told of the decision, or found to have ended. A decided
+	// review with no SignalledAt is waiting for delivery.
+	SignalledAt *time.Time
+}
+
+// columns is every column of a review, in the order scanReview reads them.
+const columns = `review_id, onboarding_id, subject_party_id, reason, status, opened_at, decision, reviewer, note, decided_at, signalled_at`
+
+func scanReview(row pgx.Row) (Review, error) {
+	var r Review
+	err := row.Scan(&r.ReviewID, &r.OnboardingID, &r.SubjectPartyID, &r.Reason, &r.Status, &r.OpenedAt,
+		&r.Decision, &r.Reviewer, &r.Note, &r.DecidedAt, &r.SignalledAt)
+	return r, err
 }
 
 // Store holds reviews.
@@ -79,11 +92,7 @@ func (s *Store) OpenReview(ctx context.Context, onboardingID, subjectID, reason 
 
 // Get returns one review.
 func (s *Store) Get(ctx context.Context, id string) (Review, error) {
-	var r Review
-	err := s.pool.QueryRow(ctx, `
-		select review_id, onboarding_id, subject_party_id, reason, status, opened_at, decision, reviewer, note, decided_at
-		from kyc_review where review_id = $1`, id).Scan(&r.ReviewID, &r.OnboardingID, &r.SubjectPartyID, &r.Reason,
-		&r.Status, &r.OpenedAt, &r.Decision, &r.Reviewer, &r.Note, &r.DecidedAt)
+	r, err := scanReview(s.pool.QueryRow(ctx, `select `+columns+` from kyc_review where review_id = $1`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Review{}, ErrNotFound
 	}
@@ -92,22 +101,25 @@ func (s *Store) Get(ctx context.Context, id string) (Review, error) {
 
 // List returns reviews, oldest first. With openOnly, only open reviews.
 func (s *Store) List(ctx context.Context, openOnly bool) ([]Review, error) {
-	q := `select review_id, onboarding_id, subject_party_id, reason, status, opened_at, decision, reviewer, note, decided_at
-		from kyc_review`
+	q := `select ` + columns + ` from kyc_review`
 	if openOnly {
 		q += ` where status = 'OPEN'`
 	}
 	q += ` order by opened_at, review_id`
-	rows, err := s.pool.Query(ctx, q)
+	return s.reviews(ctx, "list", q)
+}
+
+// reviews runs a query that selects columns and returns every row.
+func (s *Store) reviews(ctx context.Context, what, query string, args ...any) ([]Review, error) {
+	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("store: list: %w", err)
+		return nil, fmt.Errorf("store: %s: %w", what, err)
 	}
 	defer rows.Close()
 	var out []Review
 	for rows.Next() {
-		var r Review
-		if err := rows.Scan(&r.ReviewID, &r.OnboardingID, &r.SubjectPartyID, &r.Reason, &r.Status, &r.OpenedAt,
-			&r.Decision, &r.Reviewer, &r.Note, &r.DecidedAt); err != nil {
+		r, err := scanReview(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, r)
@@ -130,4 +142,21 @@ func (s *Store) Decide(ctx context.Context, id, decision, reviewer, note string,
 		return err
 	}
 	return ErrNotOpen
+}
+
+// Undelivered returns decided reviews whose decision the onboarding workflow has not yet been told, oldest first.
+func (s *Store) Undelivered(ctx context.Context, limit int) ([]Review, error) {
+	return s.reviews(ctx, "undelivered", `select `+columns+` from kyc_review
+		where status = 'DECIDED' and signalled_at is null order by decided_at, review_id limit $1`, limit)
+}
+
+// MarkSignalled records that the workflow has been told of a decision, or has ended and cannot be. It changes nothing
+// for a review that is open, or already marked, so it is safe to repeat.
+func (s *Store) MarkSignalled(ctx context.Context, id string, now time.Time) error {
+	if _, err := s.pool.Exec(ctx, `
+		update kyc_review set signalled_at = $2 where review_id = $1 and status = 'DECIDED' and signalled_at is null`,
+		id, now.UTC()); err != nil {
+		return fmt.Errorf("store: mark signalled: %w", err)
+	}
+	return nil
 }

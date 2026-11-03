@@ -78,3 +78,78 @@ func TestMissingReviewIsNotFound(t *testing.T) {
 		t.Fatalf("missing review: %v", err)
 	}
 }
+
+// A decision waits for delivery until the workflow is marked as told. Marking is safe to repeat, and an open review is
+// never waiting for delivery.
+func TestADecidedReviewWaitsForDeliveryUntilMarked(t *testing.T) {
+	ctx := context.Background()
+	st := openTest(t)
+	id, err := st.OpenReview(ctx, "onb-1", "person-1", "provider requested review", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if un, err := st.Undelivered(ctx, 10); err != nil || len(un) != 0 {
+		t.Fatalf("an open review is not waiting for delivery: %v, %v", un, err)
+	}
+	if err := st.MarkSignalled(ctx, id, now); err != nil {
+		t.Fatal(err)
+	}
+	if r, _ := st.Get(ctx, id); r.SignalledAt != nil {
+		t.Fatal("an open review cannot be marked delivered")
+	}
+
+	if err := st.Decide(ctx, id, "APPROVED", "naledi", "Checked the register extract and the ID.", now.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	un, err := st.Undelivered(ctx, 10)
+	if err != nil || len(un) != 1 || un[0].ReviewID != id || un[0].SignalledAt != nil {
+		t.Fatalf("a decided review waits for delivery: %+v, %v", un, err)
+	}
+	if err := st.MarkSignalled(ctx, id, now.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := st.Get(ctx, id)
+	if first.SignalledAt == nil {
+		t.Fatal("marking must record when the workflow was told")
+	}
+	if err := st.MarkSignalled(ctx, id, now.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := st.Get(ctx, id); !again.SignalledAt.Equal(*first.SignalledAt) {
+		t.Fatal("marking twice must keep the first time")
+	}
+	if un, _ := st.Undelivered(ctx, 10); len(un) != 0 {
+		t.Fatalf("a delivered decision is no longer waiting: %v", un)
+	}
+}
+
+// A table made before delivery was tracked is upgraded in place by Open, and Open can be run again.
+func TestOpenUpgradesATableMadeBeforeDeliveryWasTracked(t *testing.T) {
+	dsn := testdb.Scratch(t, "ONBOARDING_TEST_PG")
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	if _, err := pool.Exec(ctx, `
+		create table kyc_review (
+		  review_id text primary key, onboarding_id text not null, subject_party_id text not null, reason text not null,
+		  status text not null check (status in ('OPEN', 'DECIDED')), opened_at timestamptz not null,
+		  decision text not null default '' check (decision in ('', 'APPROVED', 'DECLINED')),
+		  reviewer text not null default '', note text not null default '', decided_at timestamptz);
+		insert into kyc_review values ('old-1', 'onb-0', 'person-0', 'provider requested review', 'DECIDED', now(), 'APPROVED', 'naledi', 'Checked it.', now())`); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		st, err := Open(ctx, pool)
+		if err != nil {
+			t.Fatalf("open %d: %v", i+1, err)
+		}
+		// The old decided row has no delivery time, so it is told to the workflow once more. That is harmless.
+		un, err := st.Undelivered(ctx, 10)
+		if err != nil || len(un) != 1 || un[0].ReviewID != "old-1" {
+			t.Fatalf("open %d: undelivered = %+v, %v", i+1, un, err)
+		}
+	}
+}

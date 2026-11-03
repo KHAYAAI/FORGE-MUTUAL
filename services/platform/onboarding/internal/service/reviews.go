@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -20,6 +21,8 @@ type ReviewQueue interface {
 	Get(ctx context.Context, id string) (store.Review, error)
 	List(ctx context.Context, openOnly bool) ([]store.Review, error)
 	Decide(ctx context.Context, id, decision, reviewer, note string, now time.Time) error
+	Undelivered(ctx context.Context, limit int) ([]store.Review, error)
+	MarkSignalled(ctx context.Context, id string, now time.Time) error
 }
 
 // WithReviews sets the review queue the review endpoints use.
@@ -44,8 +47,15 @@ func (s *Service) ListKYCReviews(ctx context.Context, req *connect.Request[onboa
 	return connect.NewResponse(out), nil
 }
 
-// DecideKYCReview implements OnboardingServiceHandler. The workflow is told first. If it cannot be told, the review
-// stays open, so the decision can be made again; once it has been told, the decision is recorded.
+// DecideKYCReview implements OnboardingServiceHandler.
+//
+// A decision is a compliance record, so it is recorded first and does not depend on the workflow being reachable. The
+// workflow is told second, and told again until it has been: a failed signal leaves the decision recorded and
+// undelivered, and either a retry of the same decision or the redelivery loop finishes the job. Telling the workflow
+// twice is harmless, because it ignores a decision for a subject it is not waiting on.
+//
+// Only one decision can be recorded. The same decision again (a retry whose response was lost) succeeds without
+// changing anything; a different decision is refused.
 func (s *Service) DecideKYCReview(ctx context.Context, req *connect.Request[onboardingv1.DecideKYCReviewRequest]) (*connect.Response[onboardingv1.DecideKYCReviewResponse], error) {
 	if s.reviews == nil {
 		return nil, connect.NewError(connect.CodeUnavailable, errors.New("reviews are not configured"))
@@ -57,7 +67,8 @@ func (s *Service) DecideKYCReview(ctx context.Context, req *connect.Request[onbo
 	if m.Decision != "APPROVED" && m.Decision != "DECLINED" {
 		return nil, invalid("decision must be APPROVED or DECLINED")
 	}
-	if r := strings.TrimSpace(m.Reviewer); r == "" || len(r) > 64 {
+	reviewer := strings.TrimSpace(m.Reviewer)
+	if reviewer == "" || len(reviewer) > 64 {
 		return nil, invalid("reviewer is required, up to 64 characters")
 	}
 	note := strings.TrimSpace(m.Note)
@@ -71,30 +82,102 @@ func (s *Service) DecideKYCReview(ctx context.Context, req *connect.Request[onbo
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
 	}
-	if r.Status != "OPEN" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the review is already decided"))
-	}
-	err = s.tc.SignalWorkflow(ctx, r.OnboardingID, "", onboarding.SignalKYCReview, onboarding.KYCReviewSignal{
-		SubjectPartyID: r.SubjectPartyID, Decision: m.Decision, Reviewer: strings.TrimSpace(m.Reviewer), Note: note,
-	})
-	var notFound *serviceerror.NotFound
-	if errors.As(err, &notFound) {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the onboarding is no longer waiting for a decision"))
-	}
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("workflow service unavailable; try again"))
-	}
-	if err := s.reviews.Decide(ctx, m.ReviewId, m.Decision, strings.TrimSpace(m.Reviewer), note, time.Now()); err != nil {
-		if errors.Is(err, store.ErrNotOpen) {
+	switch r.Status {
+	case "OPEN":
+		if err := s.reviews.Decide(ctx, r.ReviewID, m.Decision, reviewer, note, time.Now()); err != nil {
+			if errors.Is(err, store.ErrNotOpen) { // another reviewer decided first
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the review is already decided"))
+			}
+			return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
+		}
+	case "DECIDED":
+		if r.Decision != m.Decision || r.Reviewer != reviewer || r.Note != note {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the review is already decided"))
 		}
+	default:
 		return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
 	}
-	decided, err := s.reviews.Get(ctx, m.ReviewId)
+	decided, err := s.reviews.Get(ctx, r.ReviewID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
 	}
+	if decided.SignalledAt == nil {
+		if err := s.deliver(ctx, decided); err != nil {
+			return nil, err
+		}
+		if decided, err = s.reviews.Get(ctx, r.ReviewID); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
+		}
+	}
 	return connect.NewResponse(&onboardingv1.DecideKYCReviewResponse{Review: reviewProto(decided)}), nil
+}
+
+// deliver tells the onboarding workflow of a recorded decision and marks it delivered.
+//
+//   - Told: marked delivered.
+//   - The onboarding no longer exists (it ended, so there is nothing to resume): marked delivered, so it is not
+//     retried, and the caller is told the decision stands on the record but cannot take effect.
+//   - Temporal unreachable: left undelivered, for a retry or the redelivery loop.
+func (s *Service) deliver(ctx context.Context, r store.Review) error {
+	err := s.tc.SignalWorkflow(ctx, r.OnboardingID, "", onboarding.SignalKYCReview, onboarding.KYCReviewSignal{
+		SubjectPartyID: r.SubjectPartyID, Decision: r.Decision, Reviewer: r.Reviewer, Note: r.Note,
+	})
+	var notFound *serviceerror.NotFound
+	switch {
+	case err == nil:
+	case errors.As(err, &notFound):
+		_ = s.reviews.MarkSignalled(ctx, r.ReviewID, time.Now())
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("the decision is recorded, but the onboarding is no longer waiting for it"))
+	default:
+		return connect.NewError(connect.CodeUnavailable, errors.New("the decision is recorded; telling the onboarding failed and will be retried"))
+	}
+	// If the mark fails the decision still stands, and the redelivery loop will tell the workflow once more.
+	_ = s.reviews.MarkSignalled(ctx, r.ReviewID, time.Now())
+	return nil
+}
+
+// RedeliverDecisions tells the workflow of every recorded decision it has not yet been told, and returns how many it
+// told. It stops at the first sign that Temporal is unreachable and returns that error, so an outage is not hammered.
+func (s *Service) RedeliverDecisions(ctx context.Context) (int, error) {
+	if s.reviews == nil {
+		return 0, nil
+	}
+	pending, err := s.reviews.Undelivered(ctx, 100)
+	if err != nil {
+		return 0, err
+	}
+	told := 0
+	for _, r := range pending {
+		err := s.deliver(ctx, r)
+		switch {
+		case err == nil:
+			told++
+		case connect.CodeOf(err) == connect.CodeFailedPrecondition: // the onboarding had ended; settled
+		default:
+			return told, err
+		}
+	}
+	return told, nil
+}
+
+// RunRedelivery runs RedeliverDecisions every interval until ctx ends.
+func (s *Service) RunRedelivery(ctx context.Context, every time.Duration, log *slog.Logger) {
+	t := time.NewTicker(every)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			told, err := s.RedeliverDecisions(ctx)
+			switch {
+			case err != nil:
+				log.Warn("kyc decision redelivery", "told", told, "err", err)
+			case told > 0:
+				log.Info("kyc decisions redelivered", "told", told)
+			}
+		}
+	}
 }
 
 func reviewProto(r store.Review) *onboardingv1.KYCReview {
