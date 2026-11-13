@@ -20,3 +20,16 @@ alter table kyc_review add column if not exists signalled_at timestamptz;
 create unique index if not exists kyc_review_one_open on kyc_review (onboarding_id, subject_party_id) where status = 'OPEN';
 create index if not exists kyc_review_open on kyc_review (opened_at) where status = 'OPEN';
 create index if not exists kyc_review_undelivered on kyc_review (decided_at) where status = 'DECIDED' and signalled_at is null;
+
+-- Verification sessions started with the provider: one per subject per onboarding. The hosted verification link lives
+-- here, so that a retried activity does not start (and, in live mode, pay for) a second session, and so that whoever
+-- gives the person their link can read it.
+create table if not exists kyc_session (
+  onboarding_id     text        not null,
+  subject_party_id  text        not null,
+  kind              text        not null check (kind in ('business', 'person')),
+  session_id        text        not null,
+  url               text        not null default '',
+  created_at        timestamptz not null,
+  primary key (onboarding_id, subject_party_id)
+);

@@ -48,6 +48,16 @@ type Activities struct {
 	InsuredDeposits bool   // whether customer deposit accounts are marked insured (VERIFY CODI)
 	PolicyEntity    string // entity code for policy decisions made on behalf of onboarding
 	Reviews         *store.Store
+	// Sessions records the verification sessions the provider starts. With it, a retried activity reuses the session
+	// it started instead of starting (and, with a live provider, paying for) a second one, and the hosted link
+	// survives for whoever gives it to the person. Optional only for tests that use no provider.
+	Sessions SessionStore
+}
+
+// SessionStore holds the verification sessions started for an onboarding.
+type SessionStore interface {
+	Session(ctx context.Context, onboardingID, subjectID string) (store.Session, bool, error)
+	RecordSession(ctx context.Context, s store.Session) error
 }
 
 // OpenKYCReview queues a subject's verification for a person to decide. A repeat returns the open review.
@@ -163,18 +173,51 @@ func (a *Activities) StartVerifications(ctx context.Context, in Input, pro Prosp
 	if err := a.setStatus(ctx, pro.CompanyID, partyv1.PartyStatus_PARTY_STATUS_KYC_PENDING, in.Actor); err != nil {
 		return err
 	}
-	if _, err := a.KYC.StartBusinessVerification(ctx, in.OnboardingID, pro.CompanyID); err != nil {
-		return providerErr(err)
+	if err := a.startVerification(ctx, in.OnboardingID, pro.CompanyID, "business"); err != nil {
+		return err
 	}
 	for _, id := range pro.PersonIDs {
 		if err := a.setStatus(ctx, id, partyv1.PartyStatus_PARTY_STATUS_KYC_PENDING, in.Actor); err != nil {
 			return err
 		}
-		if _, err := a.KYC.StartPersonVerification(ctx, in.OnboardingID, id); err != nil {
-			return providerErr(err)
+		if err := a.startVerification(ctx, in.OnboardingID, id, "person"); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// startVerification starts one subject's verification, once. If a session was already recorded for the subject (this
+// is a retry), it stands. Otherwise the provider starts one and it is recorded. If the provider starts a session and
+// the record then fails, the retry starts another: that window is small, and the cost of it is one extra session.
+func (a *Activities) startVerification(ctx context.Context, onboardingID, subjectID, kind string) error {
+	if a.Sessions != nil {
+		_, found, err := a.Sessions.Session(ctx, onboardingID, subjectID)
+		if err != nil {
+			return retryable(err)
+		}
+		if found {
+			return nil
+		}
+	}
+	var (
+		sess kyc.Session
+		err  error
+	)
+	if kind == "business" {
+		sess, err = a.KYC.StartBusinessVerification(ctx, onboardingID, subjectID)
+	} else {
+		sess, err = a.KYC.StartPersonVerification(ctx, onboardingID, subjectID)
+	}
+	if err != nil {
+		return providerErr(err)
+	}
+	if a.Sessions == nil {
+		return nil
+	}
+	return retryable(a.Sessions.RecordSession(ctx, store.Session{
+		OnboardingID: onboardingID, SubjectPartyID: subjectID, Kind: kind, SessionID: sess.ID, URL: sess.URL, CreatedAt: time.Now(),
+	}))
 }
 
 // Screen checks the company and every director against the sanctions and PEP list. It returns the names
@@ -299,6 +342,9 @@ func retryable(err error) error {
 func providerErr(err error) error {
 	if errors.Is(err, kyc.ErrNotConfigured) {
 		return temporal.NewNonRetryableApplicationError("verification provider is not configured", ErrTypeNotConfigured, err)
+	}
+	if errors.Is(err, kyc.ErrRejected) {
+		return temporal.NewNonRetryableApplicationError("verification provider rejected the request", ErrTypeProviderRejected, err)
 	}
 	return err
 }

@@ -1,5 +1,6 @@
 // Package kyc is the identity-verification boundary (ARCHITECTURE.md 11.2). Implementations: FakeProvider
-// for development and tests, and Didit, which is not configured in this build (VERIFY-DIDIT).
+// for development and tests, and Didit (didit.go), which is built from Didit's documentation and has not yet been run
+// against a live account (VERIFY-DIDIT).
 package kyc
 
 import (
@@ -10,25 +11,38 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 // ErrNotConfigured is returned by a provider that has no credentials. Callers must fail closed.
 var ErrNotConfigured = errors.New("kyc: provider not configured")
 
-// ErrSignature is returned when a webhook's signature does not verify.
+// ErrSignature is returned when a webhook's signature does not verify, or its timestamp is missing or stale.
 var ErrSignature = errors.New("kyc: webhook signature does not verify")
+
+// ErrIgnored is returned for an authentic delivery that is not a verdict, such as a session moving to "In Progress".
+// The caller acknowledges it and does nothing.
+var ErrIgnored = errors.New("kyc: delivery is not a verdict")
+
+// ErrRejected is returned when the provider refuses a request in a way a retry will not change: bad credentials, an
+// unknown workflow, a malformed request. Callers must not retry it.
+var ErrRejected = errors.New("kyc: provider rejected the request")
 
 // Session is a started verification.
 type Session struct {
 	ID string
+	// URL is the hosted page where the person completes the verification. Empty for a provider with none.
+	URL string
 }
 
 // Event is a verified result delivered by webhook.
 type Event struct {
+	// EventID names the delivery, where the provider gives one. A retry keeps it.
+	EventID      string `json:"event_id"`
 	SessionID    string `json:"session_id"`
 	OnboardingID string `json:"onboarding_id"`
 	SubjectID    string `json:"subject_party_id"`
-	Verdict      string `json:"verdict"` // "APPROVED" or "DECLINED"
+	Verdict      string `json:"verdict"` // "APPROVED", "DECLINED" or "REVIEW"
 }
 
 // Provider starts verifications and authenticates their results.
@@ -37,8 +51,10 @@ type Provider interface {
 	StartPersonVerification(ctx context.Context, onboardingID, subjectID string) (Session, error)
 	// StartBusinessVerification starts a business check for a company party.
 	StartBusinessVerification(ctx context.Context, onboardingID, subjectID string) (Session, error)
-	// VerifyWebhook authenticates a webhook body against its signature and decodes it.
-	VerifyWebhook(body []byte, signature string) (Event, error)
+	// VerifyWebhook authenticates a delivery from its body and headers, and decodes it. Each provider names its own
+	// signature headers. It returns ErrSignature for a delivery that does not authenticate, and ErrIgnored for an
+	// authentic one that is not a verdict.
+	VerifyWebhook(body []byte, header http.Header) (Event, error)
 }
 
 // FakeProvider signs webhooks with HMAC-SHA256 and never contacts a vendor. It is for development and
@@ -65,9 +81,9 @@ func (f *FakeProvider) StartBusinessVerification(_ context.Context, onboardingID
 	return Session{ID: "fake-business-" + subjectID}, nil
 }
 
-// VerifyWebhook implements Provider.
-func (f *FakeProvider) VerifyWebhook(body []byte, signature string) (Event, error) {
-	return verify(f.secret, body, signature)
+// VerifyWebhook implements Provider. The fake's signature is in X-Forge-Signature.
+func (f *FakeProvider) VerifyWebhook(body []byte, header http.Header) (Event, error) {
+	return verify(f.secret, body, header.Get("X-Forge-Signature"))
 }
 
 // Sign produces the signature the fake expects. Tests and local tooling use it to send webhooks.
@@ -92,22 +108,3 @@ func verify(secret, body []byte, signature string) (Event, error) {
 	}
 	return ev, nil
 }
-
-// Didit is the production adapter. It is not configured in this build: every call returns
-// ErrNotConfigured, so onboarding cannot approve anyone. The sandbox contract (session creation, the
-// webhook signature scheme and the result schema) must be confirmed against Didit's documentation
-// before this is implemented (VERIFY-DIDIT).
-type Didit struct{}
-
-// StartPersonVerification implements Provider.
-func (Didit) StartPersonVerification(context.Context, string, string) (Session, error) {
-	return Session{}, ErrNotConfigured
-}
-
-// StartBusinessVerification implements Provider.
-func (Didit) StartBusinessVerification(context.Context, string, string) (Session, error) {
-	return Session{}, ErrNotConfigured
-}
-
-// VerifyWebhook implements Provider.
-func (Didit) VerifyWebhook([]byte, string) (Event, error) { return Event{}, ErrNotConfigured }

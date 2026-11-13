@@ -56,6 +56,17 @@ message OnboardingStatus {
   string tier = 6;
   string decline_reason = 7;
   repeated string steps = 8; // steps completed so far, in order
+  // The hosted pages where each subject completes their verification, once they have been started. A link is a
+  // bearer link: whoever has it can complete that verification, so it is given only to the person it is for.
+  repeated VerificationLink verification_links = 9;
+}
+
+// VerificationLink is one subject's verification with the identity provider.
+message VerificationLink {
+  string subject_party_id = 1;
+  string kind = 2;       // "business" or "person"
+  string session_id = 3; // the provider's session
+  string url = 4;        // the hosted page; empty for a provider with none
 }
 
 message GetOnboardingResponse {

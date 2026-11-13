@@ -164,8 +164,17 @@ services:
       TEMPORAL_HOST: 127.0.0.1:7233
       TEMPORAL_NAMESPACE: default
       TEMPORAL_TASK_QUEUE: onboarding
-      KYC_PROVIDER: fake
+      # The fake provider by default. For Didit set KYC_PROVIDER=didit and the DIDIT_* values in .env (never committed);
+      # see docs/PROVIDERS.md. Didit delivers webhooks only to a public https address, so it cannot reach this stack
+      # on a laptop or in a build session: use a staging deployment for the live checks.
+      KYC_PROVIDER: ${KYC_PROVIDER:-fake}
       KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
+      DIDIT_API_KEY: ${DIDIT_API_KEY:-}
+      DIDIT_KYC_WORKFLOW_ID: ${DIDIT_KYC_WORKFLOW_ID:-}
+      DIDIT_KYB_WORKFLOW_ID: ${DIDIT_KYB_WORKFLOW_ID:-}
+      DIDIT_WEBHOOK_SECRET: ${DIDIT_WEBHOOK_SECRET:-}
+      DIDIT_ENVIRONMENT: ${DIDIT_ENVIRONMENT:-sandbox}
+      DIDIT_CALLBACK_URL: ${DIDIT_CALLBACK_URL:-}
       SCREENING_LIST_FILE: /stack/screening-list.txt
       SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
       PARTY_URL: http://127.0.0.1:8081

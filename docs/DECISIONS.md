@@ -39,8 +39,11 @@ for staff) are a proposal until a real token has been inspected. Details and the
 Taken by the owner in session, and it confirms the 2026-10-31 decision: a new organisation, not A-CARD. The owner signs
 up with a personal email address (given in session, not recorded here). **Not yet done:** the account does not exist.
 Sign-up needs an emailed code that only the owner can read, and the Didit and WorkOS connectors in the build session are
-signed in to A-CARD, so they must not be used for this project. The adapter in `services/platform/onboarding` is still a
-stub that refuses every verification. No verification session is approved until the new organisation exists.
+signed in to A-CARD, so they must not be used for this project. The adapter in `services/platform/onboarding` was built
+on 2026-11-13 from Didit's documentation and tested without an account; it has never run against Didit, and the local
+stack still uses the fake provider. No verification session is approved until the new organisation exists.
+The owner chose to keep the A-CARD connectors and add Didit's and WorkOS's own servers as separate connectors for the new
+accounts; the build session checks which account each one is signed in to before using it.
 
 ## Open (need a named owner or a decision)
 

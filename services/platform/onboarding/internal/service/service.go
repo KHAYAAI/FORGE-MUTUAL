@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	enumspb "go.temporal.io/api/enums/v1"
@@ -23,6 +24,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/uuid"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/store"
 )
 
 // onboardingNamespace names the UUIDs derived from idempotency keys (a fixed, project-specific value).
@@ -48,6 +50,18 @@ type Service struct {
 	kyc       kyc.Provider
 	taskQueue string
 	reviews   ReviewQueue
+	sessions  SessionLister
+}
+
+// SessionLister returns the verification sessions started for an onboarding.
+type SessionLister interface {
+	Sessions(ctx context.Context, onboardingID string) ([]store.Session, error)
+}
+
+// WithSessions sets where GetOnboarding reads the verification links from.
+func (s *Service) WithSessions(l SessionLister) *Service {
+	s.sessions = l
+	return s
 }
 
 var (
@@ -149,7 +163,19 @@ func (s *Service) GetOnboarding(ctx context.Context, req *connect.Request[onboar
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&onboardingv1.GetOnboardingResponse{Status: toProto(st)}), nil
+	out := toProto(st)
+	if s.sessions != nil {
+		links, err := s.sessions.Sessions(ctx, req.Msg.OnboardingId)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
+		}
+		for _, l := range links {
+			out.VerificationLinks = append(out.VerificationLinks, &onboardingv1.VerificationLink{
+				SubjectPartyId: l.SubjectPartyID, Kind: l.Kind, SessionId: l.SessionID, Url: l.URL,
+			})
+		}
+	}
+	return connect.NewResponse(&onboardingv1.GetOnboardingResponse{Status: out}), nil
 }
 
 // status reads the workflow's state with its query handler.
@@ -169,20 +195,36 @@ func (s *Service) status(ctx context.Context, id string) (onboarding.Status, err
 	return st, nil
 }
 
-// WebhookHandler receives a provider's verification result. It authenticates the body with the
-// provider's signature before it signals the workflow. Unsigned or altered bodies are refused.
+// maxWebhookBody bounds what a delivery may carry. A decision with every check's detail can be large.
+const maxWebhookBody = 1 << 20
+
+// webhookDeadline is how long the handler may spend. Didit gives up after five seconds, and retries a timeout, so
+// answering inside that window with an error is better than being cut off.
+const webhookDeadline = 4 * time.Second
+
+// WebhookHandler receives a provider's verification result. It authenticates the delivery with the provider's own
+// signature headers before it signals the workflow. Unsigned or altered deliveries are refused.
+//
+// What it answers matters to the provider, which retries some answers and gives up on others:
+//
+//   - 401: the delivery does not authenticate. Never signals the workflow.
+//   - 200: acknowledged and nothing to do. This is a delivery that is not a verdict (a session starting), and a
+//     verdict for an onboarding that has ended or does not exist, which no retry can change.
+//   - 202: a verdict, delivered to the workflow.
+//   - 400: authentic, but not about a session this service started. Not retried.
+//   - 503: the workflow service could not be reached. The provider retries.
 func (s *Service) WebhookHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
-		if err != nil {
+		body, err := io.ReadAll(io.LimitReader(r.Body, maxWebhookBody+1))
+		if err != nil || len(body) > maxWebhookBody {
 			http.Error(w, "unreadable body", http.StatusBadRequest)
 			return
 		}
-		ev, err := s.kyc.VerifyWebhook(body, r.Header.Get("X-Forge-Signature"))
+		ev, err := s.kyc.VerifyWebhook(body, r.Header)
 		switch {
 		case errors.Is(err, kyc.ErrSignature):
 			http.Error(w, "signature", http.StatusUnauthorized)
@@ -190,16 +232,23 @@ func (s *Service) WebhookHandler() http.Handler {
 		case errors.Is(err, kyc.ErrNotConfigured):
 			http.Error(w, "provider not configured", http.StatusServiceUnavailable)
 			return
+		case errors.Is(err, kyc.ErrIgnored):
+			w.WriteHeader(http.StatusOK)
+			return
 		case err != nil:
 			http.Error(w, "invalid webhook", http.StatusBadRequest)
 			return
 		}
-		err = s.tc.SignalWorkflow(r.Context(), ev.OnboardingID, "", onboarding.SignalKYCResult, onboarding.KYCSignal{
+		ctx, cancel := context.WithTimeout(r.Context(), webhookDeadline)
+		defer cancel()
+		err = s.tc.SignalWorkflow(ctx, ev.OnboardingID, "", onboarding.SignalKYCResult, onboarding.KYCSignal{
 			SubjectPartyID: ev.SubjectID, Verdict: ev.Verdict, SessionID: ev.SessionID,
 		})
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
-			http.Error(w, "unknown onboarding", http.StatusNotFound)
+			// The onboarding has ended or never existed. The verdict is authentic and moot, and a provider that is told
+			// 404 retries it for nothing.
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if err != nil {

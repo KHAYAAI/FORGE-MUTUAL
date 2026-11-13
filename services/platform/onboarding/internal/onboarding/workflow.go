@@ -87,6 +87,7 @@ var activityOptions = temporal.RetryPolicy{
 	MaximumAttempts:    5,
 	NonRetryableErrorTypes: []string{
 		ErrTypeNotConfigured,
+		ErrTypeProviderRejected,
 		ErrTypeValidation,
 	},
 }
@@ -254,6 +255,7 @@ func (s Status) AllParties() []string {
 
 // ErrType names are the non-retryable error types activities may return.
 const (
-	ErrTypeNotConfigured = "NotConfigured"
-	ErrTypeValidation    = "Validation"
+	ErrTypeNotConfigured    = "NotConfigured"
+	ErrTypeProviderRejected = "ProviderRejected" // the provider refused a request that a retry cannot fix
+	ErrTypeValidation       = "Validation"
 )

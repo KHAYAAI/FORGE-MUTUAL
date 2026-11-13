@@ -1,6 +1,7 @@
 # SPEC: onboarding
 
-Status: built and tested locally, including against a real Temporal dev server. The Didit adapter is not implemented (see section 6).
+Status: built and tested locally, including against a real Temporal dev server. The Didit adapter is built from Didit's documentation
+and tested without an account; it has never run against Didit (see section 6).
 Human review required before any real customer (ARCHITECTURE.md section 0, rule 3).
 Entity: PLAT. Sections referenced: ARCHITECTURE.md 11.2, 11.3, 15.1, P1-05.
 
@@ -13,9 +14,15 @@ business that passes every check is activated. One that does not is declined, an
 ## 2. Interface
 
 - ConnectRPC `forge.onboarding.v1.OnboardingService`: `StartBusinessOnboarding`, `GetOnboarding`, `ListKYCReviews`,
-  `DecideKYCReview`. The caller allow-list applies.
-- HTTP `POST /webhooks/kyc`: the provider's verdict, authenticated by `X-Forge-Signature` before it signals the
-  workflow. A forged, altered or unsigned body returns 401 and never reaches the workflow.
+  `DecideKYCReview`. The caller allow-list applies. `GetOnboarding` returns, besides the steps, a `verification_links`
+  entry for each subject whose verification has been started: the subject, `person` or `business`, the provider's
+  session ID and the hosted link the person completes.
+- HTTP `POST /webhooks/kyc`: the provider's verdict. The provider authenticates it before it signals the workflow: the
+  fake provider by `X-Forge-Signature`, Didit by `X-Signature-V2` with `X-Timestamp` (section 6). A forged, altered, stale
+  or unsigned body returns 401 and never reaches the workflow. Other replies: 200 for a delivery that is not a verdict, or
+  for an onboarding that has already ended; 202 for a verdict, signalled to the workflow; 400 for an authenticated
+  delivery that is refused (a wrong environment, or no onboarding named); 503 when Temporal is unreachable, so that a
+  provider which retries will try again. The body is limited to 1 MiB and the handler to 4 seconds.
 
 ## 3. The workflow (`internal/onboarding/workflow.go`)
 
@@ -25,7 +32,11 @@ Steps, in order, each an activity with bounded retries:
 1b. `relationships_created`: each director is linked to the company as a director, and as a shareholder or UBO when
    the application gives them a share. The policy's person-to-entity rule (transfer code 63) relies on these links.
 2. `consents_recorded`: company terms, KYB processing and director KYC consents, each with an evidence reference.
-3. `verifications_started`: parties move to KYC_PENDING, and the provider starts each verification.
+3. `verifications_started`: parties move to KYC_PENDING, and the provider starts each verification. The provider's
+   session (ID and hosted link) is recorded in `kyc_session`, one row per subject per onboarding. A retried activity
+   finds the stored session and does not start a second one, which with a live provider would be a second charge. A
+   provider refusal that a retry cannot fix (a 4xx other than 429) is a non-retryable `ProviderRejected` error, and the
+   onboarding fails; anything else is retried.
 4. `kyc_approved`: waits for a signed verdict per party. Any decline, or 7 days without an answer, declines. A
    verdict of REVIEW means the provider cannot decide: a review is opened for a person (section 3a), and the wait
    continues under the same seven days.
@@ -89,9 +100,23 @@ in `policy/tiers.json`.
   default and returns a handle to the existing run. The service sets `WorkflowExecutionErrorWhenAlreadyStarted`, so
   a changed request under the same key is refused. The dev-server test
   `TestDevSameKeyDifferentRequestIsRefusedOnTheRealServer` fails if the flag is removed (verified by mutation).
-- **Didit is not implemented.** `kyc.Didit` refuses everything (`ErrNotConfigured`), so onboarding cannot approve
-  anyone with the real provider. The session contract and webhook signature scheme must be confirmed against Didit's
-  documentation before implementation (VERIFY-DIDIT).
+- **Didit is built but has never run against Didit (VERIFY-DIDIT).** `internal/kyc/didit.go` creates a session per
+  subject (`POST /v3/session/`, `vendor_data` the party ID, `metadata` the onboarding ID, party ID and kind), and
+  verifies webhooks by `X-Signature-V2`: the hex HMAC-SHA256 of the body's canonical JSON, with `X-Timestamp` within five
+  minutes. `Approved`, `Declined` and `In Review` become APPROVED, DECLINED and REVIEW, exactly and case-sensitively;
+  every other status is acknowledged and ignored. A delivery from a different environment than `DIDIT_ENVIRONMENT`, or
+  one that does not name an onboarding and a subject, is refused. The canonical JSON is checked against Didit's own
+  Python reference on over 180 vectors (`internal/kyc/testdata`); the rest is checked against a local fake of the API.
+  Settings: `KYC_PROVIDER` (`didit`, the default, or `fake`), `DIDIT_API_KEY`, `DIDIT_KYC_WORKFLOW_ID`,
+  `DIDIT_KYB_WORKFLOW_ID`, `DIDIT_WEBHOOK_SECRET`, `DIDIT_WEBHOOK_SECRET_PREVIOUS` (while rotating), `DIDIT_ENVIRONMENT`
+  (`sandbox` or `live`), `DIDIT_BASE_URL`, `DIDIT_CALLBACK_URL`. Production (`FORGE_ENV=production`) refuses
+  `KYC_PROVIDER=fake` and `DIDIT_ENVIRONMENT=sandbox`. `cmd/didit-verify` runs a delivery Didit recorded through the
+  verifier, which is the first check against a real account. Details, and what is not yet verified, are in
+  `docs/PROVIDERS.md`.
+- **A verification link reaches no one yet.** The onboarding records the hosted link and `GetOnboarding` returns it, but
+  there is no customer-facing application flow to show it, and no notification that sends it.
+- **An abandoned or expired Didit session is not a verdict.** The onboarding waits out its seven days and declines. Whether
+  to decline earlier or start a new session is a product decision.
 - **Screening uses a fixture list.** The compliance engine (P1-06) replaces it. The list is mandatory: the service
   refuses to start without one.
 - **Deposit insurance flag defaults to false.** `INSURED_DEPOSITS` must be set to `true` only when the sponsor confirms

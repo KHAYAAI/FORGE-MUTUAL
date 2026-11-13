@@ -1,4 +1,5 @@
-// Package store holds KYC reviews: verifications a person must decide before an onboarding can continue.
+// Package store holds KYC reviews (verifications a person must decide before an onboarding can continue) and the
+// verification sessions started with the provider.
 package store
 
 import (
@@ -159,4 +160,65 @@ func (s *Store) MarkSignalled(ctx context.Context, id string, now time.Time) err
 		return fmt.Errorf("store: mark signalled: %w", err)
 	}
 	return nil
+}
+
+// Session is a verification started with the provider for one subject of an onboarding.
+type Session struct {
+	OnboardingID   string
+	SubjectPartyID string
+	Kind           string // "business" or "person"
+	SessionID      string
+	URL            string // the hosted page where the person completes it
+	CreatedAt      time.Time
+}
+
+// RecordSession stores a started session. The first one recorded for a subject stands, so a repeat changes nothing.
+func (s *Store) RecordSession(ctx context.Context, x Session) error {
+	if x.OnboardingID == "" || x.SubjectPartyID == "" || x.SessionID == "" {
+		return errors.New("store: a session needs an onboarding, a subject and a session ID")
+	}
+	if _, err := s.pool.Exec(ctx, `
+		insert into kyc_session (onboarding_id, subject_party_id, kind, session_id, url, created_at)
+		values ($1, $2, $3, $4, $5, $6)
+		on conflict (onboarding_id, subject_party_id) do nothing`,
+		x.OnboardingID, x.SubjectPartyID, x.Kind, x.SessionID, x.URL, x.CreatedAt.UTC()); err != nil {
+		return fmt.Errorf("store: record session: %w", err)
+	}
+	return nil
+}
+
+// Session returns the session started for a subject, and whether there is one.
+func (s *Store) Session(ctx context.Context, onboardingID, subjectID string) (Session, bool, error) {
+	var x Session
+	err := s.pool.QueryRow(ctx, `
+		select onboarding_id, subject_party_id, kind, session_id, url, created_at
+		from kyc_session where onboarding_id = $1 and subject_party_id = $2`, onboardingID, subjectID).
+		Scan(&x.OnboardingID, &x.SubjectPartyID, &x.Kind, &x.SessionID, &x.URL, &x.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Session{}, false, nil
+	}
+	if err != nil {
+		return Session{}, false, fmt.Errorf("store: session: %w", err)
+	}
+	return x, true, nil
+}
+
+// Sessions returns every session started for an onboarding, the business first.
+func (s *Store) Sessions(ctx context.Context, onboardingID string) ([]Session, error) {
+	rows, err := s.pool.Query(ctx, `
+		select onboarding_id, subject_party_id, kind, session_id, url, created_at
+		from kyc_session where onboarding_id = $1 order by kind, subject_party_id`, onboardingID)
+	if err != nil {
+		return nil, fmt.Errorf("store: sessions: %w", err)
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		var x Session
+		if err := rows.Scan(&x.OnboardingID, &x.SubjectPartyID, &x.Kind, &x.SessionID, &x.URL, &x.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
 }

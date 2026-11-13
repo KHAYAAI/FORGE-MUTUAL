@@ -153,3 +153,52 @@ func TestOpenUpgradesATableMadeBeforeDeliveryWasTracked(t *testing.T) {
 		}
 	}
 }
+
+// The first session recorded for a subject stands: a retry that records again changes nothing, and each subject of an
+// onboarding has its own. The business sorts first.
+func TestSessionsAreRecordedOncePerSubject(t *testing.T) {
+	ctx := context.Background()
+	st := openTest(t)
+	first := Session{OnboardingID: "onb-1", SubjectPartyID: "company-1", Kind: "business", SessionID: "s-co", URL: "https://verify.example/co", CreatedAt: now}
+	if err := st.RecordSession(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	again := first
+	again.SessionID, again.URL = "s-other", "https://verify.example/other"
+	if err := st.RecordSession(ctx, again); err != nil {
+		t.Fatal(err)
+	}
+	got, ok, err := st.Session(ctx, "onb-1", "company-1")
+	if err != nil || !ok || got.SessionID != "s-co" || got.URL != "https://verify.example/co" {
+		t.Fatalf("session = %+v, %v, %v; the first one recorded must stand", got, ok, err)
+	}
+	if _, ok, _ := st.Session(ctx, "onb-1", "person-1"); ok {
+		t.Fatal("a subject with no session must not find one")
+	}
+	if err := st.RecordSession(ctx, Session{OnboardingID: "onb-1", SubjectPartyID: "person-1", Kind: "person", SessionID: "s-p", URL: "https://verify.example/p", CreatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.RecordSession(ctx, Session{OnboardingID: "onb-2", SubjectPartyID: "company-2", Kind: "business", SessionID: "s-x", CreatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	all, err := st.Sessions(ctx, "onb-1")
+	if err != nil || len(all) != 2 || all[0].Kind != "business" || all[1].Kind != "person" {
+		t.Fatalf("sessions = %+v, %v", all, err)
+	}
+}
+
+func TestASessionNeedsItsParts(t *testing.T) {
+	st := openTest(t)
+	for name, x := range map[string]Session{
+		"no onboarding": {SubjectPartyID: "p", Kind: "person", SessionID: "s"},
+		"no subject":    {OnboardingID: "o", Kind: "person", SessionID: "s"},
+		"no session id": {OnboardingID: "o", SubjectPartyID: "p", Kind: "person"},
+	} {
+		if err := st.RecordSession(context.Background(), x); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+	if err := st.RecordSession(context.Background(), Session{OnboardingID: "o", SubjectPartyID: "p", Kind: "robot", SessionID: "s", CreatedAt: now}); err == nil {
+		t.Error("an unknown kind must be refused by the table")
+	}
+}

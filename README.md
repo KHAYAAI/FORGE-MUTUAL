@@ -33,8 +33,10 @@ Assessed 2026-11-03.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
 - Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
   it. The apps sign in with development sign-in only.
-- Didit for KYC and KYB: decided on 2026-11-03, in a new account the owner creates. The organisation does not exist and
-  the adapter is a stub, so the fake provider is in use. The owner's steps are in `docs/PROVIDERS.md`.
+- Didit for KYC and KYB: decided on 2026-11-03, in a new account the owner creates. The organisation does not exist. The
+  adapter is built from Didit's documentation and tested without an account (its webhook signature is checked against
+  Didit's own reference code), but it has never run against Didit, so the local stack uses the fake provider. The
+  owner's steps are in `docs/PROVIDERS.md`.
 - ADR-0020 (legal form of the bank layer) and ADR-0012 (sector appetite): open human decisions.
 - goAML schema (VERIFY-GOAML): submission is refused until it is confirmed.
 - WORM storage for audit anchors and evidence packs (VERIFY-WORM): local files only.
@@ -94,8 +96,9 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
   (AES-256-GCM) with a keyed index, founder and company separation enforced, consent checked live.
 - **Onboarding** (`services/platform/onboarding`): Temporal workflow `OnboardBusiness`, tested on a real Temporal dev
   server and run on the local stack. A provider's REVIEW verdict parks the workflow until a compliance person decides
-  it; the decision is recorded once, then delivered to the workflow until it has been told. KYC uses a **fake provider**; the Didit adapter is a stub
-  (see *Blocked*).
+  it; the decision is recorded once, then delivered to the workflow until it has been told. On the local stack KYC uses a **fake provider**. The Didit
+  adapter is built, with a recorded session per subject and signed-webhook verification, and tested without an account; it has never run
+  against Didit (see *Blocked*).
 - **Rails gateway** (`services/bank/rails-gateway`) and **payments orchestrator** (`services/bank/payments-orchestrator`):
   domestic payment saga with reserve, initiate, settle or release, and repair. Settlement posts the hold, then records
   the sponsor's debit as a clearing leg into the pool. Each rail status is recorded when it is seen. Inbound credits
@@ -161,8 +164,7 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists, and the back office has its
 KYC review screen and live cases. Not yet built: the customer application flow (a public onboarding endpoint and an apply
 page), the `OnboardPerson` workflow, moving the payments orchestrator's rails from the rails-gateway simulator onto
-`BankLayer`, the customer USD account flow, the Didit adapter beyond its stub, and the core-bridge on the local stack (it
-needs a live Apache Fineract there).
+`BankLayer`, the customer USD account flow, and the core-bridge on the local stack (it needs a live Apache Fineract there).
 
 ## Production configuration
 
@@ -181,8 +183,9 @@ secrets are environment variables, with no secret store integrated.
 ## Blocked
 
 - **Didit (KYC/KYB)**: the decision is a new organisation, not A-CARD. That organisation does not exist yet, and no tool
-  in this environment can create one. The owner must create it and grant access. No verification session has been created,
-  and none is approved.
+  in this environment can create one. The owner must create it (by adding Didit's own connector and signing up on its
+  page with the personal email) and grant access. The adapter is built, but no verification session has been created, no
+  delivery from Didit has been checked, and none is approved.
 - **TigerBeetle cluster: has never run.** Tried and failed, all from this environment: the `ghcr.io` image's blob host is
   forbidden; `quay.io` and Docker Hub have no published image; GitHub release downloads return 403; the Zig download host
   is blocked, so the server cannot be built; the Go module proxy has the module path but no tagged versions. Without the

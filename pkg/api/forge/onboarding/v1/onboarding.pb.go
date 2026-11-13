@@ -336,8 +336,11 @@ type OnboardingStatus struct {
 	Tier           string                 `protobuf:"bytes,6,opt,name=tier,proto3" json:"tier,omitempty"`
 	DeclineReason  string                 `protobuf:"bytes,7,opt,name=decline_reason,json=declineReason,proto3" json:"decline_reason,omitempty"`
 	Steps          []string               `protobuf:"bytes,8,rep,name=steps,proto3" json:"steps,omitempty"` // steps completed so far, in order
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// The hosted pages where each subject completes their verification, once they have been started. A link is a
+	// bearer link: whoever has it can complete that verification, so it is given only to the person it is for.
+	VerificationLinks []*VerificationLink `protobuf:"bytes,9,rep,name=verification_links,json=verificationLinks,proto3" json:"verification_links,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *OnboardingStatus) Reset() {
@@ -426,6 +429,82 @@ func (x *OnboardingStatus) GetSteps() []string {
 	return nil
 }
 
+func (x *OnboardingStatus) GetVerificationLinks() []*VerificationLink {
+	if x != nil {
+		return x.VerificationLinks
+	}
+	return nil
+}
+
+// VerificationLink is one subject's verification with the identity provider.
+type VerificationLink struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	SubjectPartyId string                 `protobuf:"bytes,1,opt,name=subject_party_id,json=subjectPartyId,proto3" json:"subject_party_id,omitempty"`
+	Kind           string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`                            // "business" or "person"
+	SessionId      string                 `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // the provider's session
+	Url            string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`                              // the hosted page; empty for a provider with none
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *VerificationLink) Reset() {
+	*x = VerificationLink{}
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerificationLink) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerificationLink) ProtoMessage() {}
+
+func (x *VerificationLink) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerificationLink.ProtoReflect.Descriptor instead.
+func (*VerificationLink) Descriptor() ([]byte, []int) {
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *VerificationLink) GetSubjectPartyId() string {
+	if x != nil {
+		return x.SubjectPartyId
+	}
+	return ""
+}
+
+func (x *VerificationLink) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *VerificationLink) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *VerificationLink) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 type GetOnboardingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *OnboardingStatus      `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
@@ -435,7 +514,7 @@ type GetOnboardingResponse struct {
 
 func (x *GetOnboardingResponse) Reset() {
 	*x = GetOnboardingResponse{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[5]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -447,7 +526,7 @@ func (x *GetOnboardingResponse) String() string {
 func (*GetOnboardingResponse) ProtoMessage() {}
 
 func (x *GetOnboardingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[5]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -460,7 +539,7 @@ func (x *GetOnboardingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOnboardingResponse.ProtoReflect.Descriptor instead.
 func (*GetOnboardingResponse) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{5}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetOnboardingResponse) GetStatus() *OnboardingStatus {
@@ -488,7 +567,7 @@ type KYCReview struct {
 
 func (x *KYCReview) Reset() {
 	*x = KYCReview{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[6]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -500,7 +579,7 @@ func (x *KYCReview) String() string {
 func (*KYCReview) ProtoMessage() {}
 
 func (x *KYCReview) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[6]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -513,7 +592,7 @@ func (x *KYCReview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KYCReview.ProtoReflect.Descriptor instead.
 func (*KYCReview) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{6}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *KYCReview) GetReviewId() string {
@@ -595,7 +674,7 @@ type ListKYCReviewsRequest struct {
 
 func (x *ListKYCReviewsRequest) Reset() {
 	*x = ListKYCReviewsRequest{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[7]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +686,7 @@ func (x *ListKYCReviewsRequest) String() string {
 func (*ListKYCReviewsRequest) ProtoMessage() {}
 
 func (x *ListKYCReviewsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[7]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +699,7 @@ func (x *ListKYCReviewsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListKYCReviewsRequest.ProtoReflect.Descriptor instead.
 func (*ListKYCReviewsRequest) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{7}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListKYCReviewsRequest) GetOpenOnly() bool {
@@ -639,7 +718,7 @@ type ListKYCReviewsResponse struct {
 
 func (x *ListKYCReviewsResponse) Reset() {
 	*x = ListKYCReviewsResponse{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[8]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +730,7 @@ func (x *ListKYCReviewsResponse) String() string {
 func (*ListKYCReviewsResponse) ProtoMessage() {}
 
 func (x *ListKYCReviewsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[8]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +743,7 @@ func (x *ListKYCReviewsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListKYCReviewsResponse.ProtoReflect.Descriptor instead.
 func (*ListKYCReviewsResponse) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{8}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListKYCReviewsResponse) GetReviews() []*KYCReview {
@@ -686,7 +765,7 @@ type DecideKYCReviewRequest struct {
 
 func (x *DecideKYCReviewRequest) Reset() {
 	*x = DecideKYCReviewRequest{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[9]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -698,7 +777,7 @@ func (x *DecideKYCReviewRequest) String() string {
 func (*DecideKYCReviewRequest) ProtoMessage() {}
 
 func (x *DecideKYCReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[9]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -711,7 +790,7 @@ func (x *DecideKYCReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideKYCReviewRequest.ProtoReflect.Descriptor instead.
 func (*DecideKYCReviewRequest) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{9}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DecideKYCReviewRequest) GetReviewId() string {
@@ -751,7 +830,7 @@ type DecideKYCReviewResponse struct {
 
 func (x *DecideKYCReviewResponse) Reset() {
 	*x = DecideKYCReviewResponse{}
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[10]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +842,7 @@ func (x *DecideKYCReviewResponse) String() string {
 func (*DecideKYCReviewResponse) ProtoMessage() {}
 
 func (x *DecideKYCReviewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[10]
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +855,7 @@ func (x *DecideKYCReviewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideKYCReviewResponse.ProtoReflect.Descriptor instead.
 func (*DecideKYCReviewResponse) Descriptor() ([]byte, []int) {
-	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{10}
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DecideKYCReviewResponse) GetReview() *KYCReview {
@@ -811,7 +890,7 @@ const file_forge_onboarding_v1_onboarding_proto_rawDesc = "" +
 	"\x1fStartBusinessOnboardingResponse\x12#\n" +
 	"\ronboarding_id\x18\x01 \x01(\tR\fonboardingId\";\n" +
 	"\x14GetOnboardingRequest\x12#\n" +
-	"\ronboarding_id\x18\x01 \x01(\tR\fonboardingId\"\xb9\x02\n" +
+	"\ronboarding_id\x18\x01 \x01(\tR\fonboardingId\"\x8f\x03\n" +
 	"\x10OnboardingStatus\x12#\n" +
 	"\ronboarding_id\x18\x01 \x01(\tR\fonboardingId\x12:\n" +
 	"\x05state\x18\x02 \x01(\x0e2$.forge.onboarding.v1.OnboardingStateR\x05state\x12(\n" +
@@ -821,7 +900,14 @@ const file_forge_onboarding_v1_onboarding_proto_rawDesc = "" +
 	"accountIds\x12\x12\n" +
 	"\x04tier\x18\x06 \x01(\tR\x04tier\x12%\n" +
 	"\x0edecline_reason\x18\a \x01(\tR\rdeclineReason\x12\x14\n" +
-	"\x05steps\x18\b \x03(\tR\x05steps\"V\n" +
+	"\x05steps\x18\b \x03(\tR\x05steps\x12T\n" +
+	"\x12verification_links\x18\t \x03(\v2%.forge.onboarding.v1.VerificationLinkR\x11verificationLinks\"\x81\x01\n" +
+	"\x10VerificationLink\x12(\n" +
+	"\x10subject_party_id\x18\x01 \x01(\tR\x0esubjectPartyId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x03 \x01(\tR\tsessionId\x12\x10\n" +
+	"\x03url\x18\x04 \x01(\tR\x03url\"V\n" +
 	"\x15GetOnboardingResponse\x12=\n" +
 	"\x06status\x18\x01 \x01(\v2%.forge.onboarding.v1.OnboardingStatusR\x06status\"\xaf\x02\n" +
 	"\tKYCReview\x12\x1b\n" +
@@ -873,7 +959,7 @@ func file_forge_onboarding_v1_onboarding_proto_rawDescGZIP() []byte {
 }
 
 var file_forge_onboarding_v1_onboarding_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forge_onboarding_v1_onboarding_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_forge_onboarding_v1_onboarding_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_forge_onboarding_v1_onboarding_proto_goTypes = []any{
 	(OnboardingState)(0),                    // 0: forge.onboarding.v1.OnboardingState
 	(*Director)(nil),                        // 1: forge.onboarding.v1.Director
@@ -881,32 +967,34 @@ var file_forge_onboarding_v1_onboarding_proto_goTypes = []any{
 	(*StartBusinessOnboardingResponse)(nil), // 3: forge.onboarding.v1.StartBusinessOnboardingResponse
 	(*GetOnboardingRequest)(nil),            // 4: forge.onboarding.v1.GetOnboardingRequest
 	(*OnboardingStatus)(nil),                // 5: forge.onboarding.v1.OnboardingStatus
-	(*GetOnboardingResponse)(nil),           // 6: forge.onboarding.v1.GetOnboardingResponse
-	(*KYCReview)(nil),                       // 7: forge.onboarding.v1.KYCReview
-	(*ListKYCReviewsRequest)(nil),           // 8: forge.onboarding.v1.ListKYCReviewsRequest
-	(*ListKYCReviewsResponse)(nil),          // 9: forge.onboarding.v1.ListKYCReviewsResponse
-	(*DecideKYCReviewRequest)(nil),          // 10: forge.onboarding.v1.DecideKYCReviewRequest
-	(*DecideKYCReviewResponse)(nil),         // 11: forge.onboarding.v1.DecideKYCReviewResponse
+	(*VerificationLink)(nil),                // 6: forge.onboarding.v1.VerificationLink
+	(*GetOnboardingResponse)(nil),           // 7: forge.onboarding.v1.GetOnboardingResponse
+	(*KYCReview)(nil),                       // 8: forge.onboarding.v1.KYCReview
+	(*ListKYCReviewsRequest)(nil),           // 9: forge.onboarding.v1.ListKYCReviewsRequest
+	(*ListKYCReviewsResponse)(nil),          // 10: forge.onboarding.v1.ListKYCReviewsResponse
+	(*DecideKYCReviewRequest)(nil),          // 11: forge.onboarding.v1.DecideKYCReviewRequest
+	(*DecideKYCReviewResponse)(nil),         // 12: forge.onboarding.v1.DecideKYCReviewResponse
 }
 var file_forge_onboarding_v1_onboarding_proto_depIdxs = []int32{
 	1,  // 0: forge.onboarding.v1.StartBusinessOnboardingRequest.directors:type_name -> forge.onboarding.v1.Director
 	0,  // 1: forge.onboarding.v1.OnboardingStatus.state:type_name -> forge.onboarding.v1.OnboardingState
-	5,  // 2: forge.onboarding.v1.GetOnboardingResponse.status:type_name -> forge.onboarding.v1.OnboardingStatus
-	7,  // 3: forge.onboarding.v1.ListKYCReviewsResponse.reviews:type_name -> forge.onboarding.v1.KYCReview
-	7,  // 4: forge.onboarding.v1.DecideKYCReviewResponse.review:type_name -> forge.onboarding.v1.KYCReview
-	2,  // 5: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:input_type -> forge.onboarding.v1.StartBusinessOnboardingRequest
-	4,  // 6: forge.onboarding.v1.OnboardingService.GetOnboarding:input_type -> forge.onboarding.v1.GetOnboardingRequest
-	8,  // 7: forge.onboarding.v1.OnboardingService.ListKYCReviews:input_type -> forge.onboarding.v1.ListKYCReviewsRequest
-	10, // 8: forge.onboarding.v1.OnboardingService.DecideKYCReview:input_type -> forge.onboarding.v1.DecideKYCReviewRequest
-	3,  // 9: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:output_type -> forge.onboarding.v1.StartBusinessOnboardingResponse
-	6,  // 10: forge.onboarding.v1.OnboardingService.GetOnboarding:output_type -> forge.onboarding.v1.GetOnboardingResponse
-	9,  // 11: forge.onboarding.v1.OnboardingService.ListKYCReviews:output_type -> forge.onboarding.v1.ListKYCReviewsResponse
-	11, // 12: forge.onboarding.v1.OnboardingService.DecideKYCReview:output_type -> forge.onboarding.v1.DecideKYCReviewResponse
-	9,  // [9:13] is the sub-list for method output_type
-	5,  // [5:9] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	6,  // 2: forge.onboarding.v1.OnboardingStatus.verification_links:type_name -> forge.onboarding.v1.VerificationLink
+	5,  // 3: forge.onboarding.v1.GetOnboardingResponse.status:type_name -> forge.onboarding.v1.OnboardingStatus
+	8,  // 4: forge.onboarding.v1.ListKYCReviewsResponse.reviews:type_name -> forge.onboarding.v1.KYCReview
+	8,  // 5: forge.onboarding.v1.DecideKYCReviewResponse.review:type_name -> forge.onboarding.v1.KYCReview
+	2,  // 6: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:input_type -> forge.onboarding.v1.StartBusinessOnboardingRequest
+	4,  // 7: forge.onboarding.v1.OnboardingService.GetOnboarding:input_type -> forge.onboarding.v1.GetOnboardingRequest
+	9,  // 8: forge.onboarding.v1.OnboardingService.ListKYCReviews:input_type -> forge.onboarding.v1.ListKYCReviewsRequest
+	11, // 9: forge.onboarding.v1.OnboardingService.DecideKYCReview:input_type -> forge.onboarding.v1.DecideKYCReviewRequest
+	3,  // 10: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:output_type -> forge.onboarding.v1.StartBusinessOnboardingResponse
+	7,  // 11: forge.onboarding.v1.OnboardingService.GetOnboarding:output_type -> forge.onboarding.v1.GetOnboardingResponse
+	10, // 12: forge.onboarding.v1.OnboardingService.ListKYCReviews:output_type -> forge.onboarding.v1.ListKYCReviewsResponse
+	12, // 13: forge.onboarding.v1.OnboardingService.DecideKYCReview:output_type -> forge.onboarding.v1.DecideKYCReviewResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_forge_onboarding_v1_onboarding_proto_init() }
@@ -920,7 +1008,7 @@ func file_forge_onboarding_v1_onboarding_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_onboarding_v1_onboarding_proto_rawDesc), len(file_forge_onboarding_v1_onboarding_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

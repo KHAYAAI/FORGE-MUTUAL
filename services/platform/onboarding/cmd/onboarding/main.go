@@ -113,6 +113,7 @@ func run(log *slog.Logger) error {
 		InsuredDeposits: os.Getenv("INSURED_DEPOSITS") == "true",
 		PolicyEntity:    getenv("POLICY_ENTITY", "PLAT"),
 		Reviews:         reviews,
+		Sessions:        reviews,
 	}
 
 	w := worker.New(tc, taskQueue, worker.Options{})
@@ -123,7 +124,7 @@ func run(log *slog.Logger) error {
 	}
 	defer w.Stop()
 
-	svc := service.New(tc, provider, taskQueue).WithReviews(reviews)
+	svc := service.New(tc, provider, taskQueue).WithReviews(reviews).WithSessions(reviews)
 	// A decision is recorded before the workflow is told. This tells it again if the first attempt failed.
 	go svc.RunRedelivery(ctx, 15*time.Second, log)
 	path, handler := onboardingv1connect.NewOnboardingServiceHandler(svc,
@@ -139,7 +140,11 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() { _ = stopTracing(context.Background()) }()
-	if err := serve.RefuseInProduction(serve.Switch{Name: "KYC_PROVIDER=fake", Set: getenv("KYC_PROVIDER", "didit") == "fake"}); err != nil {
+	if err := serve.RefuseInProduction(
+		serve.Switch{Name: "KYC_PROVIDER=fake", Set: getenv("KYC_PROVIDER", "didit") == "fake"},
+		// A Didit sandbox application mocks its providers and can approve anyone.
+		serve.Switch{Name: "DIDIT_ENVIRONMENT=sandbox", Set: os.Getenv("DIDIT_ENVIRONMENT") == "sandbox"},
+	); err != nil {
 		return err
 	}
 	tlsCfg, err := serve.FromEnv(listen)
@@ -154,8 +159,18 @@ func run(log *slog.Logger) error {
 	return serve.Run(ctx, srv, log)
 }
 
-// providerFromEnv selects the identity provider. The fake needs an explicit secret; Didit is not
-// configured in this build and refuses every verification.
+// providerFromEnv selects the identity provider. The fake needs an explicit secret. Didit needs its API key, its two
+// workflows, its webhook secret and the environment its application runs in; without them the service does not start,
+// so an unconfigured provider can never approve anyone. Secrets are read from the environment and never logged.
+//
+//	DIDIT_API_KEY                 the application's API key
+//	DIDIT_KYC_WORKFLOW_ID         the workflow for a person (a UUID from the Didit console)
+//	DIDIT_KYB_WORKFLOW_ID         the workflow for a business
+//	DIDIT_WEBHOOK_SECRET          the webhook destination's secret_shared_key
+//	DIDIT_WEBHOOK_SECRET_PREVIOUS the old secret, accepted too while it is being rotated (optional)
+//	DIDIT_ENVIRONMENT             "sandbox" or "live"; production accepts only "live"
+//	DIDIT_BASE_URL                default https://verification.didit.me (optional)
+//	DIDIT_CALLBACK_URL            where Didit sends the person when they finish (optional)
 func providerFromEnv() (kyc.Provider, error) {
 	switch getenv("KYC_PROVIDER", "didit") {
 	case "fake":
@@ -165,7 +180,20 @@ func providerFromEnv() (kyc.Provider, error) {
 		}
 		return kyc.NewFake([]byte(secret))
 	case "didit":
-		return kyc.Didit{}, nil
+		d, err := kyc.NewDidit(kyc.DiditConfig{
+			APIKey:                os.Getenv("DIDIT_API_KEY"),
+			KYCWorkflowID:         os.Getenv("DIDIT_KYC_WORKFLOW_ID"),
+			KYBWorkflowID:         os.Getenv("DIDIT_KYB_WORKFLOW_ID"),
+			WebhookSecret:         os.Getenv("DIDIT_WEBHOOK_SECRET"),
+			PreviousWebhookSecret: os.Getenv("DIDIT_WEBHOOK_SECRET_PREVIOUS"),
+			Environment:           os.Getenv("DIDIT_ENVIRONMENT"),
+			BaseURL:               os.Getenv("DIDIT_BASE_URL"),
+			CallbackURL:           os.Getenv("DIDIT_CALLBACK_URL"),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("KYC_PROVIDER=didit: %w", err)
+		}
+		return d, nil
 	default:
 		return nil, errors.New("KYC_PROVIDER must be fake or didit")
 	}
