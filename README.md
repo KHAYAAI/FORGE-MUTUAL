@@ -11,17 +11,20 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 
 **Not ready to launch.** The v1 software is built, tested, and runs end to end on a local stack. Launch is blocked by
 decisions that only people can make, by external systems this build could not run, and by the engineering gaps below.
-Assessed 2026-11-03.
+Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
 
 **Verified**
 
-- The full gate passes on `b5e69d5`: lint, 81 test packages against real Postgres 17 and Kafka 3.9, and the isolation
+- The full gate passes on `7264619`: lint, 82 test packages against real Postgres 17 and Kafka 3.9, and the isolation
   check.
-- 422 Go test functions in 37 modules. Playwright: 58 journeys across the two apps, including the accessibility scans
+- 461 Go test functions in 37 modules. Playwright: 58 journeys across the two apps, including the accessibility scans
   and the security-header checks.
 - The local stack starts from nothing in one command (`make up`). `make test-stack` passes on a fresh stack: a customer
   onboarded through the real workflow sees the account it opened, and a compliance person decides a real review and
   the onboarding completes.
+- The Didit adapter's webhook signature reproduces Didit's own published reference code on over 180 vectors, and the
+  onboarding suites pass against a real Temporal dev server (`make test-temporal`, which the gate does not run), including
+  a whole onboarding completed by Didit-signed deliveries. It has **not** run against Didit itself.
 - Production refusals, mutual TLS, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
   Temporal stopped, a decision was recorded and the reviewer was told it would be retried; once Temporal was back, the
