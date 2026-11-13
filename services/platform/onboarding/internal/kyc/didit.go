@@ -209,23 +209,29 @@ func snippet(b []byte) string {
 
 // VerifyWebhook implements Provider. A delivery authenticates when X-Signature-V2 is the hex HMAC-SHA256, under the
 // destination's secret, of the body's canonical JSON, and X-Timestamp is within five minutes of the clock. Only then
-// is the body read. Anything that does not authenticate returns ErrSignature, and says no more than that.
+// is the body read. Anything that does not authenticate returns ErrSignature with a short reason, for the operator's
+// log: a wrong or rotated secret, a drifting clock and a missing header look the same to the sender, and must not to
+// whoever is setting the destination up. The reason never holds a secret, a signature or any of the body.
 func (d *Didit) VerifyWebhook(body []byte, header http.Header) (Event, error) {
 	signature := strings.ToLower(strings.TrimSpace(header.Get("X-Signature-V2")))
 	stamp := strings.TrimSpace(header.Get("X-Timestamp"))
 	if signature == "" || stamp == "" {
-		return Event{}, ErrSignature
+		return Event{}, refused("X-Signature-V2 or X-Timestamp is missing")
 	}
 	sent, err := strconv.ParseInt(stamp, 10, 64)
 	if err != nil || stamp[0] == '+' || stamp[0] == '-' {
-		return Event{}, ErrSignature
+		return Event{}, refused("X-Timestamp is not a whole number of seconds")
 	}
-	if skew := d.now().Unix() - sent; skew > int64(diditMaxSkew/time.Second) || skew < -int64(diditMaxSkew/time.Second) {
-		return Event{}, ErrSignature
+	// Old points at a delay or a replay; ahead points at this service's clock running slow.
+	limit := int64(diditMaxSkew / time.Second)
+	if age := d.now().Unix() - sent; age > limit {
+		return Event{}, refused(fmt.Sprintf("X-Timestamp is %ds old, and %ds is allowed", age, limit))
+	} else if age < -limit {
+		return Event{}, refused(fmt.Sprintf("X-Timestamp is %ds ahead of this service's clock, and %ds is allowed", -age, limit))
 	}
 	canonical, err := canonicalJSON(body)
 	if err != nil {
-		return Event{}, ErrSignature
+		return Event{}, refused("the body is not a JSON document")
 	}
 	valid := false
 	for _, secret := range d.secrets { // every secret is tried, so the time taken does not say which one matched
@@ -234,10 +240,14 @@ func (d *Didit) VerifyWebhook(body []byte, header http.Header) (Event, error) {
 		}
 	}
 	if !valid {
-		return Event{}, ErrSignature
+		return Event{}, refused("X-Signature-V2 does not match the body under any configured secret")
 	}
 	return d.decode(body)
 }
+
+// refused is ErrSignature with the reason a delivery did not authenticate. The reason is for the operator's log. The
+// sender is told only 401.
+func refused(reason string) error { return fmt.Errorf("%w: %s", ErrSignature, reason) }
 
 // SignDidit produces the X-Signature-V2 value Didit would send for a body. Tests and local tooling use it to send
 // deliveries, as Sign does for the fake provider.

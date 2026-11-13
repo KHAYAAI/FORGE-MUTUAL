@@ -3,12 +3,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -38,8 +41,18 @@ func devRand(t *testing.T) string {
 }
 
 // devService returns the service wired to a real client and a worker running the workflow with fake
-// activities on a fresh task queue.
+// activities on a fresh task queue, with the fake KYC provider.
 func devService(t *testing.T) (*Service, client.Client) {
+	t.Helper()
+	provider, err := kyc.NewFake([]byte(devSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return devServiceWith(t, provider)
+}
+
+// devServiceWith is devService with the given KYC provider.
+func devServiceWith(t *testing.T, provider kyc.Provider) (*Service, client.Client) {
 	t.Helper()
 	hostPort := os.Getenv("TEMPORAL_HOST")
 	if hostPort == "" {
@@ -58,10 +71,6 @@ func devService(t *testing.T) (*Service, client.Client) {
 		t.Fatal(err)
 	}
 	t.Cleanup(w.Stop)
-	provider, err := kyc.NewFake([]byte(devSecret))
-	if err != nil {
-		t.Fatal(err)
-	}
 	return New(c, provider, queue), c
 }
 
@@ -171,9 +180,10 @@ func TestDevWebhookVerdictsCompleteTheOnboarding(t *testing.T) {
 		t.Fatalf("forged verdict: %d", w.Code)
 	}
 
-	// A signed verdict for an onboarding that does not exist is reported as not found.
-	if code := signedWebhook(t, h, "11111111-1111-4111-8111-111111111111", "company-1", "APPROVED"); code != http.StatusNotFound {
-		t.Fatalf("unknown onboarding webhook: %d", code)
+	// A signed verdict for an onboarding that does not exist (or has ended) is acknowledged with 200, not 404: it is
+	// authentic and moot, and a provider told 404 would retry it for nothing. This is the real server's NotFound.
+	if code := signedWebhook(t, h, "11111111-1111-4111-8111-111111111111", "company-1", "APPROVED"); code != http.StatusOK {
+		t.Fatalf("unknown onboarding webhook: %d, want 200", code)
 	}
 
 	for _, subject := range []string{"company-1", "person-1", "person-2"} {
@@ -190,5 +200,99 @@ func TestDevWebhookVerdictsCompleteTheOnboarding(t *testing.T) {
 	}
 	if final.State != onboarding.StateCompleted {
 		t.Fatalf("final = %+v", final)
+	}
+}
+
+// The same journey with Didit as the provider: deliveries signed as Didit signs them, handled by the real handler and
+// the real Temporal server. Everything that must not reach the workflow is refused on the way, and what is moot is
+// acknowledged so that Didit does not retry it.
+func TestDevDiditVerdictsCompleteTheOnboarding(t *testing.T) {
+	const secret = "whsec_dev_server_test_secret_0123456789"
+	provider, err := kyc.NewDidit(kyc.DiditConfig{
+		APIKey: "unused", KYCWorkflowID: "11111111-1111-4111-8111-111111111111", KYBWorkflowID: "22222222-2222-4222-8222-222222222222",
+		WebhookSecret: secret, Environment: "live",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, c := devServiceWith(t, provider)
+	h := s.WebhookHandler()
+	started, err := s.StartBusinessOnboarding(context.Background(), devRequest("dev-didit-"+devRand(t), "Forge Pilot (Pty) Ltd"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := started.Msg.OnboardingId
+	waitForSteps(t, s, id, "verifications_started")
+
+	send := func(onboardingID, subject, status, environment string, mod func(http.Header)) int {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"event_id": "dev-" + devRand(t), "webhook_type": "status.updated", "environment": environment,
+			"session_id": "sess-" + subject, "status": status, "vendor_data": subject,
+			"metadata": map[string]any{"onboarding_id": onboardingID, "subject_party_id": subject},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sig, err := kyc.SignDidit(secret, body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodPost, "/webhooks/kyc", bytes.NewReader(body))
+		r.Header.Set("X-Signature-V2", sig)
+		r.Header.Set("X-Timestamp", strconv.FormatInt(time.Now().Unix(), 10))
+		if mod != nil {
+			mod(r.Header)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w.Code
+	}
+
+	// Sent in this order. Each is refused or acknowledged, and none may reach the workflow.
+	for _, tc := range []struct {
+		name      string
+		want, got int
+	}{
+		{"forged", http.StatusUnauthorized, send(id, "company-1", "Approved", "live", func(h http.Header) { h.Set("X-Signature-V2", strings.Repeat("0", 64)) })},
+		{"stale", http.StatusUnauthorized, send(id, "company-1", "Approved", "live", func(h http.Header) {
+			h.Set("X-Timestamp", strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10))
+		})},
+		{"a sandbox verdict at a live service", http.StatusBadRequest, send(id, "company-1", "Approved", "sandbox", nil)},
+		{"not a verdict", http.StatusOK, send(id, "company-1", "In Progress", "live", nil)},
+		{"an onboarding that does not exist", http.StatusOK, send("11111111-1111-4111-8111-111111111111", "company-1", "Approved", "live", nil)},
+	} {
+		if tc.got != tc.want {
+			t.Fatalf("%s: %d, want %d", tc.name, tc.got, tc.want)
+		}
+	}
+	// None of that reached the workflow: it is still waiting on every subject.
+	res, err := s.GetOnboarding(context.Background(), connect.NewRequest(&onboardingv1.GetOnboardingRequest{OnboardingId: id}))
+	if err != nil || res.Msg.Status.State != onboardingv1.OnboardingState_ONBOARDING_STATE_RUNNING {
+		t.Fatalf("after refused deliveries: %v %v", res, err)
+	}
+	for _, step := range res.Msg.Status.Steps {
+		if step == "kyc_approved" {
+			t.Fatalf("a delivery that must not count approved a subject: %v", res.Msg.Status.Steps)
+		}
+	}
+
+	for _, subject := range []string{"company-1", "person-1", "person-2"} {
+		if code := send(id, subject, "Approved", "live", nil); code != http.StatusAccepted {
+			t.Fatalf("approval for %s: %d", subject, code)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	var final onboarding.Status
+	if err := c.GetWorkflow(context.Background(), id, "").Get(ctx, &final); err != nil {
+		t.Fatalf("workflow: %v", err)
+	}
+	if final.State != onboarding.StateCompleted {
+		t.Fatalf("final = %+v", final)
+	}
+	// Didit retries what it is not sure arrived. A verdict that comes after the onboarding has ended is acknowledged.
+	if code := send(id, "company-1", "Approved", "live", nil); code != http.StatusOK {
+		t.Fatalf("a verdict after the onboarding ended: %d, want 200", code)
 	}
 }

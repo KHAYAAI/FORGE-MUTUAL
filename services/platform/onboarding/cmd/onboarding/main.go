@@ -124,7 +124,7 @@ func run(log *slog.Logger) error {
 	}
 	defer w.Stop()
 
-	svc := service.New(tc, provider, taskQueue).WithReviews(reviews).WithSessions(reviews)
+	svc := service.New(tc, provider, taskQueue).WithReviews(reviews).WithSessions(reviews).WithLogger(log)
 	// A decision is recorded before the workflow is told. This tells it again if the first attempt failed.
 	go svc.RunRedelivery(ctx, 15*time.Second, log)
 	path, handler := onboardingv1connect.NewOnboardingServiceHandler(svc,

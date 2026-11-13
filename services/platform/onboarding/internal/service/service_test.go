@@ -1,9 +1,11 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -340,6 +342,66 @@ func TestADiditVerdictForAnEndedOnboardingIsAcknowledged(t *testing.T) {
 	w := postDidit(t, s.WebhookHandler(), diditPayload("11111111-1111-4111-8111-111111111111", "party-1", "Approved"), nil)
 	if w.Code != http.StatusOK {
 		t.Fatalf("ended onboarding: %d, want 200", w.Code)
+	}
+}
+
+// What the handler did with a delivery reaches the operator's log: why a delivery was refused, and which verdict was
+// delivered. A 401 from outside cannot say whether the secret, the clock or the URL is wrong. The log must not hold the
+// secret, the signature, or what the person's check found.
+func TestWebhookSaysWhatItDidWithEachDelivery(t *testing.T) {
+	var buf bytes.Buffer
+	tc := newFakeTemporal()
+	s := New(tc, mustDidit(t, "live"), "onboarding").WithLogger(slog.New(slog.NewJSONHandler(&buf, nil)))
+	start, err := s.StartBusinessOnboarding(context.Background(), request("k-log", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := start.Msg.OnboardingId
+	h := s.WebhookHandler()
+
+	stale := func(h http.Header) { h.Set("X-Timestamp", strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10)) }
+	if w := postDidit(t, h, diditPayload(id, "party-1", "Approved"), stale); w.Code != http.StatusUnauthorized {
+		t.Fatalf("stale: %d", w.Code)
+	}
+	wrongEnv := diditPayload(id, "party-1", "Approved")
+	wrongEnv["environment"] = "sandbox"
+	if w := postDidit(t, h, wrongEnv, nil); w.Code != http.StatusBadRequest {
+		t.Fatalf("wrong environment: %d", w.Code)
+	}
+	if w := postDidit(t, h, diditPayload(id, "party-1", "Approved"), nil); w.Code != http.StatusAccepted {
+		t.Fatalf("verdict: %d", w.Code)
+	}
+	if w := postDidit(t, h, diditPayload(id, "party-1", "In Progress"), nil); w.Code != http.StatusOK {
+		t.Fatalf("not a verdict: %d", w.Code)
+	}
+
+	var lines []map[string]any
+	for _, raw := range bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n")) {
+		var line map[string]any
+		if err := json.Unmarshal(raw, &line); err != nil {
+			t.Fatalf("log line %q: %v", raw, err)
+		}
+		lines = append(lines, line)
+	}
+	if len(lines) != 3 {
+		t.Fatalf("%d log lines, want 3 (a refusal for the clock, a refusal for the environment, the verdict; a status that is not a verdict is not logged):\n%s", len(lines), buf.String())
+	}
+	if lines[0]["msg"] != "kyc webhook refused" || lines[0]["status"] != float64(401) || !strings.Contains(lines[0]["reason"].(string), "old, and 300s is allowed") {
+		t.Errorf("the stale delivery: %v", lines[0])
+	}
+	if lines[1]["msg"] != "kyc webhook refused" || lines[1]["status"] != float64(400) || !strings.Contains(lines[1]["reason"].(string), `"sandbox" environment`) {
+		t.Errorf("the sandbox delivery: %v", lines[1])
+	}
+	if lines[2]["msg"] != "kyc verdict delivered" || lines[2]["onboarding_id"] != id || lines[2]["subject_party_id"] != "party-1" ||
+		lines[2]["verdict"] != "APPROVED" || lines[2]["session_id"] != "sess-1" {
+		t.Errorf("the verdict: %v", lines[2])
+	}
+	// The secret, and the keys of the decision (which would be there if the body were logged). Digits are not checked: the
+	// log's own timestamps are full of them.
+	for _, leak := range []string{diditTestSecret, "decision", "score"} {
+		if strings.Contains(buf.String(), leak) {
+			t.Errorf("the log holds %q:\n%s", leak, buf.String())
+		}
 	}
 }
 

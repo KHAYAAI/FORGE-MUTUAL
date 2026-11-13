@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -21,6 +22,7 @@ import (
 
 	onboardingv1 "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/pkg/uuid"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
@@ -51,6 +53,7 @@ type Service struct {
 	taskQueue string
 	reviews   ReviewQueue
 	sessions  SessionLister
+	log       *slog.Logger
 }
 
 // SessionLister returns the verification sessions started for an onboarding.
@@ -64,6 +67,14 @@ func (s *Service) WithSessions(l SessionLister) *Service {
 	return s
 }
 
+// WithLogger sets where the webhook handler says what it did with a delivery. Without one it says nothing.
+func (s *Service) WithLogger(l *slog.Logger) *Service {
+	if l != nil {
+		s.log = l
+	}
+	return s
+}
+
 var (
 	_ onboardingv1connect.OnboardingServiceHandler = (*Service)(nil)
 	_ Temporal                                     = (client.Client)(nil) // the real client must satisfy the interface
@@ -71,7 +82,7 @@ var (
 
 // New returns the service.
 func New(tc Temporal, provider kyc.Provider, taskQueue string) *Service {
-	return &Service{tc: tc, kyc: provider, taskQueue: taskQueue}
+	return &Service{tc: tc, kyc: provider, taskQueue: taskQueue, log: slog.New(slog.DiscardHandler)}
 }
 
 // StartBusinessOnboarding implements OnboardingServiceHandler. The onboarding ID is derived from the key,
@@ -224,20 +235,30 @@ func (s *Service) WebhookHandler() http.Handler {
 			http.Error(w, "unreadable body", http.StatusBadRequest)
 			return
 		}
+		// The sender is told as little as possible. The operator is told why, because a wrong or rotated secret, a clock
+		// that has drifted and a destination pointed at the wrong URL all look like the same 401 from outside.
+		refuse := func(status int, text string, err error) {
+			s.log.Warn("kyc webhook refused", "status", status, "reason", clip(err.Error(), 300), "request_id", serve.RequestIDFrom(r.Context()))
+			http.Error(w, text, status)
+		}
 		ev, err := s.kyc.VerifyWebhook(body, r.Header)
 		switch {
 		case errors.Is(err, kyc.ErrSignature):
-			http.Error(w, "signature", http.StatusUnauthorized)
+			refuse(http.StatusUnauthorized, "signature", err)
 			return
 		case errors.Is(err, kyc.ErrNotConfigured):
-			http.Error(w, "provider not configured", http.StatusServiceUnavailable)
+			refuse(http.StatusServiceUnavailable, "provider not configured", err)
 			return
 		case errors.Is(err, kyc.ErrIgnored):
 			w.WriteHeader(http.StatusOK)
 			return
 		case err != nil:
-			http.Error(w, "invalid webhook", http.StatusBadRequest)
+			refuse(http.StatusBadRequest, "invalid webhook", err)
 			return
+		}
+		about := []any{
+			"onboarding_id", ev.OnboardingID, "subject_party_id", ev.SubjectID, "verdict", ev.Verdict,
+			"session_id", ev.SessionID, "event_id", ev.EventID, "request_id", serve.RequestIDFrom(r.Context()),
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), webhookDeadline)
 		defer cancel()
@@ -248,18 +269,29 @@ func (s *Service) WebhookHandler() http.Handler {
 		if errors.As(err, &notFound) {
 			// The onboarding has ended or never existed. The verdict is authentic and moot, and a provider that is told
 			// 404 retries it for nothing.
+			s.log.Info("kyc verdict for an onboarding that is not running", about...)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if err != nil {
+			s.log.Error("kyc verdict not delivered, the provider will retry", append(about, "err", clip(err.Error(), 300))...)
 			http.Error(w, "workflow service unavailable", http.StatusServiceUnavailable)
 			return
 		}
+		s.log.Info("kyc verdict delivered", about...)
 		w.WriteHeader(http.StatusAccepted)
 	})
 }
 
 // ---- helpers ----
+
+// clip shortens text for a log line.
+func clip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
+}
 
 func toProto(st onboarding.Status) *onboardingv1.OnboardingStatus {
 	out := &onboardingv1.OnboardingStatus{

@@ -22,7 +22,10 @@ business that passes every check is activated. One that does not is declined, an
   or unsigned body returns 401 and never reaches the workflow. Other replies: 200 for a delivery that is not a verdict, or
   for an onboarding that has already ended; 202 for a verdict, signalled to the workflow; 400 for an authenticated
   delivery that is refused (a wrong environment, or no onboarding named); 503 when Temporal is unreachable, so that a
-  provider which retries will try again. The body is limited to 1 MiB and the handler to 4 seconds.
+  provider which retries will try again. The body is limited to 1 MiB and the handler to 4 seconds. The sender is told
+  only the status; the log says why a delivery was refused (a missing header, a clock more than five minutes out, a
+  secret that does not match, a wrong environment) and which verdict was delivered, and never holds a secret, a
+  signature or anything from the body.
 
 ## 3. The workflow (`internal/onboarding/workflow.go`)
 

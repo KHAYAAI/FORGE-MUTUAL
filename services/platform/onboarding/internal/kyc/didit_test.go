@@ -223,6 +223,53 @@ func TestDiditRefusesWhatDoesNotAuthenticate(t *testing.T) {
 	}
 }
 
+// The reason a delivery was refused goes to the operator's log, so it has to tell a wrong secret from a clock that has
+// drifted from a missing header. It must never hold the secret, a signature, or anything from the body.
+func TestDiditSaysWhyADeliveryWasRefused(t *testing.T) {
+	d := newDidit(t, nil)
+	p := statusPayload("Approved")
+	p["vendor_data"] = "subject-that-must-not-be-logged"
+	p["metadata"] = map[string]any{"onboarding_id": "onboarding-that-must-not-be-logged"}
+	body, h := delivery(t, diditSecret, p, testNow.Unix())
+	_, otherH := delivery(t, "whsec_another_secret_entirely_0123456789", p, testNow.Unix())
+
+	with := func(src http.Header, mod func(http.Header)) http.Header {
+		c := src.Clone()
+		mod(c)
+		return c
+	}
+	cases := []struct {
+		name string
+		body []byte
+		h    http.Header
+		want string
+	}{
+		{"no signature", body, with(h, func(h http.Header) { h.Del("X-Signature-V2") }), "is missing"},
+		{"no timestamp", body, with(h, func(h http.Header) { h.Del("X-Timestamp") }), "is missing"},
+		{"timestamp text", body, with(h, func(h http.Header) { h.Set("X-Timestamp", "now") }), "not a whole number"},
+		{"an hour old", body, with(h, func(h http.Header) { h.Set("X-Timestamp", strconv.FormatInt(testNow.Unix()-3600, 10)) }), "3600s old"},
+		{"an hour ahead", body, with(h, func(h http.Header) { h.Set("X-Timestamp", strconv.FormatInt(testNow.Unix()+3600, 10)) }), "3600s ahead"},
+		{"not json", []byte("subject-that-must-not-be-logged"), h, "not a JSON document"},
+		{"wrong secret", body, otherH, "does not match"},
+	}
+	for _, c := range cases {
+		_, err := d.VerifyWebhook(c.body, c.h)
+		if !errors.Is(err, ErrSignature) {
+			t.Errorf("%s: err = %v, want ErrSignature", c.name, err)
+			continue
+		}
+		msg := err.Error()
+		if !strings.Contains(msg, c.want) {
+			t.Errorf("%s: %q does not say %q", c.name, msg, c.want)
+		}
+		for _, secret := range []string{diditSecret, "whsec_another_secret_entirely", h.Get("X-Signature-V2"), otherH.Get("X-Signature-V2"), "must-not-be-logged"} {
+			if strings.Contains(msg, secret) {
+				t.Errorf("%s: %q holds %q", c.name, msg, secret)
+			}
+		}
+	}
+}
+
 // Didit's window is 300 seconds either side of the clock. Exactly 300 passes; 301 does not.
 func TestDiditTimestampWindow(t *testing.T) {
 	d := newDidit(t, nil)

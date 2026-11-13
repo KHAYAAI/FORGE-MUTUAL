@@ -28,9 +28,10 @@ search summaries, because the WorkOS documentation host could not be reached fro
 
 1. **Add the providers' own connectors, signed in to the new accounts.** Keep the A-CARD ones as they are and add two
    custom connectors beside them, named for this project (for example "Didit - Forge Mutual" and "WorkOS - Forge
-   Mutual"). The server addresses, from the providers' documentation: Didit `https://mcp.didit.me/mcp`, WorkOS
-   `https://mcp.workos.com/mcp`. Sign out of A-CARD first, or use a private window, so the sign-in page does not reuse
-   an A-CARD session. Sign up on that page with the personal email: that is also how each account gets created, and it
+   Mutual"). The server addresses: Didit `https://mcp.didit.me/mcp` (from Didit's documentation), WorkOS
+   `https://mcp.workos.com/mcp` (*unverified*: from a search summary of WorkOS's documentation, so check it against
+   workos.com/docs if the sign-in page does not come up). Sign out of A-CARD first, or use a private window, so the
+   sign-in page does not reuse an A-CARD session. Sign up on that page with the personal email: that is also how each account gets created, and it
    accepts each provider's terms, which is the owner's act. Then tell the build session. It will check, with each
    connector's read-only identity call, that it is talking to the new account (not A-CARD) before it creates anything.
 2. **Allow the provider hosts** in the cloud environment's network settings (the environment menu in the session title
@@ -108,6 +109,14 @@ it), and no error carries the key or any secret.
 
 Replies: 401 not authenticated; 200 not a verdict, or the onboarding has already ended; 202 a verdict, signalled to the
 workflow; 400 authenticated but refused; 503 Temporal is unreachable, which Didit retries.
+
+The sender is told no more than that, but the service's log says why. A refused delivery logs `kyc webhook refused` with
+the status and a reason: `X-Signature-V2 or X-Timestamp is missing`, `X-Timestamp is 3600s old`, `X-Timestamp is 3600s
+ahead of this service's clock` (the clock here runs slow), `the body is not a JSON document`, `X-Signature-V2 does not
+match the body under any configured secret` (a wrong, rotated or other destination's secret), or why an authentic
+delivery was refused (for example a sandbox delivery at a live service). A verdict logs `kyc verdict delivered` with the
+onboarding, subject, verdict and session. The log never holds a secret, a signature or anything from the body, and a
+status that is not a verdict is not logged. These lines are what to read when the first live delivery does not arrive.
 
 Two properties of Didit's scheme to know. First, the signature covers the body, not `X-Timestamp`, so a captured delivery
 could be replayed with a fresh header. A replay changes nothing: the workflow takes a verdict once, ignores a REVIEW for a
