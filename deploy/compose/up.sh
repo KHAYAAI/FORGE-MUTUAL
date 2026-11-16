@@ -79,7 +79,7 @@ export root logs
 printf '%s\n' "${images[@]}" | xargs -P 4 -I{} bash -c 'build_one "$1"' _ {} || exit 1
 echo "up: images built"
 
-"${compose[@]}" up -d --no-build --wait --wait-timeout 600 postgres kafka kafka-init temporal >/dev/null
+"${compose[@]}" up -d --no-build --wait --wait-timeout 600 postgres kafka kafka-init temporal tigerbeetle >/dev/null
 "${compose[@]}" up -d --no-build --wait-timeout 600 >/dev/null
 
 # Every Go service answers HTTP on its port. A reply of any status means the process is listening and serving.

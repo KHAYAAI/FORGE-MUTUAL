@@ -25,6 +25,13 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
 - The Didit adapter's webhook signature reproduces Didit's own published reference code on over 180 vectors, and the
   onboarding suites pass against a real Temporal dev server (`make test-temporal`, which the gate does not run), including
   a whole onboarding completed by Didit-signed deliveries. It has **not** run against Didit itself.
+- **The ledger runs on TigerBeetle 0.16.60**, and the gate tests against it on every run. The in-memory model that every
+  other suite relies on is held to the real ledger: the same random batches go to both, and every outcome, balance and
+  stored transfer must match (48,000 batches on four seeds, after the test found and fixed four differences). A
+  three-replica cluster was taken apart while in use: it survived losing its primary, used a restarted replica to
+  survive losing another, accepted nothing without a quorum, and applied a transfer retried across the outage exactly
+  once. On the local stack a balance survived a restart of the ledger service and of TigerBeetle. All of this is a
+  development-mode cluster on one machine (`services/bank/ledger-gateway-bank/SPEC.md` section 12).
 - Production refusals, mutual TLS, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
   Temporal stopped, a decision was recorded and the reviewer was told it would be retried; once Temporal was back, the
@@ -47,8 +54,9 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
 
 **Blocked by external systems**
 
-- TigerBeetle has never run. Production balances are meant to live there, so this is the largest technical blocker. The
-  stack runs the ledger in memory.
+- TigerBeetle runs, in development mode only (since 2026-11-16; see *Verified*). Not done: a production cluster (six
+  replicas on dedicated hosts, without `--development`), its throughput, an upgrade rehearsal, and the repair rate of a
+  restarted replica on that hardware.
 - Sponsor bank: no sandbox, and the wire format is unverified (VERIFY-SPONSOR). Partner and FIC formats too
   (VERIFY-PARTNER, VERIFY-FIC).
 - Kafka runs as a single node everywhere. A multi-broker cluster is unverified.
@@ -90,8 +98,9 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 
 - **Ledger gateway** (`services/bank/ledger-gateway-bank`): the only writer to the bank ledger. Linked transfer chains,
   pending, post and void, idempotency, transactional outbox, and `ListAccounts` over the account directory. Passes one
-  shared behaviour suite in memory and against Postgres. The TigerBeetle adapter is compiled and unit-tested, but
-  **the cluster has never run** (see *Blocked*).
+  shared behaviour suite in memory, against Postgres and against TigerBeetle. A request the ledger refused stays
+  refused if it is retried after its answer was lost (`PREVIOUSLY_REFUSED`), and a ledger call gives up at a deadline
+  instead of waiting for a cluster that has no quorum.
 - **Policy service** (`services/shared/policy-service`, `policy/`): embedded OPA v1.13.0, Ed25519-signed bundles, every
   decision audited to the outbox before it is returned. The break rule is strict: while any reconciliation break is
   open, every payment is held (`docs/DECISIONS.md`).
@@ -189,11 +198,9 @@ secrets are environment variables, with no secret store integrated.
   in this environment can create one. The owner must create it (by adding Didit's own connector and signing up on its
   page with the personal email) and grant access. The adapter is built, but no verification session has been created, no
   delivery from Didit has been checked, and none is approved.
-- **TigerBeetle cluster: has never run.** Tried and failed, all from this environment: the `ghcr.io` image's blob host is
-  forbidden; `quay.io` and Docker Hub have no published image; GitHub release downloads return 403; the Zig download host
-  is blocked, so the server cannot be built; the Go module proxy has the module path but no tagged versions. Without the
-  server, `make test-ledger-tb` cannot run. Obtain the server binary by another route, or run the test on a host that
-  can reach the release artefacts.
+- **TigerBeetle: unblocked on 2026-11-16**, by allowing one host (`pkg-containers.githubusercontent.com`, which serves
+  the image's layers) in the build environment. What is still blocked is a production cluster: hardware, sites and an
+  operator. Nothing in this repository provisions one.
 - **Kafka: runs in the dev stack, but only single-node.** `apache/kafka:3.9.0` in KRaft mode is verified by the outbox
   tests and by the local stack (on port 9192, so it does not clash with a broker on 9092). Not verified: a multi-broker cluster, TLS and SASL, topic creation policy in production, and the Kafka wiring of
   the other services' relays.
@@ -213,9 +220,11 @@ secrets are environment variables, with no secret store integrated.
 ```sh
 make up               # the local stack: builds every service and starts it (deploy/compose/README.md)
 make test-stack       # the customer and back-office journeys against the running stack, with nothing mocked
-make ci-db            # the full gate, with throwaway databases (defaults: Postgres on 5432, broker on 9092; for the
-                      # stack's own, set FORGE_PG_HOST_DSN=postgres://postgres:forge-local-only@127.0.0.1:5433 and
+make ci-db            # the full gate, with throwaway databases and a throwaway TigerBeetle replica in Docker
+                      # (defaults: Postgres on 5432, broker on 9092; for the stack's own, set
+                      # FORGE_PG_HOST_DSN=postgres://postgres:forge-local-only@127.0.0.1:5433 and
                       # FORGE_KAFKA_BROKERS=127.0.0.1:9192)
+make test-ledger-tb-cluster  # three TigerBeetle replicas, taken apart while in use (not part of the gate)
 make ci               # the same gate, if you have set every database and broker variable yourself
 make test-outbox      # the outbox against a real broker
 make test-recon       # reconciliation (serial: packages share a database)

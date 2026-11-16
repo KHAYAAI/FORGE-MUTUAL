@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"context"
+	"errors"
 	"math"
 	"testing"
 	"time"
@@ -81,5 +83,76 @@ func TestAccountResultMapping(t *testing.T) {
 		if got := mapAccountResult(code); got != want {
 			t.Errorf("mapAccountResult(%v) = %q, want %q", code, got, want)
 		}
+	}
+}
+
+// With no quorum the client waits for the cluster for as long as it takes. The adapter must not: it gives up at its
+// deadline, or the caller's, and says the outcome is unknown. Nothing listens on the address used here, which is how a
+// cluster that has lost its quorum looks from outside.
+func TestTigerBeetleStopsWaitingWhenTheClusterDoesNotAnswer(t *testing.T) {
+	store, err := NewTigerBeetle(1, []string{"127.0.0.1:1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	store.maxWait = 300 * time.Millisecond
+	transfer := []Transfer{{ID: ID{1}, DebitAccountID: ID{2}, CreditAccountID: ID{3}, Amount: 1, Ledger: 710, Code: 10}}
+
+	start := time.Now()
+	_, err = store.CreateTransfers(context.Background(), transfer)
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("err = %v, want ErrUnavailable", err)
+	}
+	if waited := time.Since(start); waited < 250*time.Millisecond || waited > 5*time.Second {
+		t.Fatalf("waited %s for a 300ms limit", waited)
+	}
+
+	// The caller's own deadline is honoured when it is the shorter one.
+	store.maxWait = time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	start = time.Now()
+	if err := store.Ping(ctx); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("ping: err = %v, want ErrUnavailable", err)
+	}
+	if waited := time.Since(start); waited > 5*time.Second {
+		t.Fatalf("ping waited %s past a 200ms deadline", waited)
+	}
+	for _, call := range []func() error{
+		func() error { _, err := store.LookupAccounts(ctx, []ID{{9}}); return err },
+		func() error { _, err := store.LookupTransfers(ctx, []ID{{9}}); return err },
+		func() error {
+			_, err := store.CreateAccounts(ctx, []Account{{ID: ID{9}, Ledger: 710, Code: 1}})
+			return err
+		},
+	} {
+		if err := call(); !errors.Is(err, ErrUnavailable) {
+			t.Fatalf("err = %v, want ErrUnavailable", err)
+		}
+	}
+}
+
+// Calls that are still waiting hold a slot each. When every slot is taken, the next call is refused at once instead of
+// joining an unbounded queue behind a cluster that is away.
+func TestTigerBeetleRefusesAtOnceWhenTooManyCallsAreWaiting(t *testing.T) {
+	store, err := NewTigerBeetle(1, []string{"127.0.0.1:1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	store.maxWait = 100 * time.Millisecond
+	store.slots = make(chan struct{}, 3)
+	for i := 0; i < 3; i++ {
+		if err := store.Ping(context.Background()); !errors.Is(err, ErrUnavailable) {
+			t.Fatalf("call %d: %v", i, err)
+		}
+	}
+	if len(store.slots) != 3 {
+		t.Fatalf("%d slots held, want 3: the calls are still waiting for the cluster", len(store.slots))
+	}
+	start := time.Now()
+	err = store.Ping(context.Background())
+	if !errors.Is(err, ErrUnavailable) || time.Since(start) > 50*time.Millisecond {
+		t.Fatalf("a call beyond the limit must be refused at once: %v after %s", err, time.Since(start))
 	}
 }

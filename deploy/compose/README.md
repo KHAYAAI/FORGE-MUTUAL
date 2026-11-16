@@ -1,7 +1,7 @@
 # Local stack
 
-The stack runs the Postgres, Kafka and Temporal infrastructure and every Go service that the customer and back-office
-journeys use, with each service's real code. It is for development and for the journey tests. It is not production:
+The stack runs the Postgres, Kafka, Temporal and TigerBeetle infrastructure and every Go service that the customer and
+back-office journeys use, with each service's real code. It is for development and for the journey tests. It is not production:
 the differences are listed below, and the production refusals in `pkg/serve` and `pkg/callerauth` enforce them.
 
 ## Start, check, stop
@@ -19,7 +19,11 @@ make down                       # stops everything and deletes the volumes (the 
 
 - Docker with host networking on Linux. Docker Desktop (macOS, Windows) does not provide host networking the same way:
   the stack is written for host networking because the bridge network is unavailable on the machines it was built on.
-- About 6 GB of memory and 4 CPUs for the first build; later starts are seconds.
+- About 8 GB of memory and 4 CPUs for the first build; later starts are seconds. TigerBeetle takes about 1.7 GB of that
+  and a 1.1 GB data file.
+- The TigerBeetle image, `ghcr.io/tigerbeetle/tigerbeetle:0.16.60` (`TB_IMAGE` overrides it). Its layers come from
+  `pkg-containers.githubusercontent.com`, which a restricted network must allow. Where it cannot be pulled, put
+  `LEDGER_STORE=memory` in `.env`: the ledger then keeps balances in memory and loses them when it restarts.
 - A certificate authority for intercepted HTTPS, if your network has one: place it in `deploy/docker/ca/*.crt` (see
   `deploy/docker/ca/README.md`).
 
@@ -38,6 +42,7 @@ make down                       # stops everything and deletes the volumes (the 
 | 8085 | payments-orchestrator | 8400 | compliance-engine (cases) |
 | 8086 | rails-gateway | 8500 | backoffice-api (staff) |
 | 8300 | workspace-api (customer) | 3300 | devidp (profile `oidc` only) |
+| 3034 | TigerBeetle 0.16.60 (3033 is the test replica) | | |
 
 Every service's address names its own port, so the services reach each other over loopback without a DNS name.
 
@@ -53,13 +58,19 @@ Every service's address names its own port, so the services reach each other ove
 
 ## What is real, and what is not
 
-Real: Postgres, Kafka and Temporal; every service's own code; inter-service ConnectRPC calls with caller allow-lists; the
-event bus and the transactional outbox; the Temporal workflows; the KYC review path; the compliance rules.
+Real: Postgres, Kafka, Temporal and TigerBeetle; every service's own code; inter-service ConnectRPC calls with caller
+allow-lists; the event bus and the transactional outbox; the Temporal workflows; the KYC review path; the compliance
+rules. Balances live in TigerBeetle: a transfer made on the stack was still there after the ledger service was
+restarted, and after TigerBeetle itself was (checked 2026-11-16).
 
 Not real, on purpose:
 
-- **TigerBeetle.** The ledger runs `LEDGER_STORE=memory`. Balances are lost when it restarts, and nothing here proves
-  TigerBeetle's behaviour. Production refuses the memory store (`RefuseInProduction`).
+- **TigerBeetle is one replica in development mode.** `--development` relaxes the direct-I/O requirement and shrinks the
+  caches. One replica has no fault tolerance. Production is six replicas on dedicated hosts, without that flag
+  (`services/bank/ledger-gateway-bank/SPEC.md` section 12). The ledger's Postgres database and TigerBeetle's data file
+  belong together: `make down` removes both, and removing only one leaves a directory that names accounts the ledger
+  does not hold. Two containers run with `seccomp=unconfined`, TigerBeetle and the ledger gateway, because both use
+  io_uring, which Docker's default profile blocks; without it the gateway does not report an error, it aborts.
 - **The bank.** `PAYMENTS_ALLOW_SIMULATION` and `RAILS_SIMULATION` accept the simulator, and the bank layer is the
   simulator (`config/banklayer.yaml`). There is no sponsor sandbox. Production refuses the simulator.
 - **Identity.** The customer and staff apps sign in with the development sign-in (`WORKSPACE_AUTH=dev`,
@@ -95,6 +106,5 @@ deploy/compose/up.sh && make test-stack
 with the stack's secret from `.env`, as the provider would. Each journey creates its own company with a new,
 valid identity number, so the suites can run again without resetting the stack.
 
-Two settings differ from production on purpose: the consolidated view reconciles every ten seconds
-(`CONSOLIDATED_RECON_INTERVAL`, 15 minutes in production), so a new account appears in the workspace without a wait; and
-the ledger is in memory, so a restart of the ledger removes the accounts the journeys created.
+One setting differs from production on purpose: the consolidated view reconciles every ten seconds
+(`CONSOLIDATED_RECON_INTERVAL`, 15 minutes in production), so a new account appears in the workspace without a wait.

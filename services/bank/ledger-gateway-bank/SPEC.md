@@ -51,14 +51,24 @@ Money is always a decimal string of unsigned or signed integer minor units. Neve
 - Pending transfers reserve funds. Post and void reference pending transfer IDs. A pending transfer that is not
   posted or voided before its timeout expires automatically.
 - Post applies the full pending amount in this version. Partial post is out of scope.
+- **A refused transfer ID stays refused.** When TigerBeetle refuses a transfer for a reason that depended on the ledger's
+  state at that moment (a balance too low, an account or a pending transfer that did not exist), it remembers the ID and
+  answers `id_already_failed` to every later use of it. The gateway reports that as `PREVIOUSLY_REFUSED`. It can only be
+  seen when the first answer was lost before the gateway recorded it (a crash, a timeout); otherwise the recorded
+  rejection is replayed. A request once refused therefore cannot go through later behind the caller's back. To try
+  again, the caller sends a new request under a new idempotency key.
 
 ## 5. Idempotency (ARCHITECTURE.md 7.6)
 
 - Record key: `(caller, rpc, idempotency_key)`. Stored in Postgres `idempotency_record` with a SHA-256 hash of the canonical request.
 - Before any TigerBeetle call, the gateway writes the record as `PENDING` with all transfer IDs generated and stored.
 - Same key, same hash, status `COMMITTED`: return the stored result with `STATUS_REPLAYED`. No money moves.
-- Same key, same hash, status `PENDING` (a previous attempt crashed): resubmit with the stored IDs. TigerBeetle
-  returns `exists` for legs already applied, which counts as success when fields match.
+- Same key, same hash, status `PENDING` (a previous attempt crashed): resubmit with the stored IDs. For a single
+  transfer that was already applied, TigerBeetle answers `exists`. For a linked chain that was already applied it
+  answers `exists` for the first leg and `linked_event_failed` for the rest, and changes nothing (measured; the model
+  used to assume `exists` for every leg). The gateway reads both as "already applied", and then reads every transfer
+  back from the ledger before it reports success: if one were missing, the request fails instead.
+- If the earlier attempt was refused rather than applied, the resubmission answers `PREVIOUSLY_REFUSED` (section 4).
 - Same key, different hash: `IDEMPOTENCY_CONFLICT` (Connect code `AlreadyExists`).
 - Rejected requests are recorded as `COMMITTED` with a rejection result, so a replay returns the same rejection.
 - Records are kept at least 30 days (purge job, outside this scope).
@@ -80,15 +90,14 @@ Money is always a decimal string of unsigned or signed integer minor units. Neve
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| Property tests prove invariants 1 to 5 | Met, against the in-memory reference model | `internal/ledger` tests: conservation and no overdraft over 200 random runs; linked atomicity; replay; timeout release |
-| Replay test | Met | Shared suite `deposit_replay_conflict`, run on memory and Postgres |
-| Kill-and-restart test | Met for Postgres | `TestPendingRecordSurvivesRestart`; suite `crash_after_ledger_commit_is_recovered` |
+| Property tests prove invariants 1 to 5 | Met, on the model and on TigerBeetle | `internal/ledger` tests: conservation and no overdraft over 200 random runs; linked atomicity; replay; timeout release. The differential test holds the model to TigerBeetle (section 12) |
+| Replay test | Met | Shared suite `deposit_replay_conflict`, run on memory, Postgres and TigerBeetle |
+| Kill-and-restart test | Met | `TestPendingRecordSurvivesRestart`; suite `crash_after_ledger_commit_is_recovered`, `crash_after_a_linked_chain_committed_is_recovered`, `a_refused_request_stays_refused_when_its_answer_was_lost`; for the ledger itself, `TestClusterSurvivesLosingReplicas` |
 | Benchmark report | Met for the reference model only | `docs/specs/ledger-gateway-bank/BENCHMARK.md` |
-| Run against a live TigerBeetle cluster | Not met | No server binary (GitHub release downloads blocked) and no Docker. Adapter compiles; tagged suite ready. VERIFY-TB |
-| Run against a live Kafka broker | Not met | Publisher compiles against franz-go. VERIFY-KAFKA |
+| Run against a live TigerBeetle cluster | Met, on a development-mode cluster | TigerBeetle 0.16.60, one replica and three replicas, 2026-11-16 (section 12). Not yet on production hardware or a production configuration |
+| Run against a live Kafka broker | Met, one broker | The outbox suite publishes to Kafka 3.9 in the gate. A multi-broker cluster is unverified (VERIFY-KAFKA) |
 
-Local Postgres was tested on 16.15, not the 17 named in ARCHITECTURE.md section 18.1. The schema uses only
-standard features; the production image must be run against 17 before sign-off.
+The gate runs against Postgres 17.
 
 ## 9. Decisions made while building (deviations and interpretations)
 
@@ -109,15 +118,17 @@ These were not in the original spec and should be confirmed by a human reviewer.
    enabled account and transfer codes live in `DefaultConfig`. Real limits belong to `tiers.yaml` and OPA
    (ARCHITECTURE.md section 10). The code sets are the Appendix B subset enabled in v1.
 8. **Batch size is capped at 100 legs.** This is a conservative local cap, not a TigerBeetle limit (VERIFY-TB).
-9. **Caller identity is a header in development.** Production must take it from the mTLS workload identity. This is
-   not implemented.
+9. **Caller identity is a header in development.** In production it is the service named in the caller's client
+   certificate (`pkg/serve`), and the header is ignored.
 10. **Events are written in the same transaction as the record.** The payload is read back from the ledger for the
     timestamp, so each replay of a committed request adds no events.
 
 ## 10. Open items (see docs/QUESTIONS.md)
 
-- VERIFY-TB: TigerBeetle version, ID scheme, linked chains across ledgers, batch limits, and whether `exists` inside a
-  linked chain counts as success. The memory model assumes it does.
+- VERIFY-TB, what is left: a production cluster (six replicas on dedicated hosts, without `--development`), its batch
+  limits, an upgrade rehearsal, and how fast a replica repairs and state-syncs on that hardware (section 12). Answered on
+  2026-11-16: the version (0.16.60), the ID scheme, and `exists` inside a linked chain, which does **not** count as
+  success: it breaks the chain. The model and this document said otherwise, and both are corrected.
 - VERIFY-KAFKA: Kafka broker configuration and franz-go behaviour under failure.
 - **Outbox reconciler (ARCHITECTURE.md 7.8) is not built, and I recommend changing that section.** The gateway writes
   each outbox row in the same transaction as the record it belongs to, so a committed transfer without an event
@@ -134,3 +145,64 @@ These were not in the original spec and should be confirmed by a human reviewer.
   ago, every hour. The default is 720 hours and the server refuses anything shorter.
 - PENDING records are never deleted. A purged key that is replayed would move money again, so the retention must
   exceed every client's retry window. Clients must not reuse a key after that window.
+
+## 12. TigerBeetle: what was run, what it showed, and how to run it
+
+Run on 2026-11-16 against TigerBeetle 0.16.60 (`ghcr.io/tigerbeetle/tigerbeetle:0.16.60`) with the Go client v0.16.60,
+in Docker, in development mode, on one machine. The client must never be newer than the cluster: upgrade the cluster
+first, then the client.
+
+```sh
+scripts/tigerbeetle.sh single up && eval "$(scripts/tigerbeetle.sh env single)" && make test-ledger-tb
+make test-ledger-tb-cluster   # three replicas, taken apart while in use
+```
+
+`make ci` requires `TB_ADDRESSES` and `TB_CLUSTER_ID`, and `make ci-db` starts a replica for it, so the gate runs the
+first of these every time.
+
+**The gateway suite passes** on one replica and on three, including the crash cases.
+
+**The in-memory model is held to TigerBeetle.** Every other suite in the repository runs on the model, on the claim that
+it behaves as TigerBeetle does. `TestMemStoreAgreesWithTigerBeetle` sends both the same random batches (linked chains,
+pending transfers with posts and voids, exact replays, the same ID with a changed field, IDs that failed before, missing
+accounts, overdrafts) and requires the same outcome for every event, the same four balances on every account, and the
+same stored transfers. On its first run it found the model wrong in four ways, all now fixed:
+
+1. A transfer ID that was refused for a state-dependent reason is refused for good (`id_already_failed`). The model
+   looked at it afresh, so a refused request could succeed on a retry. This is the one that mattered (section 4).
+2. A linked chain that is sent again answers `exists` then `linked_event_failed`, not `exists` for every leg (section 5).
+3. A post or void with empty user data is stored with the pending transfer's, and is compared that way on a replay.
+4. The adapter did not map `id_already_failed`, the `exists_with_different_user_data` results, or
+   `pending_transfer_not_pending`; they all came back as `invalid_transfer`.
+
+After the fixes: 48,000 batches (about 120,000 events) on four seeds, no difference. The seed is random in the gate and
+printed, and `TB_DIFF_SEED` repeats a run. Removing either of the first two fixes makes a test fail.
+
+**Three replicas, taken apart** (`TestClusterSurvivesLosingReplicas`):
+
+- One replica killed, primary or not: the cluster carries on. A new primary took over in about five seconds, and the
+  model and the cluster still agreed on every outcome and balance.
+- That replica started again and another killed: the cluster carries on, which it can only do if the first caught up.
+- A second replica killed, so one of three is left: nothing is accepted. With the replicas started again, a transfer
+  that was tried during the outage and retried under the same ID was applied exactly once.
+
+**What running it changed in the code.**
+
+- The TigerBeetle client never gives up. Without a quorum it waits for the cluster for as long as it takes, and the
+  adapter ignored the request's deadline, so a gateway request would have hung for ever. The adapter now stops waiting
+  at the caller's deadline or after 12 seconds, whichever is first, and answers `ErrUnavailable`, which says plainly
+  that the outcome is unknown and the same IDs must be sent again. At most 512 calls may be waiting; beyond that, calls
+  are refused at once.
+- `/readyz` now asks the ledger as well as the database, so a gateway whose cluster has no quorum reports not ready.
+
+**What it showed that still needs measuring on production hardware.** A replica that was down while about 800
+operations were committed replayed them at two or three a second after it restarted (a replica that was much further
+behind used state sync instead, which took seconds). While a replica is still catching up, losing a second one leaves
+the cluster without a working majority until the first finishes. That is safe (requests answer "unavailable" and
+nothing is lost), but it is an outage. This was a development build with extra verification on one shared machine, so
+the rate says nothing about production; the point is that the rate must be measured there, and that a three-replica
+cluster does not tolerate a second failure during a repair. TigerBeetle recommends six replicas for production.
+
+**Not verified:** a production configuration (no `--development`, direct I/O, dedicated NVMe hosts, six replicas across
+sites), throughput and latency on it, an upgrade from one release to the next, and restoring a cluster from its data
+files.

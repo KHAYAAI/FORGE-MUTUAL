@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	tb "github.com/tigerbeetle/tigerbeetle-go"
 	tbtypes "github.com/tigerbeetle/tigerbeetle-go/pkg/types"
@@ -13,23 +14,86 @@ import (
 // Amounts are uint64 minor units, so every balance is read back as a value that fits in
 // 64 bits; a higher half that is not zero is reported as an error rather than truncated.
 //
-// Status: compiled against tigerbeetle-go v0.16.60. Not yet run against a live cluster in
-// this environment (VERIFY-TB; see SPEC.md section 8).
+// Verified against TigerBeetle 0.16.60 with client v0.16.60 (SPEC.md section 8): the gateway suite, a differential
+// test against MemStore, and a three-replica cluster that lost its primary, lost a second replica, and lost quorum.
+// The client must never be newer than the cluster: upgrade the cluster first.
 type TigerBeetle struct {
 	client tb.Client
+	// maxWait is how long one call waits for the cluster. slots caps how many calls may be waiting at once.
+	maxWait time.Duration
+	slots   chan struct{}
 }
 
-// NewTigerBeetle connects to a cluster. addresses are host:port pairs.
+// ErrUnavailable is returned when the cluster does not answer in time. It does not mean the request was not applied.
+// The client never gives up: without a quorum it keeps the request and delivers it when the cluster is back. So the
+// outcome is unknown, and the caller must ask again with the same IDs. A transfer that was applied after all then
+// answers "exists", and one that was not is applied once. The gateway's idempotency records do exactly this.
+var ErrUnavailable = errors.New("tigerbeetle: the cluster did not answer in time; the outcome is unknown, retry with the same ids")
+
+const (
+	// defaultMaxWait is well above a view change (about five seconds when a primary dies, measured) and well below
+	// the gateway's 30-second write timeout.
+	defaultMaxWait = 12 * time.Second
+	// defaultMaxWaiting bounds the calls (and their goroutines) parked while the cluster is away. Beyond it, calls
+	// are refused at once rather than queued.
+	defaultMaxWaiting = 512
+)
+
+// NewTigerBeetle connects to a cluster. addresses are host:port pairs. It returns before the cluster has answered:
+// use Ping to find out whether it does.
 func NewTigerBeetle(clusterID uint64, addresses []string) (*TigerBeetle, error) {
 	c, err := tb.NewClient(tbtypes.ToUint128(clusterID), addresses)
 	if err != nil {
 		return nil, fmt.Errorf("tigerbeetle: connect: %w", err)
 	}
-	return &TigerBeetle{client: c}, nil
+	return &TigerBeetle{client: c, maxWait: defaultMaxWait, slots: make(chan struct{}, defaultMaxWaiting)}, nil
 }
 
-// Close releases the client.
+// Close releases the client. Calls still waiting for the cluster end with an error.
 func (t *TigerBeetle) Close() { t.client.Close() }
+
+// Ping reports whether the cluster answers. A lookup goes through consensus like any other request, so an answer
+// means a quorum of replicas is up.
+func (t *TigerBeetle) Ping(ctx context.Context) error {
+	_, err := await(ctx, t, "ping", func() ([]tbtypes.Account, error) {
+		return t.client.LookupAccounts([]tbtypes.Uint128{tbtypes.ToUint128(1)})
+	})
+	return err
+}
+
+// await runs one client call and stops waiting for it when ctx ends or maxWait passes, whichever is first. The call
+// itself cannot be cancelled: see ErrUnavailable for what that means for the caller.
+func await[T any](ctx context.Context, t *TigerBeetle, what string, call func() (T, error)) (T, error) {
+	var zero T
+	select {
+	case t.slots <- struct{}{}:
+	default:
+		return zero, fmt.Errorf("%w (%s: %d calls are already waiting)", ErrUnavailable, what, cap(t.slots))
+	}
+	type result struct {
+		v   T
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		defer func() { <-t.slots }()
+		v, err := call()
+		done <- result{v, err}
+	}()
+	timer := time.NewTimer(t.maxWait)
+	defer timer.Stop()
+	select {
+	case r := <-done:
+		if r.err != nil {
+			return zero, fmt.Errorf("tigerbeetle: %s: %w", what, r.err)
+		}
+		return r.v, nil
+	case <-ctx.Done():
+		return zero, fmt.Errorf("%w (%s: %v)", ErrUnavailable, what, ctx.Err())
+	case <-timer.C:
+		return zero, fmt.Errorf("%w (%s: no answer in %s)", ErrUnavailable, what, t.maxWait)
+	}
+}
 
 func toU128(id ID) tbtypes.Uint128 { return tbtypes.BytesToUint128(id) }
 
@@ -52,7 +116,7 @@ func u64(v tbtypes.Uint128) (uint64, error) {
 func toU128Amount(v uint64) tbtypes.Uint128 { return tbtypes.ToUint128(v) }
 
 // CreateAccounts implements Store.
-func (t *TigerBeetle) CreateAccounts(_ context.Context, accounts []Account) ([]Outcome, error) {
+func (t *TigerBeetle) CreateAccounts(ctx context.Context, accounts []Account) ([]Outcome, error) {
 	batch := make([]tbtypes.Account, len(accounts))
 	for i, a := range accounts {
 		flags := tbtypes.AccountFlags{Linked: a.Linked, DebitsMustNotExceedCredits: a.DebitsMustNotExceedCredits}
@@ -66,9 +130,9 @@ func (t *TigerBeetle) CreateAccounts(_ context.Context, accounts []Account) ([]O
 			Flags:       flags.ToUint16(),
 		}
 	}
-	res, err := t.client.CreateAccounts(batch)
+	res, err := await(ctx, t, "create accounts", func() ([]tbtypes.AccountEventResult, error) { return t.client.CreateAccounts(batch) })
 	if err != nil {
-		return nil, fmt.Errorf("tigerbeetle: create accounts: %w", err)
+		return nil, err
 	}
 	out := make([]Outcome, len(accounts))
 	for i := range out {
@@ -81,7 +145,7 @@ func (t *TigerBeetle) CreateAccounts(_ context.Context, accounts []Account) ([]O
 }
 
 // CreateTransfers implements Store.
-func (t *TigerBeetle) CreateTransfers(_ context.Context, transfers []Transfer) ([]Outcome, error) {
+func (t *TigerBeetle) CreateTransfers(ctx context.Context, transfers []Transfer) ([]Outcome, error) {
 	batch := make([]tbtypes.Transfer, len(transfers))
 	for i, tr := range transfers {
 		flags := tbtypes.TransferFlags{
@@ -105,9 +169,9 @@ func (t *TigerBeetle) CreateTransfers(_ context.Context, transfers []Transfer) (
 			Flags:           flags.ToUint16(),
 		}
 	}
-	res, err := t.client.CreateTransfers(batch)
+	res, err := await(ctx, t, "create transfers", func() ([]tbtypes.TransferEventResult, error) { return t.client.CreateTransfers(batch) })
 	if err != nil {
-		return nil, fmt.Errorf("tigerbeetle: create transfers: %w", err)
+		return nil, err
 	}
 	out := make([]Outcome, len(transfers))
 	for i := range out {
@@ -120,14 +184,14 @@ func (t *TigerBeetle) CreateTransfers(_ context.Context, transfers []Transfer) (
 }
 
 // LookupAccounts implements Store.
-func (t *TigerBeetle) LookupAccounts(_ context.Context, ids []ID) ([]Account, error) {
+func (t *TigerBeetle) LookupAccounts(ctx context.Context, ids []ID) ([]Account, error) {
 	keys := make([]tbtypes.Uint128, len(ids))
 	for i, id := range ids {
 		keys[i] = toU128(id)
 	}
-	accs, err := t.client.LookupAccounts(keys)
+	accs, err := await(ctx, t, "lookup accounts", func() ([]tbtypes.Account, error) { return t.client.LookupAccounts(keys) })
 	if err != nil {
-		return nil, fmt.Errorf("tigerbeetle: lookup accounts: %w", err)
+		return nil, err
 	}
 	out := make([]Account, 0, len(accs))
 	for _, a := range accs {
@@ -141,14 +205,14 @@ func (t *TigerBeetle) LookupAccounts(_ context.Context, ids []ID) ([]Account, er
 }
 
 // LookupTransfers implements Store.
-func (t *TigerBeetle) LookupTransfers(_ context.Context, ids []ID) ([]Transfer, error) {
+func (t *TigerBeetle) LookupTransfers(ctx context.Context, ids []ID) ([]Transfer, error) {
 	keys := make([]tbtypes.Uint128, len(ids))
 	for i, id := range ids {
 		keys[i] = toU128(id)
 	}
-	trs, err := t.client.LookupTransfers(keys)
+	trs, err := await(ctx, t, "lookup transfers", func() ([]tbtypes.Transfer, error) { return t.client.LookupTransfers(keys) })
 	if err != nil {
-		return nil, fmt.Errorf("tigerbeetle: lookup transfers: %w", err)
+		return nil, err
 	}
 	out := make([]Transfer, 0, len(trs))
 	for _, tr := range trs {
@@ -216,7 +280,8 @@ func mapAccountResult(r tbtypes.CreateAccountResult) Reason {
 	case tbtypes.AccountExists:
 		return ReasonExists
 	case tbtypes.AccountExistsWithDifferentFlags, tbtypes.AccountExistsWithDifferentLedger,
-		tbtypes.AccountExistsWithDifferentCode:
+		tbtypes.AccountExistsWithDifferentCode, tbtypes.AccountExistsWithDifferentUserData128,
+		tbtypes.AccountExistsWithDifferentUserData64, tbtypes.AccountExistsWithDifferentUserData32:
 		return ReasonExistsWithDifferentFields
 	case tbtypes.AccountLinkedEventFailed:
 		return ReasonLinkedEventFailed
@@ -235,8 +300,12 @@ func mapTransferResult(r tbtypes.CreateTransferResult) Reason {
 	case tbtypes.TransferExistsWithDifferentFlags, tbtypes.TransferExistsWithDifferentPendingID,
 		tbtypes.TransferExistsWithDifferentTimeout, tbtypes.TransferExistsWithDifferentDebitAccountID,
 		tbtypes.TransferExistsWithDifferentCreditAccountID, tbtypes.TransferExistsWithDifferentAmount,
-		tbtypes.TransferExistsWithDifferentLedger, tbtypes.TransferExistsWithDifferentCode:
+		tbtypes.TransferExistsWithDifferentLedger, tbtypes.TransferExistsWithDifferentCode,
+		tbtypes.TransferExistsWithDifferentUserData128, tbtypes.TransferExistsWithDifferentUserData64,
+		tbtypes.TransferExistsWithDifferentUserData32:
 		return ReasonExistsWithDifferentFields
+	case tbtypes.TransferIDAlreadyFailed:
+		return ReasonIDAlreadyFailed
 	case tbtypes.TransferLinkedEventFailed:
 		return ReasonLinkedEventFailed
 	case tbtypes.TransferDebitAccountNotFound, tbtypes.TransferCreditAccountNotFound:
@@ -254,6 +323,8 @@ func mapTransferResult(r tbtypes.CreateTransferResult) Reason {
 		return ReasonOverflow
 	case tbtypes.TransferPendingTransferNotFound:
 		return ReasonPendingNotFound
+	case tbtypes.TransferPendingTransferNotPending:
+		return ReasonPendingNotPending
 	case tbtypes.TransferPendingTransferAlreadyPosted:
 		return ReasonPendingAlreadyPosted
 	case tbtypes.TransferPendingTransferAlreadyVoided:

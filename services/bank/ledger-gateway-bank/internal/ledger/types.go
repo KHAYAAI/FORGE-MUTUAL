@@ -10,24 +10,38 @@ const (
 	ReasonOK                        Reason = ""
 	ReasonExists                    Reason = "exists" // same ID, identical fields: idempotent success
 	ReasonExistsWithDifferentFields Reason = "exists_with_different_fields"
-	ReasonLinkedEventFailed         Reason = "linked_event_failed"
-	ReasonAccountNotFound           Reason = "account_not_found"
-	ReasonSameAccount               Reason = "same_account"
-	ReasonLedgerMismatch            Reason = "ledger_mismatch"
-	ReasonInsufficientFunds         Reason = "insufficient_funds"
-	ReasonOverflow                  Reason = "overflow"
-	ReasonPendingNotFound           Reason = "pending_not_found"
-	ReasonPendingAlreadyPosted      Reason = "pending_already_posted"
-	ReasonPendingAlreadyVoided      Reason = "pending_already_voided"
-	ReasonPendingExpired            Reason = "pending_expired"
-	ReasonPendingMismatch           Reason = "pending_mismatch"
-	ReasonInvalidAmount             Reason = "invalid_amount"
-	ReasonInvalidAccount            Reason = "invalid_account"
-	ReasonInvalidTransfer           Reason = "invalid_transfer"
+	// ReasonIDAlreadyFailed: this transfer ID was refused before for a reason that depended on the ledger's state at
+	// that moment (see Transient), so TigerBeetle refuses the ID for good. Without that, a retry of a refused request
+	// could succeed later, and the caller who was told "refused" would be wrong. A new attempt needs a new ID.
+	ReasonIDAlreadyFailed      Reason = "id_already_failed"
+	ReasonLinkedEventFailed    Reason = "linked_event_failed"
+	ReasonAccountNotFound      Reason = "account_not_found"
+	ReasonSameAccount          Reason = "same_account"
+	ReasonLedgerMismatch       Reason = "ledger_mismatch"
+	ReasonInsufficientFunds    Reason = "insufficient_funds"
+	ReasonOverflow             Reason = "overflow"
+	ReasonPendingNotFound      Reason = "pending_not_found"
+	ReasonPendingNotPending    Reason = "pending_not_pending" // the transfer named by PendingID exists but is not pending
+	ReasonPendingAlreadyPosted Reason = "pending_already_posted"
+	ReasonPendingAlreadyVoided Reason = "pending_already_voided"
+	ReasonPendingExpired       Reason = "pending_expired"
+	ReasonPendingMismatch      Reason = "pending_mismatch"
+	ReasonInvalidAmount        Reason = "invalid_amount"
+	ReasonInvalidAccount       Reason = "invalid_account"
+	ReasonInvalidTransfer      Reason = "invalid_transfer"
 )
 
 // IsSuccess reports whether a reason means the event was applied or already applied.
 func (r Reason) IsSuccess() bool { return r == ReasonOK || r == ReasonExists }
+
+// Transient reports whether a refusal depended on the ledger's state at that moment, so that the same transfer could
+// have been accepted at another time: an account or a pending transfer that did not exist yet, or a balance that was
+// too low. TigerBeetle remembers the ID of a transfer refused this way and answers ReasonIDAlreadyFailed to every
+// later use of it. A refusal that would be the same at any time (two ledgers, the same account twice, a pending
+// transfer already posted) is not remembered: sending it again gives the same answer.
+func (r Reason) Transient() bool {
+	return r == ReasonAccountNotFound || r == ReasonPendingNotFound || r == ReasonInsufficientFunds
+}
 
 // Account is a ledger account. Balances are in minor units of the account's asset.
 type Account struct {

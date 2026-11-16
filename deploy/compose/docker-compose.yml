@@ -1,12 +1,13 @@
 # The local stack: infrastructure and every Go service that the customer and back-office journeys use, running the
 # real code. Start it with deploy/compose/up.sh, which generates the local secrets in .env (never committed).
 #
-# What is real here: Postgres 17, Kafka 3.9 (one broker, topics created explicitly), the Temporal server, and every
-# service's own logic, inter-service calls (ConnectRPC, with the caller allow-lists in config/callers), the event bus
-# and the outbox.
+# What is real here: Postgres 17, Kafka 3.9 (one broker, topics created explicitly), the Temporal server, TigerBeetle
+# (the ledger's balances live in it, and survive a restart of the ledger service), and every service's own logic,
+# inter-service calls (ConnectRPC, with the caller allow-lists in config/callers), the event bus and the outbox.
 #
 # What is NOT real here, and why (see deploy/compose/README.md):
-#   - TigerBeetle: the ledger runs LEDGER_STORE=memory. Balances do not survive a restart. Production refuses this.
+#   - TigerBeetle is ONE replica in development mode (--development). Production is six replicas on dedicated hosts,
+#     without that flag. Set LEDGER_STORE=memory in .env to run without TigerBeetle, where its image cannot be pulled.
 #   - The bank: the bank layer runs its simulator (PAYMENTS_ALLOW_SIMULATION, RAILS_SIMULATION). No sponsor sandbox.
 #   - Identity: the customer and staff apps sign in with the development sign-in (WORKSPACE_AUTH=dev,
 #     BACKOFFICE_AUTH=dev). The OIDC path is exercised by tests against tools/devidp (profile "oidc").
@@ -226,16 +227,59 @@ services:
       - ./config/callers:/stack/callers:ro
       - ./audit-anchor.txt:/stack/audit-anchor.txt
 
-  # ---- ledger (memory store: see the header) -----------------------------------------------------------------------
+  # ---- ledger -------------------------------------------------------------------------------------------------------
+  # TigerBeetle, one replica. The data file is made once, in the tb-data volume, and kept until `make down` removes the
+  # volumes. The ledger's Postgres database (idempotency records, the account directory, the outbox) and this file
+  # belong together: remove both or neither. Port 3034, so it does not clash with a test replica on 3033.
+  tigerbeetle-format:
+    image: ${TB_IMAGE:-ghcr.io/tigerbeetle/tigerbeetle:0.16.60}
+    network_mode: host
+    security_opt: ["seccomp=unconfined"] # io_uring, which Docker's default profile blocks
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - test -f /data/1_0.tigerbeetle || /tigerbeetle format --cluster=1 --replica=0 --replica-count=1 --development /data/1_0.tigerbeetle
+    volumes: ["tb-data:/data"]
+    restart: "no"
+
+  tigerbeetle:
+    image: ${TB_IMAGE:-ghcr.io/tigerbeetle/tigerbeetle:0.16.60}
+    network_mode: host
+    security_opt: ["seccomp=unconfined"]
+    cap_add: ["IPC_LOCK"]
+    depends_on:
+      tigerbeetle-format:
+        condition: service_completed_successfully
+    command: ["start", "--addresses=127.0.0.1:3034", "--development", "/data/1_0.tigerbeetle"]
+    volumes: ["tb-data:/data"]
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "nc -z 127.0.0.1 3034"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
   ledger:
-    <<: *go
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      tigerbeetle:
+        condition: service_healthy
     image: forge/ledger-gateway-bank:dev
     network_mode: host
+    # The TigerBeetle client uses io_uring, as the server does. Under Docker's default seccomp profile it cannot, and it
+    # does not return an error: it aborts the process ("io_uring is not available"). Wherever the gateway runs, its
+    # seccomp profile must allow io_uring_setup, io_uring_enter and io_uring_register. Here the profile is simply off.
+    security_opt: ["seccomp=unconfined"]
     environment:
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/ledger?sslmode=disable
       LEDGER_LISTEN: ":8070"
-      LEDGER_STORE: memory
+      LEDGER_STORE: ${LEDGER_STORE:-tigerbeetle}
+      TB_ADDRESSES: 127.0.0.1:3034
+      TB_CLUSTER_ID: "1"
       LEDGER_PUBLISHER: kafka
       LEDGER_CALLERS_FILE: /stack/callers/ledger.json
     volumes: ["./config/callers:/stack/callers:ro"]
@@ -419,3 +463,4 @@ services:
 
 volumes:
   pg-data:
+  tb-data:

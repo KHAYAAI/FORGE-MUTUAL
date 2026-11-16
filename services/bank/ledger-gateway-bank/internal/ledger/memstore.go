@@ -17,6 +17,8 @@ type MemStore struct {
 	accounts  map[ID]Account
 	transfers map[ID]Transfer
 	pending   map[ID]*pendingState
+	// failed holds the IDs of transfers refused for a transient reason. They are refused for good (Reason.Transient).
+	failed map[ID]struct{}
 }
 
 type pendingState struct {
@@ -43,6 +45,7 @@ func NewMemStore(now func() time.Time) *MemStore {
 		accounts:  make(map[ID]Account),
 		transfers: make(map[ID]Transfer),
 		pending:   make(map[ID]*pendingState),
+		failed:    make(map[ID]struct{}),
 	}
 }
 
@@ -71,53 +74,51 @@ func (s *MemStore) CreateAccounts(_ context.Context, batch []Account) ([]Outcome
 	return out, nil
 }
 
-// createChain validates the whole chain before inserting anything.
+// createChain validates the whole chain before inserting anything. Any answer but OK breaks the chain, and that
+// includes "exists": TigerBeetle answers a chain that is sent a second time with "exists" for its first member and
+// "linked_event_failed" for the rest. A chain of one is simply its own answer.
 func (s *MemStore) createChain(chain []Account, out []Outcome, base int) {
-	reasons := make([]Reason, len(chain))
-	seen := make(map[ID]bool)
+	staged := make(map[ID]Account, len(chain))
 	failAt := -1
+	var failReason Reason
 	for k, a := range chain {
-		r := s.checkAccount(a)
-		if r.IsSuccess() && seen[a.ID] {
-			r = ReasonExistsWithDifferentFields
-		}
-		seen[a.ID] = true
-		reasons[k] = r
-		if !r.IsSuccess() {
-			failAt = k
+		if r := s.checkAccount(a, staged); r != ReasonOK {
+			failAt, failReason = k, r
 			break
 		}
+		staged[a.ID] = a
 	}
 	if failAt >= 0 {
 		for k := range chain {
 			reason := ReasonLinkedEventFailed
 			if k == failAt {
-				reason = reasons[failAt]
+				reason = failReason
 			}
 			out[k] = Outcome{Index: base + k, Reason: reason}
 		}
 		return
 	}
 	for k, a := range chain {
-		if reasons[k] == ReasonExists {
-			out[k] = Outcome{Index: base + k, Reason: ReasonExists}
-			continue
-		}
 		a.Timestamp = s.nextTimestamp()
 		s.accounts[a.ID] = a
 		out[k] = Outcome{Index: base + k, Reason: ReasonOK}
 	}
 }
 
-// checkAccount reports whether a can be created, without changing state.
-func (s *MemStore) checkAccount(a Account) Reason {
+// checkAccount reports whether a can be created, without changing state. staged holds the accounts earlier in the
+// same chain.
+func (s *MemStore) checkAccount(a Account, staged map[ID]Account) Reason {
 	if a.ID.IsZero() || a.Ledger == 0 || a.Code == 0 {
 		return ReasonInvalidAccount
 	}
 	if a.DebitsPending|a.DebitsPosted|a.CreditsPending|a.CreditsPosted != 0 {
 		return ReasonInvalidAccount
 	}
-	if existing, ok := s.accounts[a.ID]; ok {
+	existing, ok := staged[a.ID]
+	if !ok {
+		existing, ok = s.accounts[a.ID]
+	}
+	if ok {
 		if sameAccountFields(existing, a) {
 			return ReasonExists
 		}
@@ -151,13 +152,17 @@ func (s *MemStore) CreateTransfers(_ context.Context, batch []Transfer) ([]Outco
 	return out, nil
 }
 
+// applyChain applies one chain, or nothing. Any answer but OK breaks the chain, and that includes "exists": when a
+// chain that was already applied is sent again, TigerBeetle answers "exists" for its first member and
+// "linked_event_failed" for the rest, and changes nothing. A caller that retries must read that as "already done",
+// and confirm it by looking the transfers up (the gateway does both). A chain of one is simply its own answer.
 func (s *MemStore) applyChain(chain []Transfer, out []Outcome, base int) {
 	st := newStaging(s)
 	failAt := -1
 	var failReason Reason
 	for k, t := range chain {
 		r := st.apply(t)
-		if !r.IsSuccess() {
+		if r != ReasonOK {
 			failAt, failReason = k, r
 			break
 		}
@@ -170,6 +175,11 @@ func (s *MemStore) applyChain(chain []Transfer, out []Outcome, base int) {
 				reason = failReason
 			}
 			out[k] = Outcome{Index: base + k, Reason: reason}
+		}
+		// The chain is rolled back, but the ID that was refused for a transient reason stays refused. The other
+		// members of the chain were not refused on their own account, and their IDs can be used again.
+		if failReason.Transient() {
+			s.failed[chain[failAt].ID] = struct{}{}
 		}
 		return
 	}
@@ -285,10 +295,20 @@ func (st *staging) apply(t Transfer) Reason {
 		return ReasonInvalidAmount
 	}
 	if existing, ok := st.lookupTransfer(t.ID); ok {
+		if (t.PostPending || t.VoidPending) && t.PendingID == existing.PendingID {
+			// A post or void is stored with the pending transfer's user data where its own was empty, so the same
+			// request sent again must be compared after the same filling in.
+			if pt, ok := st.lookupTransfer(t.PendingID); ok {
+				t = inheritUserData(t, pt)
+			}
+		}
 		if sameTransferFields(existing, t) {
 			return ReasonExists
 		}
 		return ReasonExistsWithDifferentFields
+	}
+	if _, ok := st.s.failed[t.ID]; ok {
+		return ReasonIDAlreadyFailed
 	}
 	if t.PostPending && t.VoidPending {
 		return ReasonInvalidTransfer
@@ -363,8 +383,11 @@ func (st *staging) createTransfer(t Transfer) Reason {
 
 func (st *staging) resolvePending(t Transfer) Reason {
 	pt, ok := st.lookupTransfer(t.PendingID)
-	if !ok || !pt.Pending {
+	if !ok {
 		return ReasonPendingNotFound
+	}
+	if !pt.Pending {
+		return ReasonPendingNotPending
 	}
 	p, _ := st.pendingPhase(t.PendingID)
 	switch p.state {
@@ -409,6 +432,7 @@ func (st *staging) resolvePending(t Transfer) Reason {
 	st.accounts[pt.CreditAccountID] = credit
 	st.pending[t.PendingID] = p
 
+	t = inheritUserData(t, pt)
 	t.Timestamp = st.nextTimestamp()
 	st.transfer[t.ID] = t
 	return ReasonOK
@@ -430,6 +454,20 @@ func (st *staging) commit() {
 		}
 	}
 	st.s.clock = st.clock
+}
+
+// inheritUserData fills a post's or void's empty user data from its pending transfer, as TigerBeetle stores it.
+func inheritUserData(t, pending Transfer) Transfer {
+	if t.UserData128 == ([16]byte{}) {
+		t.UserData128 = pending.UserData128
+	}
+	if t.UserData64 == 0 {
+		t.UserData64 = pending.UserData64
+	}
+	if t.UserData32 == 0 {
+		t.UserData32 = pending.UserData32
+	}
+	return t
 }
 
 func addU64(a, b uint64) (uint64, bool) {

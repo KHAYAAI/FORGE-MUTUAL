@@ -39,6 +39,8 @@ func Run(t *testing.T, newEnv Factory) {
 	t.Run("pending_post_and_void", func(t *testing.T) { pendingPostAndVoid(t, newEnv) })
 	t.Run("linked_chain_is_atomic", func(t *testing.T) { linkedChainAtomic(t, newEnv) })
 	t.Run("crash_after_ledger_commit_is_recovered", func(t *testing.T) { crashRecovered(t, newEnv) })
+	t.Run("crash_after_a_linked_chain_committed_is_recovered", func(t *testing.T) { chainCrashRecovered(t, newEnv) })
+	t.Run("a_refused_request_stays_refused_when_its_answer_was_lost", func(t *testing.T) { refusedStaysRefused(t, newEnv) })
 	t.Run("validation", func(t *testing.T) { validation(t, newEnv) })
 	t.Run("outbox_publishes_each_committed_leg_once", func(t *testing.T) { outboxOnce(t, newEnv) })
 	t.Run("list_accounts_pages_and_filters_the_directory", func(t *testing.T) { listAccounts(t, newEnv) })
@@ -319,6 +321,112 @@ func crashRecovered(t *testing.T, newEnv Factory) {
 	again, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
 	if err != nil || again.Msg.Status != ledgerv1.Status_STATUS_REPLAYED {
 		t.Fatalf("third call should replay: err=%v status=%v", err, again.Msg.Status)
+	}
+}
+
+// The same for a request with two legs. When a chain that is already applied is sent again, TigerBeetle answers
+// "exists" for the first leg and "linked_event_failed" for the second. The gateway must read that as done, confirm it by
+// reading both transfers back, move nothing a second time, and publish each leg exactly once.
+func chainCrashRecovered(t *testing.T, newEnv Factory) {
+	f := setup(t, newEnv)
+	if out, _ := f.send(t, f.transferReq(f.nextKey("fund"), leg(f.operate, f.customer, "ZAR", "50000", 10))); out.Status != ledgerv1.Status_STATUS_OK {
+		t.Fatalf("fund: %v", out)
+	}
+	flaky := &flakyStore{Store: f.env.Store, failNext: true}
+	svc := gateway.NewService(gateway.DefaultConfig(), flaky, f.env.Repo)
+	r := f.transferReq(f.nextKey("chain-crash"),
+		leg(f.operate, f.customer, "ZAR", "1000", 10),
+		leg(f.customer, f.operate, "ZAR", "400", 11),
+	)
+
+	_, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if connect.CodeOf(err) != connect.CodeUnavailable {
+		t.Fatalf("first attempt: want Unavailable, got %v", err)
+	}
+	if got := f.available(t, f.customer); got != "50600" {
+		t.Fatalf("the ledger should hold both legs, available=%s", got)
+	}
+	res, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if err != nil || res.Msg.Status != ledgerv1.Status_STATUS_OK || len(res.Msg.TransferIds) != 2 {
+		t.Fatalf("retry: err=%v resp=%v", err, res)
+	}
+	if got := f.available(t, f.customer); got != "50600" {
+		t.Fatalf("the retry moved money again: available=%s", got)
+	}
+	again, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if err != nil || again.Msg.Status != ledgerv1.Status_STATUS_REPLAYED || len(again.Msg.TransferIds) != 2 {
+		t.Fatalf("third call should replay both legs: err=%v resp=%v", err, again)
+	}
+
+	// One event for the funding, and one for each leg of the chain: three, however many times the chain was sent.
+	published := map[string]int{}
+	for {
+		n, err := f.env.Repo.RelayBatch(context.Background(), 10, func(evs []gateway.OutboxEvent) error {
+			for _, e := range evs {
+				var env eventsv1.EventEnvelope
+				if err := proto.Unmarshal(e.Payload, &env); err != nil {
+					return err
+				}
+				published[env.CausationId]++
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("relay: %v", err)
+		}
+		if n == 0 {
+			break
+		}
+	}
+	if len(published) != 3 {
+		t.Fatalf("published events for %d transfers, want 3: %v", len(published), published)
+	}
+	for _, id := range res.Msg.TransferIds {
+		if published[id] != 1 {
+			t.Fatalf("leg %s was published %d times, want once", id, published[id])
+		}
+	}
+}
+
+// The ledger refuses a request (the customer has no money), and the answer is lost on the way back. Then the customer is
+// funded, and the caller retries the same request. A ledger that looked at the transfer afresh would now accept it. It
+// must not: the request was refused, and the retry must say so. TigerBeetle remembers the refused ID; the gateway
+// reports PREVIOUSLY_REFUSED, moves nothing, and keeps giving that answer. A new request is accepted.
+func refusedStaysRefused(t *testing.T, newEnv Factory) {
+	f := setup(t, newEnv)
+	flaky := &flakyStore{Store: f.env.Store, failNext: true}
+	svc := gateway.NewService(gateway.DefaultConfig(), flaky, f.env.Repo)
+	r := f.transferReq(f.nextKey("refused"), leg(f.customer, f.operate, "ZAR", "30000", 11))
+
+	_, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if connect.CodeOf(err) != connect.CodeUnavailable {
+		t.Fatalf("first attempt: want Unavailable, got %v", err)
+	}
+	if out, _ := f.send(t, f.transferReq(f.nextKey("fund-later"), leg(f.operate, f.customer, "ZAR", "50000", 10))); out.Status != ledgerv1.Status_STATUS_OK {
+		t.Fatalf("fund: %v", out)
+	}
+
+	res, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if res.Msg.Status != ledgerv1.Status_STATUS_REJECTED || len(res.Msg.RejectionCodes) != 1 || res.Msg.RejectionCodes[0] != gateway.CodePreviouslyRefused {
+		t.Fatalf("a request the ledger refused must stay refused: %v %v", res.Msg.Status, res.Msg.RejectionCodes)
+	}
+	if got := f.available(t, f.customer); got != "50000" {
+		t.Fatalf("the refused request moved money on retry: available=%s", got)
+	}
+	again, err := svc.CreateTransfers(context.Background(), withCaller(connect.NewRequest(r)))
+	if err != nil || again.Msg.Status != ledgerv1.Status_STATUS_REPLAYED || again.Msg.RejectionCodes[0] != gateway.CodePreviouslyRefused {
+		t.Fatalf("third call should replay the refusal: err=%v resp=%v", err, again)
+	}
+
+	fresh, err := f.send(t, f.transferReq(f.nextKey("fresh"), leg(f.customer, f.operate, "ZAR", "30000", 11)))
+	if err != nil || fresh.Status != ledgerv1.Status_STATUS_OK {
+		t.Fatalf("a new request for the same payment: err=%v resp=%v", err, fresh)
+	}
+	if got := f.available(t, f.customer); got != "20000" {
+		t.Fatalf("after the new request available=%s, want 20000", got)
 	}
 }
 

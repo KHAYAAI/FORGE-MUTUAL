@@ -9,9 +9,10 @@ GATEWAY := services/bank/ledger-gateway-bank
 # suite proves nothing. `make ci-db` creates the databases and sources the environment for you.
 DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN AUDIT_TEST_DSN TREASURY_TEST_DSN \
 	COMPLIANCE_TEST_DSN POLICY_TEST_DSN PARTY_TEST_DSN CONSENT_TEST_DSN ONBOARDING_TEST_PG OUTBOX_TEST_DSN FX_TEST_DSN PAYOUTS_TEST_DSN \
-	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS
+	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS \
+	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-policy policy-manifest test-platform test-bank test-temporal proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal proto up down
 
 ci: require-test-dbs lint test test-isolation
 
@@ -25,9 +26,14 @@ require-test-dbs:
 	  echo "run 'make ci-db' (throwaway databases on the compose Postgres, broker from 'make up'), or set FORGE_SKIP_DB_TESTS=1 to skip knowingly"; \
 	  exit 1; fi
 
-# Creates throwaway databases on the Postgres at FORGE_PG_HOST_DSN (default: compose), then runs the full gate with them.
+# Creates throwaway databases on the Postgres at FORGE_PG_HOST_DSN (default: compose) and starts a throwaway TigerBeetle
+# replica in Docker, then runs the full gate with them. To use a TigerBeetle that is already running, set TB_ADDRESSES and
+# TB_CLUSTER_ID yourself, and none is started.
 ci-db:
 	scripts/test-databases.sh
+	@if [ -n "$$TB_ADDRESSES" ] && [ -n "$$TB_CLUSTER_ID" ]; then \
+	  printf "export TB_ADDRESSES='%s'\nexport TB_CLUSTER_ID='%s'\n" "$$TB_ADDRESSES" "$$TB_CLUSTER_ID" >> .test-dbs.env; \
+	else scripts/tigerbeetle.sh single up && scripts/tigerbeetle.sh env single >> .test-dbs.env; fi
 	set -a; . ./.test-dbs.env; set +a; $(MAKE) ci
 
 test: test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web
@@ -98,9 +104,13 @@ test-stack:
 	cd apps/web && npm run build && npx playwright test -c playwright.stack.config.ts
 	cd apps/backoffice && npm run build && npx playwright test -c playwright.stack.config.ts
 
-# Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg).
+# Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg). With TB_ADDRESSES and
+# TB_CLUSTER_ID set, which `make ci` requires, the gateway suite and the differential test against the in-memory model
+# also run against that TigerBeetle.
 test-ledger:
 	cd $(GATEWAY) && $(GO) test -count=1 ./...
+	@if [ -n "$$TB_ADDRESSES" ] && [ -n "$$TB_CLUSTER_ID" ]; then $(MAKE) test-ledger-tb; \
+	else echo "TigerBeetle suites SKIPPED: TB_ADDRESSES and TB_CLUSTER_ID are not set"; fi
 
 # Runs the shared behaviour suite and the restart test against Postgres.
 # Tables are truncated; use a throwaway database.
@@ -138,10 +148,22 @@ test-temporal:
 	cd services/platform/onboarding && $(GO) test -tags temporaldev -count=1 -v -timeout 600s ./internal/onboarding/ ./internal/service/
 	cd services/bank/payments-orchestrator && $(GO) test -tags temporaldev -count=1 -v -timeout 600s ./internal/service/
 
-# Runs the shared behaviour suite against a live TigerBeetle cluster.
+# Against a live TigerBeetle: the gateway's behaviour suite, pending expiry, and the differential test, which sends the
+# in-memory model and the cluster the same random batches and requires the same outcomes, balances and transfers.
+# `scripts/tigerbeetle.sh single up` starts one, and `eval "$$(scripts/tigerbeetle.sh env single)"` sets the variables.
 test-ledger-tb:
 	@test -n "$$TB_ADDRESSES" -a -n "$$TB_CLUSTER_ID" || (echo "set TB_ADDRESSES and TB_CLUSTER_ID"; exit 1)
-	cd $(GATEWAY) && $(GO) test -count=1 -tags tbintegration -v ./internal/ledger/
+	cd $(GATEWAY) && $(GO) test -count=1 -tags tbintegration -timeout 900s ./internal/ledger/
+
+# Starts three replicas in Docker and takes them apart while they are in use: one killed, then another, then no quorum,
+# then recovery (services/bank/ledger-gateway-bank/internal/ledger/tigerbeetle_cluster_test.go). Needs about 6 GiB of
+# memory. Not part of `make ci`.
+test-ledger-tb-cluster:
+	scripts/tigerbeetle.sh cluster up
+	eval "$$(scripts/tigerbeetle.sh env cluster)"; \
+	  ( cd $(GATEWAY) && $(GO) test -count=1 -tags tbintegration -timeout 1500s -v \
+	    -run 'TestClusterSurvivesLosingReplicas|TestGatewaySuiteTigerBeetle|TestMemStoreAgreesWithTigerBeetle' ./internal/ledger/ ); \
+	  status=$$?; scripts/tigerbeetle.sh cluster down; exit $$status
 
 lint: fmt-check vet
 

@@ -145,10 +145,22 @@ func run(log *slog.Logger) error {
 	mux.Handle(path, handler)
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	// Ready means the gateway can do its work: the database answers, and so does the ledger. A TigerBeetle cluster
+	// without a quorum accepts nothing, so the gateway says it is not ready and stops being sent work it would only
+	// keep waiting.
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		if err := repo.Ping(r.Context()); err != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		if err := repo.Ping(ctx); err != nil {
 			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
 			return
+		}
+		if p, ok := store.(interface{ Ping(context.Context) error }); ok {
+			if err := p.Ping(ctx); err != nil {
+				log.Warn("ledger not ready", "err", err.Error())
+				http.Error(w, "ledger unavailable", http.StatusServiceUnavailable)
+				return
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 	})
