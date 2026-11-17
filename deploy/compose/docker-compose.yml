@@ -38,8 +38,8 @@ services:
     # Ports here are chosen to avoid the machine's own servers: Postgres 5433 (5432 is often a local server),
     # Kafka 9192 (9092 often is), ledger 8070 (8080 often is). With host networking they are on the loopback
     # interface. Every service's address names these ports.
-    # Every completed WAL segment is archived, and archive_timeout closes a segment at least once a minute, so the
-    # database can be restored to any moment up to about a minute ago from a base backup plus the archive
+    # Every completed WAL segment is archived, and archive_timeout closes a segment at least every five minutes (local stack; production sets its own), so the
+    # database can be restored to any moment up to about five minutes ago from a base backup plus the archive
     # (scripts/pitr-check.sh). The archive is the pg-wal volume; in production it is off-site object storage.
     # The archive volume is created owned by root; the server runs as postgres and must be able to write to it.
     entrypoint: ["bash", "-c", "chown postgres:postgres /wal-archive && exec docker-entrypoint.sh \"$$@\"", "--"]
@@ -54,7 +54,7 @@ services:
       - -c
       - archive_command=test ! -f /wal-archive/%f && cp %p /wal-archive/%f.tmp && mv /wal-archive/%f.tmp /wal-archive/%f
       - -c
-      - archive_timeout=60
+      - archive_timeout=300
     environment:
       POSTGRES_PASSWORD: forge-local-only
     volumes:
@@ -79,7 +79,7 @@ services:
     environment:
       PGPASSWORD: forge-local-only
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
-      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-2}
     volumes:
       - pg-base:/backups
       - pg-wal:/wal-archive

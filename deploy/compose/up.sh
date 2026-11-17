@@ -120,6 +120,11 @@ printf '%s\n' "${images[@]}" | xargs -P 4 -I{} bash -c 'build_one "$1"' _ {} || 
 echo "up: images built"
 
 "${compose[@]}" up -d --no-build --wait --wait-timeout 600 postgres kafka kafka-init temporal tigerbeetle >/dev/null
+# A database added since the volume was made is created now: initdb runs only on an empty volume.
+for db in $(grep -o 'create database [a-z_]*' initdb/01-databases.sql | awk '{print $3}'); do
+  "${compose[@]}" exec -T postgres psql -U postgres -p 5433 -tAc "select 1 from pg_database where datname = '$db'" | grep -q 1 ||
+    "${compose[@]}" exec -T postgres psql -U postgres -p 5433 -qc "create database $db" >/dev/null
+done
 "${compose[@]}" up -d --no-build --wait-timeout 600 >/dev/null
 
 # Every Go service answers HTTP on its port. A reply of any status means the process is listening and serving. With

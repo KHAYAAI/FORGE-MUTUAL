@@ -18,8 +18,14 @@ while true; do
   find /backups -maxdepth 1 -name 'base-*' -type d -mtime "+$keep_days" -exec rm -rf {} +
   oldest="$(ls -d /backups/base-* 2>/dev/null | grep -E "/base-[0-9]{8}T[0-9]{6}Z$" | sort | head -1)"
   if [ -n "$oldest" ]; then
-    first_wal="$(tar -xzOf "$oldest/base.tar.gz" ./backup_label 2>/dev/null | sed -n 's/^START WAL LOCATION: .* (file \([0-9A-F]*\))$/\1/p')"
-    [ -n "$first_wal" ] && pg_archivecleanup /wal-archive "$first_wal"
+    # pg_basebackup writes the label as "backup_label" (no "./"). A cleanup that cannot run is logged and the loop goes
+    # on: exiting here would restart the container, which takes a new base backup at once, over and over.
+    first_wal="$(tar -xzOf "$oldest/base.tar.gz" backup_label 2>/dev/null | sed -n 's/^START WAL LOCATION: .* (file \([0-9A-F]*\))$/\1/p' || true)"
+    if [ -n "$first_wal" ]; then
+      pg_archivecleanup /wal-archive "$first_wal" || echo "pg-backup: WAL cleanup failed; the archive keeps growing until it works" >&2
+    else
+      echo "pg-backup: no backup_label in $oldest; WAL not cleaned up" >&2
+    fi
   fi
   sleep "$interval"
 done
