@@ -10,11 +10,15 @@ export const MFA_MESSAGE =
 
 // A sign-in without a second factor is valid but refused (403, mfa_required). Rather than leave every page showing
 // errors, send the person back to sign in with a plain explanation.
+// A page often makes several calls at once; only the first refusal redirects, so the redirects do not cancel each other.
+let redirecting = false;
+
 api.use({
   async onResponse({ response }) {
     if (response.status !== 403 || typeof window === "undefined") return response;
     const body = (await response.clone().json().catch(() => null)) as { error?: { code?: string } } | null;
-    if (body?.error?.code === "mfa_required") {
+    if (body?.error?.code === "mfa_required" && !redirecting) {
+      redirecting = true;
       window.location.assign(`/sign-in?error=${encodeURIComponent(MFA_MESSAGE)}`);
     }
     return response;

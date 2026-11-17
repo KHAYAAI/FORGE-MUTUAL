@@ -8,7 +8,8 @@ test("a sign-in without a second factor is told what to do", async ({ page }) =>
   await page.route("**/api/v1/**", (route) =>
     reply(route, 403, { error: { code: "mfa_required", message: "your sign-in did not use a second factor" } }),
   );
-  await page.goto("/currencies");
-  await page.waitForURL("**/sign-in?error=*");
+  // The redirect can land before the page finishes loading, so wait only for the navigation to start.
+  await page.goto("/currencies", { waitUntil: "commit" });
+  await expect(page).toHaveURL(/\/sign-in\?error=/, { timeout: 10_000 });
   await expect(page.getByText("did not use a second factor, which every Forge account requires")).toBeVisible();
 });
