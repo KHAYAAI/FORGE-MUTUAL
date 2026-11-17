@@ -95,7 +95,7 @@ Money is always a decimal string of unsigned or signed integer minor units. Neve
 | Kill-and-restart test | Met | `TestPendingRecordSurvivesRestart`; suite `crash_after_ledger_commit_is_recovered`, `crash_after_a_linked_chain_committed_is_recovered`, `a_refused_request_stays_refused_when_its_answer_was_lost`; for the ledger itself, `TestClusterSurvivesLosingReplicas` |
 | Benchmark report | Met for the reference model only | `docs/specs/ledger-gateway-bank/BENCHMARK.md` |
 | Run against a live TigerBeetle cluster | Met, on a development-mode cluster | TigerBeetle 0.16.60, one replica and three replicas, 2026-11-16 (section 12). Not yet on production hardware or a production configuration |
-| Run against a live Kafka broker | Met, one broker | The outbox suite publishes to Kafka 3.9 in the gate. A multi-broker cluster is unverified (VERIFY-KAFKA) |
+| Run against a live Kafka broker | Met | The outbox suite publishes to Kafka 3.9 in the gate, and `pkg/outbox/kafka_cluster_test.go` runs the relay on three brokers while one and then two are killed. The ledger gateway's own publisher has the same settings (acks=all, a 20-second delivery deadline) but is not itself run against the cluster |
 
 The gate runs against Postgres 17.
 
@@ -129,7 +129,7 @@ These were not in the original spec and should be confirmed by a human reviewer.
   limits, an upgrade rehearsal, and how fast a replica repairs and state-syncs on that hardware (section 12). Answered on
   2026-11-16: the version (0.16.60), the ID scheme, and `exists` inside a linked chain, which does **not** count as
   success: it breaks the chain. The model and this document said otherwise, and both are corrected.
-- VERIFY-KAFKA: Kafka broker configuration and franz-go behaviour under failure.
+- VERIFY-KAFKA, what is left: TLS and SASL to the brokers, and the production cluster's topic settings. Found on a three-broker cluster: with no quorum the client retried a record for ever; both publishers now have a delivery deadline.
 - **Outbox reconciler (ARCHITECTURE.md 7.8) is not built, and I recommend changing that section.** The gateway writes
   each outbox row in the same transaction as the record it belongs to, so a committed transfer without an event
   cannot happen inside the gateway. A reconciler that compares TigerBeetle with the outbox would only detect writes

@@ -49,8 +49,23 @@ func NewTigerBeetle(clusterID uint64, addresses []string) (*TigerBeetle, error) 
 	return &TigerBeetle{client: c, maxWait: defaultMaxWait, slots: make(chan struct{}, defaultMaxWaiting)}, nil
 }
 
-// Close releases the client. Calls still waiting for the cluster end with an error.
-func (t *TigerBeetle) Close() { t.client.Close() }
+// Close releases the client. It waits at most closeWait: the client's own Close waits for every request in flight,
+// and a request to a cluster that has no quorum never finishes, so a shutdown during an outage would otherwise hang
+// for ever (seen in the gate). The process is exiting when this is called, so a client left behind costs nothing.
+func (t *TigerBeetle) Close() {
+	done := make(chan struct{})
+	go func() {
+		t.client.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(closeWait):
+	}
+}
+
+// closeWait bounds Close.
+var closeWait = 5 * time.Second
 
 // Ping reports whether the cluster answers. A lookup goes through consensus like any other request, so an answer
 // means a quorum of replicas is up.

@@ -12,7 +12,7 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS \
 	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster proto up down
 
 ci: require-test-dbs lint test test-isolation vulncheck
 
@@ -266,3 +266,10 @@ up:
 
 down:
 	$(COMPOSE) down -v
+
+# The outbox relay against three Kafka brokers while one and then two are killed (pkg/outbox/kafka_cluster_test.go).
+# Needs OUTBOX_TEST_DSN (make ci-db writes it) and about 2 GiB of memory. Not part of `make ci`.
+test-kafka-cluster:
+	scripts/kafka-cluster.sh up
+	eval "$$(scripts/kafka-cluster.sh env)"; ( cd pkg/outbox && $(GO) test -count=1 -v -timeout 600s -run TestCluster ./ ); \
+	  status=$$?; scripts/kafka-cluster.sh down; exit $$status
