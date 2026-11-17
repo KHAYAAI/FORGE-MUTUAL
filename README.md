@@ -69,6 +69,11 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   every script Next.js renders carries it; `'unsafe-inline'` is gone from `script-src`. A script tag injected into a
   page's HTML does not run (tested in both apps; those tests fail under the old policy). Styles keep
   `'unsafe-inline'`, since React sets style attributes; an injected style cannot run code.
+- **Under load, and through crashes, no money is made, lost or moved twice** (`make load-ledger`). 32 clients sent
+  about 400 transfers a second for a minute to the ledger on TigerBeetle, with refusals, retries of the same request,
+  the ledger service killed and then TigerBeetle killed. Afterwards every account held exactly what the accepted
+  transfers say, no customer was negative, and the balances summed to zero; every retry got the first answer back.
+  p50 about 60 ms, p99 under 200 ms on one shared machine, with development-mode TigerBeetle.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -117,7 +122,8 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   passwords are still in its `DATABASE_URL` settings.
 - Backups and the WAL archive are local volumes on the stack. In production they go to off-site, immutable object
   storage, which is not set up.
-- No load test and no external security review.
+- No external security review. The load test covers the ledger, on one machine; a load test through the whole
+  payment path, and one on production hardware, are not done.
 - Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
 
 **Suggested order**

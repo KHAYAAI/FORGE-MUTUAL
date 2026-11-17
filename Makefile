@@ -12,7 +12,7 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS \
 	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster load-ledger proto up down
 
 ci: require-test-dbs lint test test-isolation vulncheck
 
@@ -266,6 +266,11 @@ up:
 
 down:
 	$(COMPOSE) down -v
+
+# Load on the running stack's ledger gateway, then checks that every balance is what the accepted transfers say, no
+# customer is negative and the books sum to zero (cmd/ledger-load). Start the stack first. Not part of `make ci`.
+load-ledger:
+	cd $(GATEWAY) && $(GO) run ./cmd/ledger-load -duration 60s -workers 32
 
 # The outbox relay against three Kafka brokers while one and then two are killed (pkg/outbox/kafka_cluster_test.go).
 # Needs OUTBOX_TEST_DSN (make ci-db writes it) and about 2 GiB of memory. Not part of `make ci`.
