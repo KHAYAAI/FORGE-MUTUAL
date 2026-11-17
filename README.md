@@ -50,6 +50,10 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   webhook secrets, API keys) may be given as `NAME_FILE`, a mounted file, which is how Kubernetes secrets, Vault Agent
   and cloud secret drivers deliver them. Production refuses to start with any of them in the plain environment. On the
   stack, the generated keys are files, and `docker inspect` shows only their paths.
+- **Traces reach a collector and follow a request across services.** On the stack all 18 services export spans to
+  an OpenTelemetry collector. The trace context crosses every service call and goes into Temporal workflows and out
+  through their activities, so one onboarding is one trace through onboarding, party, consent, policy and the
+  ledger. Not done: a tracing backend to read them in, and sampling settings for production volume.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -93,7 +97,6 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 - Under mutual TLS, a service's health checks need a certificate too, because they are on the same listener. A
   separate health listener for an orchestrator's probes is not built. Postgres, Kafka, Temporal and TigerBeetle are
   reached without TLS on the stack.
-- Tracing creates spans but has not been exported to a collector.
 - The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
 - Secrets are read from mounted files, but no secret store is wired to deliver them, and the stack's database
   passwords are still in its `DATABASE_URL` settings.
@@ -212,7 +215,7 @@ spans, with OTLP export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; a backup and 
 restores (`scripts/pg-backup.sh`, `scripts/pg-restore-check.sh`); and an axe accessibility scan of every page in both
 apps, failing on serious and critical violations.
 
-Not done: the OTLP export has not been run against a collector; under mutual TLS a health check needs a certificate,
+Not done: under mutual TLS a health check needs a certificate,
 because there is no separate health listener; backups are not scheduled and there is no point-in-time recovery;
 no secret store is wired to deliver the secret files.
 

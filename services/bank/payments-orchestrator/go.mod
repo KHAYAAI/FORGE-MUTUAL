@@ -15,8 +15,9 @@ require (
 	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 	github.com/khayaai/forge-mutual/pkg/systemaccounts v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
-	go.temporal.io/api v1.62.12
-	go.temporal.io/sdk v1.45.0
+	go.temporal.io/api v1.64.3
+	go.temporal.io/sdk v1.51.0
+	go.temporal.io/sdk/contrib/opentelemetry v0.9.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -36,7 +37,8 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.3 // indirect
 	github.com/klauspost/compress v1.20.4 // indirect
-	github.com/nexus-rpc/sdk-go v0.6.0 // indirect
+	github.com/nexus-rpc/nexus-proto-annotations v0.1.0 // indirect
+	github.com/nexus-rpc/sdk-go v0.7.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect

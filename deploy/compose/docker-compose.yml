@@ -26,6 +26,7 @@ x-go: &go
 
 x-env: &dev
   FORGE_ENV: development
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://127.0.0.1:4318
   KAFKA_BROKERS: 127.0.0.1:9192
   PAYMENTS_PUBLISHER: kafka
 
@@ -103,6 +104,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: on-failure
+
+  # Every service exports its spans here (config/otel-collector.yaml).
+  otel-collector:
+    image: otel/opentelemetry-collector:0.114.0
+    network_mode: host
+    user: "0:0"
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./config/otel-collector.yaml:/etc/otelcol/config.yaml:ro", "./.traces:/traces"]
     restart: on-failure
 
   # ---- platform -----------------------------------------------------------------------------------------------------
@@ -493,6 +503,7 @@ services:
       TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-backoffice-api.key}
       TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       FORGE_ENV: development
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://127.0.0.1:4318
       BACKOFFICE_AUTH: dev
       BACKOFFICE_ADDR: ":8500"
       # With mutual TLS, the API serves only its own web app's server, and the journey tests, which seed through it.
@@ -512,6 +523,7 @@ services:
       TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-workspace.key}
       TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       FORGE_ENV: development
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://127.0.0.1:4318
       WORKSPACE_AUTH: dev
       WORKSPACE_ADDR: ":8300"
       # With mutual TLS, the API serves only its own web app's server, and the journey tests, which read through it.

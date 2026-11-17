@@ -18,6 +18,8 @@ import (
 	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/store"
 	"github.com/khayaai/forge-mutual/services/bank/payouts-service/internal/workflow"
 	"go.temporal.io/sdk/client"
+	temporalotel "go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 	"log/slog"
 	"net/http"
@@ -88,7 +90,13 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	tc, err := client.Dial(client.Options{
+	// The trace a request carries goes into the workflow it starts, and on through every activity's outbound calls,
+	// so one trace shows a request from its caller to the ledger.
+	tracing, err := temporalotel.NewTracingInterceptor(temporalotel.TracerOptions{})
+	if err != nil {
+		return fmt.Errorf("temporal tracing: %w", err)
+	}
+	tc, err := client.Dial(client.Options{Interceptors: []interceptor.ClientInterceptor{tracing},
 		HostPort: getenv("TEMPORAL_HOST", "localhost:7233"), Namespace: getenv("TEMPORAL_NAMESPACE", "default"),
 	})
 	if err != nil {
