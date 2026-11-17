@@ -54,6 +54,10 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   an OpenTelemetry collector. The trace context crosses every service call and goes into Temporal workflows and out
   through their activities, so one onboarding is one trace through onboarding, party, consent, policy and the
   ledger. Not done: a tracing backend to read them in, and sampling settings for production volume.
+- **Point-in-time recovery works.** The stack's Postgres archives every WAL segment (at least once a minute), and a
+  backup service takes a verified base backup on a schedule and keeps 14 days. `scripts/pitr-check.sh` writes rows,
+  picks a moment, then adds a row and drops a table, and restores a fresh copy to that moment: the rows from before
+  are there, the later row is not, and the dropped table is back. Passed twice on the running stack.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -100,7 +104,8 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 - The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
 - Secrets are read from mounted files, but no secret store is wired to deliver them, and the stack's database
   passwords are still in its `DATABASE_URL` settings.
-- Backups are verified to restore but are not scheduled, and there is no point-in-time recovery.
+- Backups and the WAL archive are local volumes on the stack. In production they go to off-site, immutable object
+  storage, which is not set up.
 - No load test and no external security review.
 - Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
 
