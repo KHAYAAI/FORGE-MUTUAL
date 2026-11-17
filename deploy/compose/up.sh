@@ -58,6 +58,17 @@ ensure PARTY_INDEX_KEY b64key
 ensure NOTIFICATIONS_KEY b64key
 ensure KYC_WEBHOOK_SECRET hex32
 
+# The services read these as files (NAME_FILE), as production requires, never from the environment. .secrets/ is
+# written from .env on every start, readable by the services' unprivileged user, and never committed.
+mkdir -p .secrets
+for name in PARTY_SEAL_KEY PARTY_INDEX_KEY NOTIFICATIONS_KEY KYC_WEBHOOK_SECRET; do
+  value="$(grep "^$name=" "$env_file" | head -1 | cut -d= -f2-)"
+  rm -f ".secrets/$name.new"
+  printf '%s' "$value" > ".secrets/$name.new"
+  chmod 0444 ".secrets/$name.new"
+  mv -f ".secrets/$name.new" ".secrets/$name"
+done
+
 # Time-stamped settings, rewritten on every start.
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 sed -i -e '/^SCREENING_LIST_AS_OF=/d' -e '/^FX_RATE_AS_OF=/d' "$env_file"

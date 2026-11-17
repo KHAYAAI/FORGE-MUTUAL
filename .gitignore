@@ -8,3 +8,4 @@ deploy/docker/ca/*.crt
 deploy/compose/.env
 # The local stack's private CA and service keys, made by deploy/compose/pki.sh: never committed.
 deploy/compose/.pki/
+deploy/compose/.secrets/

@@ -46,6 +46,10 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   against the Go vulnerability database and both apps against npm's. Getting there meant moving from Go 1.24.7 (out of
   support, 41 reachable standard-library vulnerabilities) to Go 1.27.4, and upgrading pgx, klauspost/compress,
   golang.org/x/net, OpenTelemetry and gRPC.
+- **Secrets come from files, not the environment.** Every secret a service reads (database URLs, encryption keys,
+  webhook secrets, API keys) may be given as `NAME_FILE`, a mounted file, which is how Kubernetes secrets, Vault Agent
+  and cloud secret drivers deliver them. Production refuses to start with any of them in the plain environment. On the
+  stack, the generated keys are files, and `docker inspect` shows only their paths.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -91,7 +95,8 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   reached without TLS on the stack.
 - Tracing creates spans but has not been exported to a collector.
 - The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
-- Secrets are environment variables. No secret store is integrated.
+- Secrets are read from mounted files, but no secret store is wired to deliver them, and the stack's database
+  passwords are still in its `DATABASE_URL` settings.
 - Backups are verified to restore but are not scheduled, and there is no point-in-time recovery.
 - No load test and no external security review.
 - Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
@@ -209,7 +214,7 @@ apps, failing on serious and critical violations.
 
 Not done: the OTLP export has not been run against a collector; under mutual TLS a health check needs a certificate,
 because there is no separate health listener; backups are not scheduled and there is no point-in-time recovery;
-secrets are environment variables, with no secret store integrated.
+no secret store is wired to deliver the secret files.
 
 ## Blocked
 

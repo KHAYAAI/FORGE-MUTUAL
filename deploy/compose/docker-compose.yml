@@ -119,9 +119,9 @@ services:
       PARTY_CALLERS_FILE: /stack/callers/party.json
       PARTY_LISTEN: ":8081"
       PARTY_PUBLISHER: kafka
-      PARTY_SEAL_KEY: ${PARTY_SEAL_KEY}
-      PARTY_INDEX_KEY: ${PARTY_INDEX_KEY}
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+      PARTY_SEAL_KEY_FILE: /stack/secrets/PARTY_SEAL_KEY
+      PARTY_INDEX_KEY_FILE: /stack/secrets/PARTY_INDEX_KEY
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   consent:
     <<: *go
@@ -136,7 +136,7 @@ services:
       CONSENT_CALLERS_FILE: /stack/callers/consent.json
       CONSENT_LISTEN: ":8082"
       CONSENT_PUBLISHER: kafka
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   policy:
     <<: *go
@@ -153,7 +153,7 @@ services:
       POLICY_BUNDLE_DIR: /app/policy
       POLICY_DEV_UNSIGNED: "true"
       POLICY_PUBLISHER: kafka
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   onboarding:
     <<: *go
@@ -181,7 +181,7 @@ services:
       # see docs/PROVIDERS.md. Didit delivers webhooks only to a public https address, so it cannot reach this stack
       # on a laptop or in a build session: use a staging deployment for the live checks.
       KYC_PROVIDER: ${KYC_PROVIDER:-fake}
-      KYC_WEBHOOK_SECRET: ${KYC_WEBHOOK_SECRET}
+      KYC_WEBHOOK_SECRET_FILE: /stack/secrets/KYC_WEBHOOK_SECRET
       DIDIT_API_KEY: ${DIDIT_API_KEY:-}
       DIDIT_KYC_WORKFLOW_ID: ${DIDIT_KYC_WORKFLOW_ID:-}
       DIDIT_KYB_WORKFLOW_ID: ${DIDIT_KYB_WORKFLOW_ID:-}
@@ -198,6 +198,7 @@ services:
       - ./config/callers:/stack/callers:ro
       - ./config/screening-list.txt:/stack/screening-list.txt:ro
       - ./.pki:/stack/pki:ro
+      - ./.secrets:/stack/secrets:ro
 
   consolidated:
     <<: *go
@@ -216,7 +217,7 @@ services:
       # stack runs it every 10 seconds so a journey sees a new account without waiting.
       CONSOLIDATED_RECON_INTERVAL: 10s
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   notifications:
     <<: *go
@@ -229,9 +230,9 @@ services:
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/notifications?sslmode=disable
       NOTIFICATIONS_ADDR: ":8097"
-      NOTIFICATIONS_KEY: ${NOTIFICATIONS_KEY}
+      NOTIFICATIONS_KEY_FILE: /stack/secrets/NOTIFICATIONS_KEY
       NOTIFICATIONS_SINK_FILE: /tmp/notifications-sink.log
-    volumes: ["./.pki:/stack/pki:ro"]
+    volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   audit:
     <<: *go
@@ -250,6 +251,7 @@ services:
       - ./config/callers:/stack/callers:ro
       - ./audit-anchor.txt:/stack/audit-anchor.txt
       - ./.pki:/stack/pki:ro
+      - ./.secrets:/stack/secrets:ro
 
   # ---- ledger -------------------------------------------------------------------------------------------------------
   # TigerBeetle, one replica. The data file is made once, in the tb-data volume, and kept until `make down` removes the
@@ -309,7 +311,7 @@ services:
       TB_CLUSTER_ID: "1"
       LEDGER_PUBLISHER: kafka
       LEDGER_CALLERS_FILE: /stack/callers/ledger.json
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # ---- bank -------------------------------------------------------------------------------------------------------
   fx:
@@ -328,7 +330,7 @@ services:
       FX_RATE_AS_OF: ${FX_RATE_AS_OF}
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   rails:
     <<: *go
@@ -342,7 +344,7 @@ services:
       RAILS_CALLERS_FILE: /stack/callers/rails.json
       RAILS_LISTEN: ":8086"
       RAILS_SIMULATION: "true"
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   partner-router:
     <<: *go
@@ -363,6 +365,7 @@ services:
       - ./config/callers:/stack/callers:ro
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
       - ./.pki:/stack/pki:ro
+      - ./.secrets:/stack/secrets:ro
 
   payments:
     <<: *go
@@ -401,6 +404,7 @@ services:
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
       - ./config/screening-list.txt:/stack/screening-list.txt:ro
       - ./.pki:/stack/pki:ro
+      - ./.secrets:/stack/secrets:ro
 
   payouts:
     <<: *go
@@ -426,7 +430,7 @@ services:
       TEMPORAL_TASK_QUEUE: payouts
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   recon:
     <<: *go
@@ -448,6 +452,7 @@ services:
       - ./config/callers:/stack/callers:ro
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
       - ./.pki:/stack/pki:ro
+      - ./.secrets:/stack/secrets:ro
 
   treasury:
     <<: *go
@@ -462,7 +467,7 @@ services:
       TREASURY_ADDR: ":8095"
       TREASURY_ENTITY: BANK
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
-    volumes: ["./.pki:/stack/pki:ro"]
+    volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # ---- shared: compliance, back office ------------------------------------------------------------------------------
   compliance:
@@ -477,7 +482,7 @@ services:
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/cases?sslmode=disable
       CASES_CALLERS_FILE: /stack/callers/cases.json
       CASES_ADDR: ":8400"
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   backoffice:
     image: forge/backoffice-api:dev
@@ -496,7 +501,7 @@ services:
       ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       RECON_URL: ${STACK_SCHEME:-http}://127.0.0.1:8093
-    volumes: ["./.pki:/stack/pki:ro"]
+    volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   workspace:
     image: forge/workspace-api:dev
@@ -515,7 +520,7 @@ services:
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       FX_URL: ${STACK_SCHEME:-http}://127.0.0.1:8100
       PAYOUTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8200
-    volumes: ["./.pki:/stack/pki:ro"]
+    volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.
   devidp:

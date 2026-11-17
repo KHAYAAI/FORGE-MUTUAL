@@ -74,6 +74,10 @@ func FromEnv(addr string) (Config, error) {
 	if err := c.Validate(); err != nil {
 		return c, err
 	}
+	// Every service starts here, so this is where a secret given the wrong way stops it (secrets.go).
+	if err := checkSecrets(c.Production); err != nil {
+		return c, err
+	}
 	return c, nil
 }
 
