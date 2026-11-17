@@ -32,6 +32,9 @@ export default function Nav() {
             <Link href="/payments/lookup" className="text-stone-700 hover:text-stone-950">
               Payments
             </Link>
+            <Link href="/risk" className="text-stone-700 hover:text-stone-950">
+              Risk
+            </Link>
             <Link href="/credit" className="text-stone-700 hover:text-stone-950">
               Credit
             </Link>

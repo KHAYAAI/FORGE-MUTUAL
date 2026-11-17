@@ -573,7 +573,12 @@ services:
       TREASURY_ADDR: ":8095"
       TREASURY_ENTITY: BANK
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
-    volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+      # The prudential report for the back office. No capital is raised, so it is 0 and the capital ratio is in breach.
+      TREASURY_CALLERS_FILE: /stack/callers/treasury.json
+      TREASURY_CAPITAL_MINOR: "0"
+      TREASURY_GROSS_INCOME_MINOR: "0"
+      TREASURY_FX_RATES: "USD=18.25,EUR=19.80,GBP=23.10"
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # ---- shared: compliance, back office ------------------------------------------------------------------------------
   compliance:
@@ -607,6 +612,7 @@ services:
       CASES_URL: ${STACK_SCHEME:-http}://127.0.0.1:8400
       ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
       LENDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8120
+      TREASURY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8095
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       RECON_URL: ${STACK_SCHEME:-http}://127.0.0.1:8093
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]

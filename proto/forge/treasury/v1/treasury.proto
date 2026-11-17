@@ -1,0 +1,45 @@
+// Treasury and prudential risk (treasury-risk). The prudential report: capital adequacy, leverage, liquidity coverage
+// and stress results, computed from the ledger. Weights, rates and minimums are PROPOSED (docs/THRESHOLDS.md).
+syntax = "proto3";
+
+package forge.treasury.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1;treasuryv1";
+
+service TreasuryService {
+  rpc GetPrudentialReport(GetPrudentialReportRequest) returns (GetPrudentialReportResponse);
+}
+
+message GetPrudentialReportRequest {}
+
+message StressScenario {
+  string name = 1;
+  string description = 2;
+  string liquidity_left_minor = 3;
+  int64 total_capital_bps = 4;
+  bool survives = 5;
+}
+
+message GetPrudentialReportResponse {
+  string as_of = 1;
+  string capital_minor = 2;
+  string credit_rwa_minor = 3;
+  string market_rwa_minor = 4;
+  string operational_rwa_minor = 5;
+  string total_rwa_minor = 6;
+  int64 total_capital_bps = 7;
+  int64 min_total_capital_bps = 8;
+  string leverage_exposure_minor = 9;
+  int64 leverage_bps = 10;
+  int64 min_leverage_bps = 11;
+  string hqla_minor = 12;
+  string net_outflows_30d_minor = 13;
+  int64 lcr_bps = 14;
+  int64 min_lcr_bps = 15;
+  repeated string breaches = 16;
+  repeated StressScenario stress = 17;
+  repeated string limitations = 18;  // what this report does not yet see
+  string deposits_minor = 19;
+  string loans_minor = 20;
+  string largest_depositor_minor = 21;
+}

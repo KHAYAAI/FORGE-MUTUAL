@@ -5,12 +5,15 @@ package main
 import (
 	"connectrpc.com/connect"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1/treasuryv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/ledgerread"
+	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/prudential"
 	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/risk"
 	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/store"
 	"log/slog"
@@ -18,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -26,6 +30,8 @@ import (
 var assets = []ledgerread.Asset{
 	{Code: "ZAR", Ledger: 710, PoolCode: 3003},
 	{Code: "USD", Ledger: 840, PoolCode: 5001},
+	{Code: "EUR", Ledger: 978, PoolCode: 5001},
+	{Code: "GBP", Ledger: 826, PoolCode: 5001},
 }
 
 func main() {
@@ -79,6 +85,29 @@ func run(log *slog.Logger) error {
 	go loop(ctx, log, st, reader, th, interval)
 
 	mux := http.NewServeMux()
+	// The prudential report, for the back office. Capital and gross income are configured until the ledger holds them.
+	if path := os.Getenv("TREASURY_CALLERS_FILE"); path != "" {
+		callers, err := loadCallers(path)
+		if err != nil {
+			return err
+		}
+		capital, err := int64FromEnv("TREASURY_CAPITAL_MINOR", 0)
+		if err != nil {
+			return err
+		}
+		income, err := int64FromEnv("TREASURY_GROSS_INCOME_MINOR", 0)
+		if err != nil {
+			return err
+		}
+		rates, err := ratesFromEnv(os.Getenv("TREASURY_FX_RATES"))
+		if err != nil {
+			return err
+		}
+		pr := prudential.Reader{Client: ledger, Entity: reader.Entity, Rates: rates, Capital: capital, GrossIncome: income, Params: prudential.DefaultParams()}
+		p, h := treasuryv1connect.NewTreasuryServiceHandler(pr, connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
+		mux.Handle(p, h)
+		log.Warn("prudential weights, run-off rates and minimums are PROPOSED; capital and gross income are configured", "capital_minor", capital)
+	}
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if err := st.Pool().Ping(r.Context()); err != nil {
@@ -177,4 +206,47 @@ func getenv(name, def string) string {
 		return v
 	}
 	return def
+}
+
+// ratesFromEnv reads "USD=18.25,EUR=19.80,GBP=23.10" into rates scaled by 10^8.
+func ratesFromEnv(spec string) (map[string]int64, error) {
+	out := map[string]int64{}
+	for _, part := range strings.Split(spec, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		cur, raw, ok := strings.Cut(part, "=")
+		whole, frac, _ := strings.Cut(raw, ".")
+		if !ok || len(frac) > 8 {
+			return nil, fmt.Errorf("TREASURY_FX_RATES: %q is not CUR=rate", part)
+		}
+		frac += strings.Repeat("0", 8-len(frac))
+		w, err1 := strconv.ParseInt(whole, 10, 64)
+		f, err2 := strconv.ParseInt(frac, 10, 64)
+		if err1 != nil || err2 != nil || w*100_000_000+f <= 0 {
+			return nil, fmt.Errorf("TREASURY_FX_RATES: %q is not CUR=rate", part)
+		}
+		out[strings.ToUpper(cur)] = w*100_000_000 + f
+	}
+	return out, nil
+}
+
+func loadCallers(path string) (callerauth.Allowlist, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var raw map[string][]string
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return nil, err
+	}
+	out := callerauth.Allowlist{}
+	for caller, methods := range raw {
+		out[caller] = map[string]bool{}
+		for _, m := range methods {
+			out[caller][m] = true
+		}
+	}
+	return out, nil
 }

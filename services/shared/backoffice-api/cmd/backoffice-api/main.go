@@ -11,6 +11,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1/treasuryv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/shared/backoffice-api/internal/api"
@@ -65,6 +66,7 @@ func run(log *slog.Logger) error {
 			Recon:      reconv1connect.NewReconServiceClient(outbound, urls["RECON_URL"], caller()),
 			Onboarding: onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
 			Credit:     creditClient(outbound, caller()),
+			Treasury:   treasuryClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "backoffice-api")
@@ -128,4 +130,12 @@ func creditClient(h connect.HTTPClient, opt connect.ClientOption) lendingv1conne
 		return nil
 	}
 	return lendingv1connect.NewCreditDeskServiceClient(h, u, opt)
+}
+
+// treasuryClient is the treasury-risk client, or nil when TREASURY_URL is not set.
+func treasuryClient(h connect.HTTPClient, opt connect.ClientOption) treasuryv1connect.TreasuryServiceClient {
+	if u := os.Getenv("TREASURY_URL"); u != "" {
+		return treasuryv1connect.NewTreasuryServiceClient(h, u, opt)
+	}
+	return nil
 }

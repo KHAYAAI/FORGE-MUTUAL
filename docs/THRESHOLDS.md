@@ -32,6 +32,11 @@ recorded here.
 | 20 | Affordability: multiple of monthly inflow | 1 (overdraft), 3 (term loan), 2 (revenue-based) | `internal/credit/credit.go` `Affordability` | Risk owner (credit) | _unassigned_ | Placeholder; NCA affordability rules apply to persons |
 | 21 | Card merchant discount rate | 2.75% | `ACQUIRING_MDR_BPS`, `services/bank/acquiring-service` | Head of Payments operations | _unassigned_ | Placeholder until an acquirer is chosen |
 
+| 22 | Risk weights and credit conversion | cash at banks 20%, business loans 100%, personal loans 75%, acquirer 20%, undrawn 10% CCF | `services/bank/treasury-risk/internal/prudential` `DefaultParams` | Risk owner | _unassigned_ | Placeholder; BA 200 defines the real ones |
+| 23 | Capital minimums | total capital 11.5%, leverage 4% | same | Risk owner and board | _unassigned_ | Placeholder (Directive 6/2017 to verify) |
+| 24 | Liquidity run-off rates and LCR minimum | retail and savings 10%, business 40%, foreign 40%, inflows 50% capped at 75%; LCR 100% | same | Head of Treasury | _unassigned_ | Placeholder; BA 300 defines the real ones |
+| 25 | Capital and gross income used by the report | configured (`TREASURY_CAPITAL_MINOR`, `TREASURY_GROSS_INCOME_MINOR`) | treasury-risk | CFO | _unassigned_ | Zero until capital is raised |
+
 Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).
 
