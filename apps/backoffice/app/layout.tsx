@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
@@ -7,7 +8,9 @@ export const metadata: Metadata = {
   description: "Staff tools for compliance cases, payment decisions, repair and reconciliation.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Every page is rendered per request, so it can carry that request's nonce (proxy.ts).
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
   return (
     <html lang="en-ZA">
       <body className="min-h-screen bg-stone-100 text-stone-900 antialiased">

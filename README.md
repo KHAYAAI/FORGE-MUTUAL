@@ -58,6 +58,17 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   backup service takes a verified base backup on a schedule and keeps 14 days. `scripts/pitr-check.sh` writes rows,
   picks a moment, then adds a row and drops a table, and restores a fresh copy to that moment: the rows from before
   are there, the later row is not, and the dropped table is back. Passed twice on the running stack.
+- **Kafka survives losing a broker, and refuses writes it cannot make durable.** Against three brokers (three
+  replicas, two in sync required) the outbox relay lost a broker mid-run with no event lost or reordered; with two of
+  three down it refused to publish and left the events in the outbox; on recovery it delivered them. That test found
+  the relay hung for ever, inside its database transaction, when the brokers had no quorum: the Kafka client retried a
+  record with no deadline, and its own timeout did not stop it once the brokers had lost their controller majority.
+  Both publishers now return at the caller's deadline whatever the client does, and the relay retries on its next pass.
+  Passed four runs in a row (`make test-kafka-cluster`).
+- **Only the page's own scripts run.** Both apps send a Content-Security-Policy with a fresh nonce on every page, and
+  every script Next.js renders carries it; `'unsafe-inline'` is gone from `script-src`. A script tag injected into a
+  page's HTML does not run (tested in both apps; those tests fail under the old policy). Styles keep
+  `'unsafe-inline'`, since React sets style attributes; an injected style cannot run code.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -86,7 +97,8 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   restarted replica on that hardware.
 - Sponsor bank: no sandbox, and the wire format is unverified (VERIFY-SPONSOR). Partner and FIC formats too
   (VERIFY-PARTNER, VERIFY-FIC).
-- Kafka runs as a single node everywhere. A multi-broker cluster is unverified.
+- Kafka: verified as a three-broker cluster in tests, but the stack runs one broker, and TLS and SASL to the brokers
+  are not set up.
 - Temporal runs as a single development server. No production cluster is set up.
 - core-bridge's posting path was checked once against a live Fineract. It is not on the stack.
 
@@ -101,7 +113,6 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 - Under mutual TLS, a service's health checks need a certificate too, because they are on the same listener. A
   separate health listener for an orchestrator's probes is not built. Postgres, Kafka, Temporal and TigerBeetle are
   reached without TLS on the stack.
-- The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
 - Secrets are read from mounted files, but no secret store is wired to deliver them, and the stack's database
   passwords are still in its `DATABASE_URL` settings.
 - Backups and the WAL archive are local volumes on the stack. In production they go to off-site, immutable object
@@ -214,7 +225,7 @@ production refuses to start without certificates, the caller is the service name
 a renewed certificate is loaded without a restart, and the two APIs for people serve only the web apps named in
 `WORKSPACE_CLIENTS` and `BACKOFFICE_CLIENTS`, which production requires); each web app's server presents its own
 certificate to its API and refuses a plain-HTTP API address in production; request IDs, timeouts and security headers on
-every service and both web apps (CSP keeps `'unsafe-inline'` for scripts, a known gap until there is a nonce); a
+every service and both web apps (the Content-Security-Policy runs only scripts carrying a per-request nonce); a
 production refusal of every development switch (memory ledger, simulators, unsigned policy, fake KYC); OpenTelemetry
 spans, with OTLP export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; a backup and restore check that proves a dump
 restores (`scripts/pg-backup.sh`, `scripts/pg-restore-check.sh`); and an axe accessibility scan of every page in both
