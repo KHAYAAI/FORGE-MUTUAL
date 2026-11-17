@@ -66,6 +66,9 @@ func (o OIDC) Session(r *http.Request) (api.Session, error) {
 		return api.Session{}, errNoSession
 	}
 	c, err := o.V.Verify(r.Context(), raw)
+	if errors.Is(err, oidc.ErrMFARequired) {
+		return api.Session{}, api.ErrMFARequired
+	}
 	if err != nil {
 		return api.Session{}, errNoSession
 	}
@@ -87,6 +90,9 @@ func (o OIDC) Applicant(r *http.Request) (api.Applicant, error) {
 		return api.Applicant{}, errNoSession
 	}
 	c, err := o.V.Verify(r.Context(), raw)
+	if errors.Is(err, oidc.ErrMFARequired) {
+		return api.Applicant{}, api.ErrMFARequired
+	}
 	if err != nil || !validSubject(c.Subject) {
 		return api.Applicant{}, errNoSession
 	}

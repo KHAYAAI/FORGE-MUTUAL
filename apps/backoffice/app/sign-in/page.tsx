@@ -65,6 +65,7 @@ export default function SignInPage() {
   return (
     <section className="mx-auto max-w-md space-y-6">
       <h1 className="text-2xl font-semibold">Staff sign-in</h1>
+      {callbackError ? <Notice tone="error">{callbackError}</Notice> : null}
       {mode === "dev" ? (
         <Notice tone="info">Development sign-in: your name and the roles you hold. It is not available in production.</Notice>
       ) : null}

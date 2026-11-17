@@ -21,7 +21,7 @@ func (a *API) applicant(h applicantHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ap, err := a.Auth.Applicant(r)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, errBody("unauthenticated", "sign in to apply"))
+			authError(w, err, "sign in to apply")
 			return
 		}
 		h(w, r, ap)

@@ -65,6 +65,7 @@ export default function SignInPage() {
   return (
     <section className="mx-auto max-w-md space-y-6">
       <h1 className="text-4xl font-light tracking-tight">Sign in</h1>
+      {callbackError ? <Notice tone="error">{callbackError}</Notice> : null}
       {mode === "dev" ? (
         <Notice tone="info">
           Development sign-in: enter your name. A customer also enters their party ID; leave it empty to apply for an

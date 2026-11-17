@@ -41,6 +41,21 @@ type Applicant struct {
 	Actor   string
 }
 
+// ErrMFARequired is returned by an Authenticator when the sign-in was valid but did not use a second factor. The
+// caller is told so plainly (403, mfa_required), rather than being sent round the sign-in loop.
+var ErrMFARequired = errors.New("sign-in did not use multi-factor authentication")
+
+const mfaMessage = "your sign-in did not use a second factor; sign out and sign in again with your authenticator app"
+
+// authError writes the response for a failed authentication.
+func authError(w http.ResponseWriter, err error, unauthenticated string) {
+	if errors.Is(err, ErrMFARequired) {
+		writeJSON(w, http.StatusForbidden, errBody("mfa_required", mfaMessage))
+		return
+	}
+	writeJSON(w, http.StatusUnauthorized, errBody("unauthenticated", unauthenticated))
+}
+
 // Authenticator turns a request into a session, or refuses it.
 type Authenticator interface {
 	Session(r *http.Request) (Session, error)
@@ -122,7 +137,7 @@ func (a *API) session(h handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s, err := a.Auth.Session(r)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, errBody("unauthenticated", "sign in to continue"))
+			authError(w, err, "sign in to continue")
 			return
 		}
 		h(w, r, s)
