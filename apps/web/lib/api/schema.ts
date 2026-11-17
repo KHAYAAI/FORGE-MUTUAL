@@ -194,6 +194,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/applications/person": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply for a personal account. For a signed-in applicant; needs no party yet.
+         * @description One application per applicant and kind: sending it again returns the same application. Limited to 10
+         *     submissions an hour per applicant.
+         */
+        post: operations["applyPerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/applications/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply for a business account, naming the company and each director. */
+        post: operations["applyBusiness"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/applications/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in applicant's own application of this kind. */
+        get: operations["getApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -314,6 +369,47 @@ export interface components {
                 payment_id?: string;
                 reason?: string;
             }[];
+        };
+        PersonApplication: {
+            legal_name: string;
+            /** @description A 13-digit South African identity number with a valid check digit. */
+            national_id: string;
+        };
+        BusinessApplication: {
+            legal_name: string;
+            registration_number: string;
+            sector_code: string;
+            directors: {
+                legal_name: string;
+                national_id: string;
+                ownership_bps: number;
+                is_ubo: boolean;
+            }[];
+        };
+        /**
+         * @description Where an application stands. A declined application never says why: telling an applicant about a sanctions
+         *     or screening match would be tipping-off.
+         */
+        Application: {
+            /** @enum {string} */
+            kind: "person" | "business";
+            /** @enum {string} */
+            state: "in_progress" | "approved" | "declined" | "failed";
+            /** @description What the applicant does next, "verify" or "wait"; empty once the application has ended. */
+            next: string;
+            steps: string[];
+            /** @description The hosted verification links. Each is a bearer link, shown only to the applicant. */
+            verify?: {
+                /** @enum {string} */
+                kind: "person" | "business";
+                /** Format: uri */
+                url: string;
+            }[];
+            /**
+             * Format: uuid
+             * @description Present once the application is approved.
+             */
+            party_id?: string;
         };
     };
     responses: {
@@ -619,6 +715,89 @@ export interface operations {
             };
             403: components["responses"]["Error"];
             409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    applyPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonApplication"];
+            };
+        };
+        responses: {
+            /** @description Accepted. The onboarding has started. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    applyBusiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessApplication"];
+            };
+        };
+        responses: {
+            /** @description Accepted. The onboarding has started. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    getApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: "person" | "business";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Where the application stands. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             503: components["responses"]["Error"];
         };
     };

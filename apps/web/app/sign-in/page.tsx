@@ -50,11 +50,11 @@ export default function SignInPage() {
   if (mode === "oidc") {
     return (
       <section className="mx-auto max-w-md space-y-6">
-        <h1 className="text-2xl font-semibold">Sign in</h1>
+        <h1 className="text-4xl font-light tracking-tight">Sign in</h1>
         {callbackError ? <Notice tone="error">{callbackError}</Notice> : null}
         <a
           href="/api/auth/login"
-          className="inline-block rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+          className="inline-block rounded-full bg-stone-900 px-6 py-3 text-base text-white hover:bg-black"
         >
           Sign in with your identity provider
         </a>
@@ -64,7 +64,7 @@ export default function SignInPage() {
 
   return (
     <section className="mx-auto max-w-md space-y-6">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
+      <h1 className="text-4xl font-light tracking-tight">Sign in</h1>
       {mode === "dev" ? (
         <Notice tone="info">
           Development sign-in: enter your name. A customer also enters their party ID; leave it empty to apply for an
@@ -81,7 +81,7 @@ export default function SignInPage() {
               value={party}
               onChange={(e) => setParty(e.target.value)}
               autoComplete="off"
-              className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 font-mono text-sm"
+              className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-mono text-sm"
             />
           </label>
           <label className="block text-sm">
@@ -93,13 +93,13 @@ export default function SignInPage() {
               required
               maxLength={64}
               autoComplete="name"
-              className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
             />
           </label>
           <button
             type="submit"
             disabled={busy}
-            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+            className="rounded-full bg-stone-900 px-6 py-3 text-base text-white hover:bg-black disabled:opacity-50"
           >
             {busy ? "Signing in…" : "Sign in"}
           </button>

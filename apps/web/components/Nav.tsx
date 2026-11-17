@@ -39,29 +39,39 @@ export default function Nav() {
   }
 
   return (
-    <header className="border-b border-stone-200 bg-white">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-        <Link href="/accounts" className="text-lg font-semibold tracking-tight">
+    <header className="bg-white">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link href="/accounts" className="text-2xl font-light tracking-tight">
           Forge
         </Link>
         {who?.signedIn ? (
-          <nav aria-label="Main" className="flex flex-wrap items-center gap-4 text-sm">
+          <nav aria-label="Main" className="flex flex-wrap items-center gap-1 text-base">
             {(who.customer ? LINKS : [{ href: "/apply", label: "Apply" }]).map((l) => (
-              <Link key={l.href} href={l.href} className="text-stone-700 hover:text-stone-950">
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={pathname.startsWith(l.href) ? "page" : undefined}
+                className={`rounded-full px-4 py-2 ${pathname.startsWith(l.href) ? "bg-stone-100 text-stone-950" : "text-stone-700 hover:bg-stone-100"}`}
+              >
                 {l.label}
               </Link>
             ))}
-            <span className="text-stone-500" data-testid="signed-in-as">
+            <span className="px-3 text-stone-500" data-testid="signed-in-as">
               {who.actor}
             </span>
-            <button type="button" onClick={signOut} className="text-stone-600 underline hover:text-stone-900">
+            <button type="button" onClick={signOut} className="rounded-full border border-stone-900 px-4 py-2 text-stone-900 hover:bg-stone-100">
               Sign out
             </button>
           </nav>
         ) : (
-          <Link href="/sign-in" className="text-sm text-stone-700 hover:text-stone-950">
-            Sign in
-          </Link>
+          <div className="flex items-center gap-2 text-base">
+            <Link href="/sign-in" className="rounded-full px-4 py-2 text-stone-700 hover:bg-stone-100">
+              Sign in
+            </Link>
+            <Link href="/apply" className="rounded-full bg-stone-900 px-5 py-2 text-white hover:bg-black">
+              Open account
+            </Link>
+          </div>
         )}
       </div>
     </header>

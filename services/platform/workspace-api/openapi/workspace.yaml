@@ -270,6 +270,96 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/applications/person:
+    post:
+      operationId: applyPerson
+      summary: Apply for a personal account. For a signed-in applicant; needs no party yet.
+      description: |
+        One application per applicant and kind: sending it again returns the same application. Limited to 10
+        submissions an hour per applicant.
+      security:
+        - devApplicant: []
+          devActor: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonApplication"
+      responses:
+        "202":
+          description: Accepted. The onboarding has started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/applications/business:
+    post:
+      operationId: applyBusiness
+      summary: Apply for a business account, naming the company and each director.
+      security:
+        - devApplicant: []
+          devActor: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessApplication"
+      responses:
+        "202":
+          description: Accepted. The onboarding has started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/applications/{kind}:
+    get:
+      operationId: getApplication
+      summary: The signed-in applicant's own application of this kind.
+      security:
+        - devApplicant: []
+          devActor: []
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [person, business]
+      responses:
+        "200":
+          description: Where the application stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     devParty:
@@ -282,6 +372,11 @@ components:
       in: header
       name: X-Forge-Actor
       description: Development only. Refused in production. The signed-in person, up to 64 characters.
+    devApplicant:
+      type: apiKey
+      in: header
+      name: X-Forge-Applicant
+      description: Development only. Refused in production, where the subject comes from the verified sign-in token.
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
@@ -535,3 +630,85 @@ components:
                 type: string
               reason:
                 type: string
+    PersonApplication:
+      type: object
+      additionalProperties: false
+      required: [legal_name, national_id]
+      properties:
+        legal_name:
+          type: string
+          maxLength: 200
+        national_id:
+          type: string
+          description: A 13-digit South African identity number with a valid check digit.
+          pattern: "^[0-9]{13}$"
+    BusinessApplication:
+      type: object
+      additionalProperties: false
+      required: [legal_name, registration_number, sector_code, directors]
+      properties:
+        legal_name:
+          type: string
+          maxLength: 200
+        registration_number:
+          type: string
+          maxLength: 32
+        sector_code:
+          type: string
+        directors:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [legal_name, national_id, ownership_bps, is_ubo]
+            properties:
+              legal_name:
+                type: string
+              national_id:
+                type: string
+                pattern: "^[0-9]{13}$"
+              ownership_bps:
+                type: integer
+                minimum: 0
+                maximum: 10000
+              is_ubo:
+                type: boolean
+    Application:
+      type: object
+      description: |
+        Where an application stands. A declined application never says why: telling an applicant about a sanctions
+        or screening match would be tipping-off.
+      required: [kind, state, next, steps]
+      properties:
+        kind:
+          type: string
+          enum: [person, business]
+        state:
+          type: string
+          enum: [in_progress, approved, declined, failed]
+        next:
+          type: string
+          description: What the applicant does next, "verify" or "wait"; empty once the application has ended.
+        steps:
+          type: array
+          items:
+            type: string
+        verify:
+          type: array
+          description: The hosted verification links. Each is a bearer link, shown only to the applicant.
+          items:
+            type: object
+            required: [kind, url]
+            properties:
+              kind:
+                type: string
+                enum: [person, business]
+              url:
+                type: string
+                format: uri
+        party_id:
+          type: string
+          format: uuid
+          description: Present once the application is approved.

@@ -30,6 +30,7 @@ export interface Review {
 export function stackSecret(): string;
 export function nationalId(): string;
 export function startCompany(label: string): Promise<Company>;
+export function findApplication(subject: string, kind: "person" | "business", timeoutMs?: number): Promise<OnboardingStatus>;
 export function verdict(onboardingId: string, subjectPartyId: string, value: "APPROVED" | "DECLINED" | "REVIEW"): Promise<void>;
 export function onboardingState(onboardingId: string): Promise<OnboardingStatus>;
 export function waitForState(onboardingId: string, state: string, timeoutMs?: number): Promise<OnboardingStatus>;

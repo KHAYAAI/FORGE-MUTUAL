@@ -12,7 +12,7 @@ export default function Notice({ tone, children }: { tone: keyof typeof TONES; c
     <div
       role={tone === "error" ? "alert" : "status"}
       data-testid="notice"
-      className={`rounded-md border px-4 py-3 text-sm ${TONES[tone]}`}
+      className={`rounded-xl border px-4 py-3 text-sm ${TONES[tone]}`}
     >
       {children}
     </div>

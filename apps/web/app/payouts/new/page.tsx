@@ -81,7 +81,7 @@ export default function NewPayoutPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">New bulk payout</h1>
+      <h1 className="text-4xl font-light tracking-tight">New bulk payout</h1>
       <Notice tone="info">
         You create the batch. A different person must approve it before any payment is sent.
       </Notice>
@@ -93,7 +93,7 @@ export default function NewPayoutPage() {
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           >
             {accounts.map((a) => (
               <option key={a.account_id} value={a.account_id}>
@@ -105,7 +105,7 @@ export default function NewPayoutPage() {
 
         <div className="space-y-4">
           {rows.map((r, i) => (
-            <fieldset key={r.key} className="grid gap-3 rounded-lg border border-stone-200 bg-white p-4 sm:grid-cols-2">
+            <fieldset key={r.key} className="grid gap-3 rounded-2xl bg-stone-100 p-5 sm:grid-cols-2">
               <legend className="px-1 text-sm font-medium">Payment {i + 1}</legend>
               <label className="text-sm">
                 <span className="text-stone-600">Amount (R)</span>
@@ -115,7 +115,7 @@ export default function NewPayoutPage() {
                   onChange={(e) => update(i, { amount: e.target.value })}
                   inputMode="decimal"
                   required
-                  className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm tabular-nums"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm tabular-nums"
                 />
               </label>
               <label className="text-sm">
@@ -126,7 +126,7 @@ export default function NewPayoutPage() {
                   onChange={(e) => update(i, { beneficiary: e.target.value })}
                   required
                   maxLength={140}
-                  className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
               <label className="text-sm">
@@ -136,7 +136,7 @@ export default function NewPayoutPage() {
                   value={r.accountNumber}
                   onChange={(e) => update(i, { accountNumber: e.target.value })}
                   required
-                  className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
               <label className="text-sm">
@@ -146,7 +146,7 @@ export default function NewPayoutPage() {
                   value={r.bankCode}
                   onChange={(e) => update(i, { bankCode: e.target.value })}
                   required
-                  className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
               <label className="text-sm sm:col-span-2">
@@ -157,7 +157,7 @@ export default function NewPayoutPage() {
                   onChange={(e) => update(i, { reference: e.target.value })}
                   required
                   maxLength={140}
-                  className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
               {rows.length > 1 ? (
@@ -178,14 +178,14 @@ export default function NewPayoutPage() {
             type="button"
             onClick={() => setRows((prev) => [...prev, blankRow(prev.length + 1)])}
             disabled={rows.length >= 500}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm hover:bg-stone-100 disabled:opacity-50"
+            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm hover:bg-stone-100 disabled:opacity-50"
           >
             Add a payment
           </button>
           <button
             type="submit"
             disabled={busy || !accountId}
-            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+            className="rounded-full bg-stone-900 px-6 py-3 text-base text-white hover:bg-black disabled:opacity-50"
           >
             {busy ? "Creating…" : "Create batch"}
           </button>

@@ -69,7 +69,7 @@ export default function PayoutBatchPage() {
           Back to accounts
         </Link>
       </p>
-      <h1 id="batch-heading" className="text-2xl font-semibold">
+      <h1 id="batch-heading" className="text-4xl font-light tracking-tight">
         Bulk payout
       </h1>
       {error ? <Notice tone="error">{error}</Notice> : null}

@@ -77,7 +77,7 @@ export default function NewPaymentPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-2xl font-semibold">Send a payment</h1>
+      <h1 className="text-4xl font-light tracking-tight">Send a payment</h1>
       {error ? <Notice tone="error">{error}</Notice> : null}
       <form onSubmit={submit} className="space-y-4" aria-label="Send a payment">
         <label className="block text-sm">
@@ -87,7 +87,7 @@ export default function NewPaymentPage() {
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           >
             {accounts.map((a) => (
               <option key={a.account_id} value={a.account_id}>
@@ -105,7 +105,7 @@ export default function NewPaymentPage() {
             onChange={(e) => setAmount(e.target.value)}
             required
             placeholder="0.00"
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums"
           />
         </label>
         <label className="block text-sm">
@@ -116,7 +116,7 @@ export default function NewPaymentPage() {
             onChange={(e) => setBeneficiary(e.target.value)}
             required
             maxLength={140}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           />
         </label>
         <label className="block text-sm">
@@ -126,7 +126,7 @@ export default function NewPaymentPage() {
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           />
         </label>
         <label className="block text-sm">
@@ -136,7 +136,7 @@ export default function NewPaymentPage() {
             value={bankCode}
             onChange={(e) => setBankCode(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           />
         </label>
         <label className="block text-sm">
@@ -147,13 +147,13 @@ export default function NewPaymentPage() {
             onChange={(e) => setReference(e.target.value)}
             required
             maxLength={140}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           />
         </label>
         <button
           type="submit"
           disabled={busy || !selected}
-          className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+          className="rounded-full bg-stone-900 px-6 py-3 text-base text-white hover:bg-black disabled:opacity-50"
         >
           {busy ? "Sending…" : "Send payment"}
         </button>

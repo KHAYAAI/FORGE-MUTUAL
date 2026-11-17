@@ -81,7 +81,7 @@ export default function FxPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-2xl font-semibold">Convert currency</h1>
+      <h1 className="text-4xl font-light tracking-tight">Convert currency</h1>
       {error ? <Notice tone="error">{error}</Notice> : null}
       {deal ? (
         <Notice tone="success">
@@ -96,7 +96,7 @@ export default function FxPage() {
             name="sellAsset"
             value={sellAsset}
             onChange={(e) => setSellAsset(e.target.value as Asset)}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           >
             <option value="ZAR">ZAR to USD</option>
             <option value="USD">USD to ZAR</option>
@@ -110,20 +110,20 @@ export default function FxPage() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums"
+            className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums"
           />
         </label>
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+          className="rounded-full bg-stone-900 px-6 py-3 text-base text-white hover:bg-black disabled:opacity-50"
         >
           Get a quote
         </button>
       </form>
 
       {quote ? (
-        <div className="space-y-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Your quote">
+        <div className="space-y-4 rounded-[2rem] bg-stone-100 p-8" aria-label="Your quote">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-stone-500">You pay</dt>
             <dd className="tabular-nums">{formatMinor(quote.sell_amount_minor, quote.sell_asset)}</dd>
@@ -157,7 +157,7 @@ export default function FxPage() {
                 <select
                   value={sellAccount}
                   onChange={(e) => setSellAccount(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
                 >
                   {sellOptions.map((a) => (
                     <option key={a.account_id} value={a.account_id}>
@@ -171,7 +171,7 @@ export default function FxPage() {
                 <select
                   value={buyAccount}
                   onChange={(e) => setBuyAccount(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
                 >
                   {buyOptions.map((a) => (
                     <option key={a.account_id} value={a.account_id}>

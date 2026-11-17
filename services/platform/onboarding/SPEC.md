@@ -1,20 +1,26 @@
 # SPEC: onboarding
 
-Status: built and tested locally, including against a real Temporal dev server. The Didit adapter is built from Didit's documentation
+Status: built and tested locally, and run end to end on the local stack for a personal application through the web
+app (`apps/web/tests/stack/apply.spec.ts`). Built and tested locally, including against a real Temporal dev server. The Didit adapter is built from Didit's documentation
 and tested without an account; it has never run against Didit (see section 6).
 Human review required before any real customer (ARCHITECTURE.md section 0, rule 3).
 Entity: PLAT. Sections referenced: ARCHITECTURE.md 11.2, 11.3, 15.1, P1-05.
 
 ## 1. Purpose
 
-Takes a business application and, through a Temporal workflow, creates its parties, records consents, verifies
+Takes an application, for a business or for a person, and runs it through a Temporal workflow. For a business it creates its parties, records consents, verifies
 the company and each director, screens them, checks the sector, and opens the company's ZAR current account. A
-business that passes every check is activated. One that does not is declined, and its parties are closed.
+business that passes every check is activated. One that does not is declined, and its parties are closed. For a person
+(`OnboardPerson`, section 3b) it creates the person, records their consents, verifies and screens them, and opens a
+personal ZAR current account.
 
 ## 2. Interface
 
-- ConnectRPC `forge.onboarding.v1.OnboardingService`: `StartBusinessOnboarding`, `GetOnboarding`, `ListKYCReviews`,
-  `DecideKYCReview`. The caller allow-list applies. `GetOnboarding` returns, besides the steps, a `verification_links`
+- ConnectRPC `forge.onboarding.v1.OnboardingService`: `StartBusinessOnboarding`, `StartPersonOnboarding`,
+  `FindApplication`, `GetOnboarding`, `ListKYCReviews`, `DecideKYCReview`. A start request may carry
+  `applicant_subject`, the sign-in subject of the person applying; `FindApplication(applicant_subject, kind)` returns
+  that applicant's onboarding of that kind (`person` or `business`), or `NOT_FOUND`. Only workspace-api, for the web
+  app's front door, and the stack's journeys may call these two. The caller allow-list applies. `GetOnboarding` returns, besides the steps, a `verification_links`
   entry for each subject whose verification has been started: the subject, `person` or `business`, the provider's
   session ID and the hosted link the person completes.
 - HTTP `POST /webhooks/kyc`: the provider's verdict. The provider authenticates it before it signals the workflow: the
@@ -55,6 +61,18 @@ marks the run FAILED and returns the error.
 
 Each activity is idempotent: party, consent and account creation use keys derived from the onboarding ID, and
 status changes read the current status first, so a retry is a no-op.
+
+## 3b. A person (`internal/onboarding/person.go`)
+
+`OnboardPerson` reuses the business steps for one subject: `prospects_created` (the person), `consents_recorded`
+(account terms and KYC processing), `verifications_started`, `kyc_approved` (the same verdict wait and review path),
+`screened`, `accounts_created` (a `personal-zar-current` account owned by the person, tier `standard`) and `activated`.
+There is no sector check. `StartPersonOnboarding` refuses an identity number that is not 13 digits with a valid check
+digit.
+
+**One application per applicant.** When a start carries `applicant_subject`, the idempotency key is
+`applicant/<kind>/<subject>`, so the workflow ID follows from the applicant: a second start returns the first
+application, and `FindApplication` finds it without a lookup table. `GetOnboarding`'s status carries `kind`.
 
 ## 3a. KYC review
 
@@ -116,15 +134,16 @@ in `policy/tiers.json`.
   `KYC_PROVIDER=fake` and `DIDIT_ENVIRONMENT=sandbox`. `cmd/didit-verify` runs a delivery Didit recorded through the
   verifier, which is the first check against a real account. Details, and what is not yet verified, are in
   `docs/PROVIDERS.md`.
-- **A verification link reaches no one yet.** The onboarding records the hosted link and `GetOnboarding` returns it, but
-  there is no customer-facing application flow to show it, and no notification that sends it.
+- **A verification link reaches the applicant through the web app's status page** (`apps/web/app/apply/status`), for
+  the person who applied. For a business, the applicant passes each director their own link; no notification sends it.
 - **An abandoned or expired Didit session is not a verdict.** The onboarding waits out its seven days and declines. Whether
   to decline earlier or start a new session is a product decision.
 - **Screening uses a fixture list.** The compliance engine (P1-06) replaces it. The list is mandatory: the service
   refuses to start without one.
 - **Deposit insurance flag defaults to false.** `INSURED_DEPOSITS` must be set to `true` only when the sponsor confirms
   CODI coverage for business deposits (VERIFY CODI). Invariant 10 requires the flag to be true.
-- **Accounts are created only for the company.** Personal founder accounts are a later step (ARCHITECTURE.md 6.1).
+- **Personal accounts** are opened by `OnboardPerson`. A director of a business onboarding does not get one, and gets
+  no sign-in of their own: only the applicant can see the business account.
 - **Fineract is not used.** ARCHITECTURE.md 11.3 step 7 creates a Fineract client; Fineract is not in this build.
 - **Caller identity.** In development, calls to other services carry `X-Forge-Caller: svc-onboarding`. In production the
   service presents its own certificate and the callee reads the service name from it (`pkg/serve`); the header is

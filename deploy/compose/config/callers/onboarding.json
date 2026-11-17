@@ -4,6 +4,7 @@
     "ListKYCReviews"
   ],
   "svc-stack-journeys": [
+    "FindApplication",
     "GetOnboarding",
     "StartBusinessOnboarding"
   ],

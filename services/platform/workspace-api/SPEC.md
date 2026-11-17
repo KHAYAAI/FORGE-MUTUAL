@@ -19,6 +19,17 @@ the data:
 | `GET /v1/payments/{payment}` | payments-orchestrator `GetPayment` |
 | `POST /v1/fx/quotes`, `POST /v1/fx/deals`, `GET /v1/fx/deals/{deal}` | fx-service `Quote`, `Book`, `GetDeal` |
 | `POST /v1/payout-batches`, `GET .../{batch}`, `POST .../{batch}/approve` | payouts-service `CreateBatch`, `GetBatch`, `ApproveBatch` |
+| `POST /v1/applications/person` | onboarding `StartPersonOnboarding` |
+| `POST /v1/applications/business` | onboarding `StartBusinessOnboarding` |
+| `GET /v1/applications/{kind}` | onboarding `FindApplication` |
+
+The application routes are for an **applicant**: someone signed in who may not have a party yet. Every other route needs
+a party. An applicant is identified by their sign-in subject (the `sub` of the verified token; in development the
+`X-Forge-Applicant` header). The idempotency key is derived from the subject and the kind, so an applicant has one
+application of each kind, and sending the form again returns it. Applications are limited to 10 submissions an hour per
+subject (429 after that). The status reply never carries the decline reason, or anything else from screening:
+telling an applicant about a sanctions match would be tipping-off (FIC Act section 29). Once approved, the reply carries
+the new party ID, which the web app uses to attach the party to the session.
 
 ## 2. Rules
 
@@ -69,6 +80,6 @@ strict body decoding; dev auth refused in production.
 
 - No production authenticator (section 3).
 - No CORS policy. The web app is intended to reach the API through its own origin (a rewrite), so none is needed yet.
-- No rate limiting, and no request logging or tracing beyond the downstream services.
-- The routes are not yet exercised end to end against the real services.
+- Rate limiting covers applications only, and is per instance (in memory). No request logging or tracing beyond the downstream services.
+- The account routes and the personal application are exercised end to end on the local stack (`make test-stack`).
 - Downstream allowlists for `svc-workspace` are configuration, not yet written into the services' deployment files.

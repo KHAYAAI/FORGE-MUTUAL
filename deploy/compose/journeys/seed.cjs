@@ -20,7 +20,7 @@ function stackEnv(name) {
 }
 
 // With `up.sh mtls` every service speaks TLS and requires a client certificate. The journeys then present their own,
-// which names them svc-stack-journeys: an identity that exists only in the local stack, and is allowed exactly the two
+// which names them svc-stack-journeys: an identity that exists only in the local stack, and is allowed exactly the
 // onboarding calls the journeys make. Without it, the same name goes in the development caller header.
 const TLS = stackEnv("STACK_TLS") === "1";
 const JOURNEYS = "svc-stack-journeys";
@@ -116,6 +116,25 @@ async function startCompany(label) {
   return { onboardingId, companyPartyId: status.companyPartyId, personPartyIds: status.personPartyIds };
 }
 
+/**
+ * Waits for the application a signed-in applicant made through the web app, and returns it once its verifications have
+ * started. The subject is the applicant's sign-in subject (for the development sign-in, "dev-" and their name).
+ */
+async function findApplication(subject, kind, timeoutMs = 60_000) {
+  return until(`${kind} application of ${subject}`, async () => {
+    const res = await send(`${ONBOARDING}/${ONBOARDING_SERVICE}/FindApplication`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "connect-protocol-version": "1", "x-forge-caller": JOURNEYS },
+      body: JSON.stringify({ applicantSubject: subject, kind }),
+    });
+    if (res.status === 404) return { done: false, seen: "not found" };
+    if (!res.ok) throw new Error(`FindApplication: ${res.status} ${res.text}`);
+    const { status } = res.json();
+    const started = (status.steps ?? []).includes("verifications_started") && status.personPartyIds?.length;
+    return { done: started, value: status, seen: status.steps };
+  }, timeoutMs);
+}
+
 /** Delivers the provider's verdict for one subject, signed as the provider signs it. */
 async function verdict(onboardingId, subjectPartyId, value) {
   const body = JSON.stringify({
@@ -179,5 +198,5 @@ function waitForAccounts(partyId, timeoutMs = 90_000) {
 
 module.exports = {
   ONBOARDING, BACKOFFICE, WORKSPACE, TLS,
-  stackSecret, stackEnv, send, nationalId, startCompany, verdict, onboardingState, waitForState, waitForReview, decideReview, waitForAccounts,
+  stackSecret, stackEnv, send, nationalId, startCompany, findApplication, verdict, onboardingState, waitForState, waitForReview, decideReview, waitForAccounts,
 };
