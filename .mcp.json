@@ -3,6 +3,10 @@
     "workos-forge-mutual": {
       "type": "http",
       "url": "https://mcp.workos.com/mcp"
+    },
+    "didit": {
+      "type": "http",
+      "url": "https://mcp.didit.me/mcp"
     }
   }
 }
