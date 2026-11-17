@@ -32,7 +32,18 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
   survive losing another, accepted nothing without a quorum, and applied a transfer retried across the outage exactly
   once. On the local stack a balance survived a restart of the ledger service and of TigerBeetle. All of this is a
   development-mode cluster on one machine (`services/bank/ledger-gateway-bank/SPEC.md` section 12).
-- Production refusals, mutual TLS, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
+- **Mutual TLS runs end to end on the stack** (`deploy/compose/up.sh mtls`, `make test-stack-mtls`). Every service
+  speaks TLS and requires a client certificate, and the journeys pass through it, browser to ledger. Checked against the
+  running services: a caller with no certificate, or one from another authority, gets no answer; the caller is the
+  service its certificate names, and a header that says otherwise is ignored; each of the two APIs for people serves
+  only its own web app's server. Every certificate was renewed on disk while the stack ran, and every service presented
+  its new one within seconds, with no restart.
+- **Caller lists are least privilege, and stay that way.** Each service may call only the methods its code calls: 83
+  unneeded grants were removed (reconciliation could create transfers and approve payments; every reader of the ledger
+  could write to it). `make ci` fails on a grant the caller's code does not use (`tools/isolation`).
+- Production refusals, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
+- Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
+  the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
   Temporal stopped, a decision was recorded and the reviewer was told it would be retried; once Temporal was back, the
   onboarding completed within 20 seconds with no further action.
@@ -71,7 +82,9 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
 - Onboarding does not create the Fineract client the design lists, and nothing gives an approved director a login.
 - An account reaches its owner only after reconciliation names the owner, every 15 minutes by default. Shorten it or
   accept it: a product decision.
-- Mutual TLS is covered by unit tests. The stack runs in development mode, so it is not exercised end to end.
+- Under mutual TLS, a service's health checks need a certificate too, because they are on the same listener. A
+  separate health listener for an orchestrator's probes is not built. Postgres, Kafka, Temporal and TigerBeetle are
+  reached without TLS on the stack.
 - Tracing creates spans but has not been exported to a collector.
 - The Content-Security-Policy keeps `'unsafe-inline'` for scripts.
 - Secrets are environment variables. No secret store is integrated.
@@ -85,7 +98,7 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
 1. Name the threshold owners, and decide the sanctions source.
 2. Create the WorkOS and Didit accounts and allow their hosts (`docs/PROVIDERS.md`), then run the first live checks.
 3. Build the customer application flow and the person onboarding on top of them.
-4. Get TigerBeetle running, by a route that works (see *Blocked*).
+4. Provision a production TigerBeetle cluster and measure it (done so far: a development-mode cluster, see *Verified*).
 5. Obtain sponsor sandbox access and the wire formats.
 6. Decide the reconciliation latency.
 7. Security review and load test.
@@ -180,16 +193,19 @@ page), the `OnboardPerson` workflow, moving the payments orchestrator's rails fr
 
 ## Production configuration
 
-Done and tested: TLS and mutual TLS between services (`pkg/serve`: production refuses to start without certificates,
-and the caller is the service named in its certificate, not a header); request IDs, timeouts and security headers on
+Done and tested: TLS and mutual TLS between services, on the running stack as well as in unit tests (`pkg/serve`:
+production refuses to start without certificates, the caller is the service named in its certificate and not a header,
+a renewed certificate is loaded without a restart, and the two APIs for people serve only the web apps named in
+`WORKSPACE_CLIENTS` and `BACKOFFICE_CLIENTS`, which production requires); each web app's server presents its own
+certificate to its API and refuses a plain-HTTP API address in production; request IDs, timeouts and security headers on
 every service and both web apps (CSP keeps `'unsafe-inline'` for scripts, a known gap until there is a nonce); a
 production refusal of every development switch (memory ledger, simulators, unsigned policy, fake KYC); OpenTelemetry
 spans, with OTLP export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; a backup and restore check that proves a dump
 restores (`scripts/pg-backup.sh`, `scripts/pg-restore-check.sh`); and an axe accessibility scan of every page in both
 apps, failing on serious and critical violations.
 
-Not done: the OTLP export has not been run against a collector; the local stack runs in development mode, so mutual TLS
-is covered by `pkg/serve`'s tests, not by the stack; backups are not scheduled and there is no point-in-time recovery;
+Not done: the OTLP export has not been run against a collector; under mutual TLS a health check needs a certificate,
+because there is no separate health listener; backups are not scheduled and there is no point-in-time recovery;
 secrets are environment variables, with no secret store integrated.
 
 ## Blocked

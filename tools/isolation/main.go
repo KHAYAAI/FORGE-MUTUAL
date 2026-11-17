@@ -1,6 +1,9 @@
-// Command isolation enforces legal-entity boundaries in code (ARCHITECTURE.md section 5).
-// A package under services/<entity>/ may import only its own entity, or services/shared.
-// Any other cross-entity import fails the check.
+// Command isolation enforces two boundaries that code review alone would let slip.
+//
+// Legal entities (ARCHITECTURE.md section 5): a package under services/<entity>/ may import only its own entity, or
+// services/shared. Any other cross-entity import fails the check.
+//
+// Callers (callers.go): a service is allowed to call only the methods of another service that its code really calls.
 package main
 
 import (
@@ -28,13 +31,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, "isolation:", err)
 		os.Exit(2)
 	}
-	for _, v := range violations {
+	grants, err := checkCallers(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "callers:", err)
+		os.Exit(2)
+	}
+	for _, v := range append(violations, grants...) {
 		fmt.Println("VIOLATION:", v)
 	}
-	if len(violations) > 0 {
+	if len(violations)+len(grants) > 0 {
 		os.Exit(1)
 	}
 	fmt.Println("isolation: ok")
+	fmt.Println("callers: ok (every grant in deploy/compose/config/callers is a call the caller's code makes)")
 }
 
 // check returns one message per forbidden cross-entity import under root/services.

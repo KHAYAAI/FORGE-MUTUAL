@@ -3,7 +3,6 @@ package serve
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -21,11 +20,12 @@ func Outbound(cfg Config) (*http.Client, error) {
 	base.ForceAttemptHTTP2 = true
 	var rt http.RoundTripper = base
 	if cfg.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+		// Read again when it is renewed on disk, as the server's is (keypair.go).
+		pair, err := loadKeyPair(cfg.CertFile, cfg.KeyFile, nil)
 		if err != nil {
-			return nil, fmt.Errorf("tls certificate: %w", err)
+			return nil, err
 		}
-		tc := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+		tc := &tls.Config{GetClientCertificate: pair.forClient, MinVersion: tls.VersionTLS12}
 		if cfg.CAFile != "" {
 			pool, err := loadCA(cfg.CAFile)
 			if err != nil {

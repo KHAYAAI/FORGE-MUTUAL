@@ -9,6 +9,7 @@ the differences are listed below, and the production refusals in `pkg/serve` and
 ```bash
 deploy/compose/up.sh            # generates .env (secrets, never committed), builds, starts, waits for every port
 deploy/compose/up.sh oidc       # also starts the development identity provider (tools/devidp) on :3300
+deploy/compose/up.sh mtls       # every service speaks TLS and requires a client certificate (see "Mutual TLS")
 make down                       # stops everything and deletes the volumes (the data is gone)
 ```
 
@@ -49,12 +50,41 @@ Every service's address names its own port, so the services reach each other ove
 ## Configuration
 
 - `docker-compose.yml`: one service per block. Settings the code requires are set here, and nothing else.
-- `config/callers/<service>.json`: which callers may call each service, and which methods. Dev-only identities:
-  production uses the mutual-TLS identity of the calling service instead (`pkg/serve`).
+- `config/callers/<service>.json`: which callers may call each service, and which methods. Each list is least
+  privilege: a caller is granted a method only if its code calls it, and `make ci` fails otherwise
+  (`tools/isolation/callers.go`). An empty file denies everyone. Without mutual TLS the caller names itself in a
+  header, which is development only; with it, the caller is the service its certificate names.
 - `config/kafka-topics.txt`: every topic the services use. The broker does not create topics on its own.
 - `config/banklayer.yaml`: the bank layer, using the simulator (see below).
 - `config/screening-list.txt`: a local fixture with one invented name. It is not a sanctions list.
 - `initdb/01-databases.sql`: one database per service that keeps state. Each service migrates its own schema.
+
+## Mutual TLS
+
+```bash
+deploy/compose/up.sh mtls && make test-stack-mtls
+```
+
+`up.sh mtls` runs `pki.sh`, which makes a private certificate authority and one certificate per service in `.pki/`
+(never committed), and starts every service with `TLS_CERT_FILE`, `TLS_KEY_FILE` and `TLS_CA_FILE`. From then on:
+
+- Every service-to-service call is TLS, and both sides present a certificate. A caller with no certificate, or one
+  from another authority, gets no answer at all.
+- The caller is the service its certificate names (`spiffe://forge/svc/<name>`). The development caller header is
+  ignored.
+- The two APIs for people serve only their own web app's server: `WORKSPACE_CLIENTS=svc-web` and
+  `BACKOFFICE_CLIENTS=svc-backoffice-web` (plus the journey tests here). Production refuses to start without these.
+- Each web app's server presents its own certificate to its API (`apps/*/lib/upstream.ts`).
+- A certificate that is renewed on disk is picked up within 15 seconds, without a restart. Running `pki.sh` again
+  while the stack is up renews every certificate, which is how that was checked.
+
+`check-mtls.sh` states each of these as a claim and tests it against the running stack. `make test-stack-mtls` runs it
+and then the journeys.
+
+What this mode does not make real: the certificates are valid for a year and their keys are world-readable files, for
+a stack on one machine. Production certificates come from the platform's PKI and are short-lived. Health checks are
+served on the same listener, so they need a certificate too: a separate health listener for an orchestrator's probes
+is not built. Postgres, Kafka, Temporal and TigerBeetle are still reached without TLS here.
 
 ## What is real, and what is not
 
@@ -75,8 +105,8 @@ Not real, on purpose:
   simulator (`config/banklayer.yaml`). There is no sponsor sandbox. Production refuses the simulator.
 - **Identity.** The customer and staff apps sign in with the development sign-in (`WORKSPACE_AUTH=dev`,
   `BACKOFFICE_AUTH=dev`). The OIDC path is exercised by tests against `tools/devidp`.
-- **Service identity.** Development uses the `X-Forge-Caller` header. Production uses mutual TLS, and refuses to start
-  without certificates.
+- **Service identity.** By default the stack uses the `X-Forge-Caller` header. `up.sh mtls` turns on mutual TLS, as
+  production requires (see "Mutual TLS"). Production refuses to start without certificates.
 - **KYC.** The fake provider, with a local webhook secret. Didit is not configured in this build.
 - **Policy.** The bundle loads unsigned (`POLICY_DEV_UNSIGNED`). Production loads only a signed bundle.
 - **Core banking.** `core-bridge` is not started: it needs a live Apache Fineract.

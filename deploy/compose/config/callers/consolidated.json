@@ -1,17 +1,12 @@
 {
   "svc-fx": [
-    "GetActivity",
-    "GetBalances",
-    "GetReconStatus"
+    "GetBalances"
   ],
   "svc-payouts": [
-    "GetActivity",
-    "GetBalances",
-    "GetReconStatus"
+    "GetBalances"
   ],
   "svc-workspace": [
     "GetActivity",
-    "GetBalances",
-    "GetReconStatus"
+    "GetBalances"
   ]
 }

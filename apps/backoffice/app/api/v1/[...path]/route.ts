@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { config } from "@/lib/config";
 import { ACCESS_COOKIE } from "@/lib/oidc";
+import { callUpstream, type UpstreamResponse } from "@/lib/upstream";
 import { SESSION_COOKIE, parseStaff } from "@/lib/session";
 
 // Forwards a page's request to backoffice-api. In oidc mode the access token is sent as a bearer token, and the API
@@ -29,13 +30,12 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
   url.search = new URL(req.url).search;
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
-  let upstream: Response;
+  let upstream: UpstreamResponse;
   try {
-    upstream = await fetch(url, {
+    upstream = await callUpstream(url, {
       method: req.method,
-      headers,
+      headers: Object.fromEntries(headers.entries()),
       body: hasBody ? await req.text() : undefined,
-      cache: "no-store",
     });
   } catch {
     return Response.json(
@@ -43,9 +43,9 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
       { status: 503 },
     );
   }
-  return new Response(await upstream.text(), {
+  return new Response(upstream.body, {
     status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },
+    headers: { "content-type": upstream.contentType },
   });
 }
 

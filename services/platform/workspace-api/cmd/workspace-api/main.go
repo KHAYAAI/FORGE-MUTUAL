@@ -74,7 +74,14 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv, err := serve.New(tlsCfg, h.Handler(), log)
+	// This API is for one caller: the customer web app's server. With mutual TLS on, every service the CA has signed could
+	// otherwise reach it and present a person's token. WORKSPACE_CLIENTS names the services whose certificates are served
+	// (comma-separated), and production refuses to start without it.
+	handler, err := serve.OnlyClients(tlsCfg, "WORKSPACE_CLIENTS", serve.ClientsFromEnv("WORKSPACE_CLIENTS"), h.Handler())
+	if err != nil {
+		return err
+	}
+	srv, err := serve.New(tlsCfg, handler, log)
 	if err != nil {
 		return err
 	}

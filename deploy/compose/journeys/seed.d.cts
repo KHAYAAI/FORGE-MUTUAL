@@ -36,3 +36,8 @@ export function waitForState(onboardingId: string, state: string, timeoutMs?: nu
 export function waitForReview(onboardingId: string, subjectPartyId: string, timeoutMs?: number): Promise<Review>;
 export function decideReview(reviewId: string, decision: "APPROVED" | "DECLINED", note: string): Promise<Review>;
 export function waitForAccounts(partyId: string, timeoutMs?: number): Promise<{ account_id: string; asset: string }[]>;
+
+/** True when the stack was started with `up.sh mtls`: every call is https and presents the journeys' certificate. */
+export const TLS: boolean;
+/** A value from deploy/compose/.env. */
+export function stackEnv(name: string): string | undefined;

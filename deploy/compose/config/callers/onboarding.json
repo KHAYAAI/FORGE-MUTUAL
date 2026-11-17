@@ -1,8 +1,10 @@
 {
   "svc-backoffice-api": [
     "DecideKYCReview",
+    "ListKYCReviews"
+  ],
+  "svc-stack-journeys": [
     "GetOnboarding",
-    "ListKYCReviews",
     "StartBusinessOnboarding"
   ]
 }

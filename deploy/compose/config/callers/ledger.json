@@ -1,65 +1,34 @@
 {
   "svc-consolidated-view": [
-    "CreateAccounts",
-    "CreateTransfers",
     "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
-    "PostPending",
-    "VoidPending"
+    "ListAccounts"
   ],
   "svc-core-bridge": [
-    "CreateAccounts",
-    "CreateTransfers",
     "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
-    "PostPending",
-    "VoidPending"
+    "ListAccounts"
   ],
   "svc-fx": [
     "CreateAccounts",
     "CreateTransfers",
     "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
     "PostPending",
     "VoidPending"
   ],
   "svc-onboarding": [
-    "CreateAccounts",
-    "CreateTransfers",
-    "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
-    "PostPending",
-    "VoidPending"
+    "CreateAccounts"
   ],
   "svc-payments": [
     "CreateAccounts",
     "CreateTransfers",
-    "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
     "PostPending",
     "VoidPending"
   ],
   "svc-reconciliation": [
-    "CreateAccounts",
-    "CreateTransfers",
     "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
-    "PostPending",
-    "VoidPending"
+    "ListAccounts"
   ],
   "svc-treasury-risk": [
-    "CreateAccounts",
-    "CreateTransfers",
     "GetBalances",
-    "ListAccounts",
-    "LookupTransfers",
-    "PostPending",
-    "VoidPending"
+    "ListAccounts"
   ]
 }

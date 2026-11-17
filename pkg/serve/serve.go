@@ -115,11 +115,13 @@ func New(cfg Config, h http.Handler, log *slog.Logger) (*http.Server, error) {
 		MaxHeaderBytes:    1 << 16,
 	}
 	if cfg.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+		// The certificate is read again when it is renewed on disk (keypair.go), so a short-lived certificate does not
+		// need a restart.
+		pair, err := loadKeyPair(cfg.CertFile, cfg.KeyFile, log)
 		if err != nil {
-			return nil, fmt.Errorf("tls certificate: %w", err)
+			return nil, err
 		}
-		tc := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+		tc := &tls.Config{GetCertificate: pair.forServer, MinVersion: tls.VersionTLS12}
 		if cfg.CAFile != "" {
 			pool, err := loadCA(cfg.CAFile)
 			if err != nil {
@@ -135,7 +137,7 @@ func New(cfg Config, h http.Handler, log *slog.Logger) (*http.Server, error) {
 
 // Run serves until ctx is done, then shuts down gracefully within ten seconds.
 func Run(ctx context.Context, srv *http.Server, log *slog.Logger) error {
-	tlsOn := srv.TLSConfig != nil && len(srv.TLSConfig.Certificates) > 0
+	tlsOn := srv.TLSConfig != nil && (len(srv.TLSConfig.Certificates) > 0 || srv.TLSConfig.GetCertificate != nil)
 	mtls := tlsOn && srv.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert
 	errc := make(chan error, 1)
 	go func() {

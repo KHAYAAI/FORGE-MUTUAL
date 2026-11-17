@@ -111,6 +111,9 @@ services:
     image: forge/party-service:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-party.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-party.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/party?sslmode=disable
       PARTY_CALLERS_FILE: /stack/callers/party.json
@@ -118,25 +121,31 @@ services:
       PARTY_PUBLISHER: kafka
       PARTY_SEAL_KEY: ${PARTY_SEAL_KEY}
       PARTY_INDEX_KEY: ${PARTY_INDEX_KEY}
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   consent:
     <<: *go
     image: forge/consent-service:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-consent.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-consent.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/consent?sslmode=disable
       CONSENT_CALLERS_FILE: /stack/callers/consent.json
       CONSENT_LISTEN: ":8082"
       CONSENT_PUBLISHER: kafka
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   policy:
     <<: *go
     image: forge/policy-service:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-policy.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-policy.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/policy?sslmode=disable
       POLICY_CALLERS_FILE: /stack/callers/policy.json
@@ -144,7 +153,7 @@ services:
       POLICY_BUNDLE_DIR: /app/policy
       POLICY_DEV_UNSIGNED: "true"
       POLICY_PUBLISHER: kafka
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   onboarding:
     <<: *go
@@ -158,6 +167,9 @@ services:
       temporal:
         condition: service_started
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-onboarding.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-onboarding.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/onboarding?sslmode=disable
       ONBOARDING_CALLERS_FILE: /stack/callers/onboarding.json
@@ -178,19 +190,23 @@ services:
       DIDIT_CALLBACK_URL: ${DIDIT_CALLBACK_URL:-}
       SCREENING_LIST_FILE: /stack/screening-list.txt
       SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
-      PARTY_URL: http://127.0.0.1:8081
-      CONSENT_URL: http://127.0.0.1:8082
-      POLICY_URL: http://127.0.0.1:8084
-      LEDGER_URL: http://127.0.0.1:8070
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+      CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
+      POLICY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8084
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./config/screening-list.txt:/stack/screening-list.txt:ro
+      - ./.pki:/stack/pki:ro
 
   consolidated:
     <<: *go
     image: forge/consolidated-view:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-consolidated-view.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-consolidated-view.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/consolidated?sslmode=disable
       CONSOLIDATED_CALLERS_FILE: /stack/callers/consolidated.json
@@ -199,25 +215,32 @@ services:
       # The reconciler names each account's owner (fail closed until it has). 15 minutes by default; the local
       # stack runs it every 10 seconds so a journey sees a new account without waiting.
       CONSOLIDATED_RECON_INTERVAL: 10s
-      LEDGER_URL: http://127.0.0.1:8070
-    volumes: ["./config/callers:/stack/callers:ro"]
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   notifications:
     <<: *go
     image: forge/notifications:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-notifications.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-notifications.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/notifications?sslmode=disable
       NOTIFICATIONS_ADDR: ":8097"
       NOTIFICATIONS_KEY: ${NOTIFICATIONS_KEY}
       NOTIFICATIONS_SINK_FILE: /tmp/notifications-sink.log
+    volumes: ["./.pki:/stack/pki:ro"]
 
   audit:
     <<: *go
     image: forge/audit-service:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-audit.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-audit.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/audit?sslmode=disable
       AUDIT_CALLERS_FILE: /stack/callers/audit.json
@@ -226,6 +249,7 @@ services:
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./audit-anchor.txt:/stack/audit-anchor.txt
+      - ./.pki:/stack/pki:ro
 
   # ---- ledger -------------------------------------------------------------------------------------------------------
   # TigerBeetle, one replica. The data file is made once, in the tb-data volume, and kept until `make down` removes the
@@ -274,6 +298,9 @@ services:
     # seccomp profile must allow io_uring_setup, io_uring_enter and io_uring_register. Here the profile is simply off.
     security_opt: ["seccomp=unconfined"]
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-ledger.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-ledger.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/ledger?sslmode=disable
       LEDGER_LISTEN: ":8070"
@@ -282,7 +309,7 @@ services:
       TB_CLUSTER_ID: "1"
       LEDGER_PUBLISHER: kafka
       LEDGER_CALLERS_FILE: /stack/callers/ledger.json
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   # ---- bank -------------------------------------------------------------------------------------------------------
   fx:
@@ -290,32 +317,41 @@ services:
     image: forge/fx-service:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-fx.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-fx.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/fx?sslmode=disable
       FX_CALLERS_FILE: /stack/callers/fx.json
       FX_ADDR: ":8100"
       FX_RATE_ZAR_PER_USD: "18.25"
       FX_RATE_AS_OF: ${FX_RATE_AS_OF}
-      LEDGER_URL: http://127.0.0.1:8070
-      CONSOLIDATED_URL: http://127.0.0.1:8096
-    volumes: ["./config/callers:/stack/callers:ro"]
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   rails:
     <<: *go
     image: forge/rails-gateway:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-rails.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-rails.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       RAILS_CALLERS_FILE: /stack/callers/rails.json
       RAILS_LISTEN: ":8086"
       RAILS_SIMULATION: "true"
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   partner-router:
     <<: *go
     image: forge/partner-bank-router:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-partner-router.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-partner-router.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/partner_router?sslmode=disable
       PARTNER_CALLERS_FILE: /stack/callers/partner.json
@@ -326,6 +362,7 @@ services:
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
+      - ./.pki:/stack/pki:ro
 
   payments:
     <<: *go
@@ -339,6 +376,9 @@ services:
       temporal:
         condition: service_started
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-payments.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-payments.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/payments?sslmode=disable
       PAYMENTS_CALLERS_FILE: /stack/callers/payments.json
@@ -351,15 +391,16 @@ services:
       BANK_CONFIG: /stack/banklayer.yaml
       SCREENING_LIST_FILE: /stack/screening-list.txt
       SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
-      LEDGER_URL: http://127.0.0.1:8070
-      PARTY_URL: http://127.0.0.1:8081
-      POLICY_URL: http://127.0.0.1:8084
-      RAILS_URL: http://127.0.0.1:8086
-      RECON_URL: http://127.0.0.1:8093
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+      POLICY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8084
+      RAILS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8086
+      RECON_URL: ${STACK_SCHEME:-http}://127.0.0.1:8093
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
       - ./config/screening-list.txt:/stack/screening-list.txt:ro
+      - ./.pki:/stack/pki:ro
 
   payouts:
     <<: *go
@@ -373,6 +414,9 @@ services:
       temporal:
         condition: service_started
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-payouts.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-payouts.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/payouts?sslmode=disable
       PAYOUTS_CALLERS_FILE: /stack/callers/payouts.json
@@ -380,37 +424,45 @@ services:
       TEMPORAL_HOST: 127.0.0.1:7233
       TEMPORAL_NAMESPACE: default
       TEMPORAL_TASK_QUEUE: payouts
-      PAYMENTS_URL: http://127.0.0.1:8085
-      CONSOLIDATED_URL: http://127.0.0.1:8096
-    volumes: ["./config/callers:/stack/callers:ro"]
+      PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   recon:
     <<: *go
     image: forge/reconciliation:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-reconciliation.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-reconciliation.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/recon?sslmode=disable
       RECON_CALLERS_FILE: /stack/callers/recon.json
       RECON_ADDR: ":8093"
       BANK_ALLOW_SIMULATION: "true"
       BANK_CONFIG: /stack/banklayer.yaml
-      LEDGER_URL: http://127.0.0.1:8070
-      PAYMENTS_INFLIGHT_URL: http://127.0.0.1:8085
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      PAYMENTS_INFLIGHT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./config/banklayer.yaml:/stack/banklayer.yaml:ro
+      - ./.pki:/stack/pki:ro
 
   treasury:
     <<: *go
     image: forge/treasury-risk:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-treasury-risk.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-treasury-risk.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/treasury?sslmode=disable
       TREASURY_ADDR: ":8095"
       TREASURY_ENTITY: BANK
-      LEDGER_URL: http://127.0.0.1:8070
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+    volumes: ["./.pki:/stack/pki:ro"]
 
   # ---- shared: compliance, back office ------------------------------------------------------------------------------
   compliance:
@@ -418,37 +470,52 @@ services:
     image: forge/compliance-engine:dev
     network_mode: host
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-compliance.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-compliance.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/cases?sslmode=disable
       CASES_CALLERS_FILE: /stack/callers/cases.json
       CASES_ADDR: ":8400"
-    volumes: ["./config/callers:/stack/callers:ro"]
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro"]
 
   backoffice:
     image: forge/backoffice-api:dev
     network_mode: host
     restart: on-failure
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-backoffice-api.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-backoffice-api.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       FORGE_ENV: development
       BACKOFFICE_AUTH: dev
       BACKOFFICE_ADDR: ":8500"
-      CASES_URL: http://127.0.0.1:8400
-      ONBOARDING_URL: http://127.0.0.1:8083
-      PAYMENTS_URL: http://127.0.0.1:8085
-      RECON_URL: http://127.0.0.1:8093
+      # With mutual TLS, the API serves only its own web app's server, and the journey tests, which seed through it.
+      BACKOFFICE_CLIENTS: ${STACK_TLS:+svc-backoffice-web,svc-stack-journeys}
+      CASES_URL: ${STACK_SCHEME:-http}://127.0.0.1:8400
+      ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
+      PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
+      RECON_URL: ${STACK_SCHEME:-http}://127.0.0.1:8093
+    volumes: ["./.pki:/stack/pki:ro"]
 
   workspace:
     image: forge/workspace-api:dev
     network_mode: host
     restart: on-failure
     environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-workspace.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-workspace.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       FORGE_ENV: development
       WORKSPACE_AUTH: dev
       WORKSPACE_ADDR: ":8300"
-      CONSOLIDATED_URL: http://127.0.0.1:8096
-      PAYMENTS_URL: http://127.0.0.1:8085
-      FX_URL: http://127.0.0.1:8100
-      PAYOUTS_URL: http://127.0.0.1:8200
+      # With mutual TLS, the API serves only its own web app's server, and the journey tests, which read through it.
+      WORKSPACE_CLIENTS: ${STACK_TLS:+svc-web,svc-stack-journeys}
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+      PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
+      FX_URL: ${STACK_SCHEME:-http}://127.0.0.1:8100
+      PAYOUTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8200
+    volumes: ["./.pki:/stack/pki:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.
   devidp:

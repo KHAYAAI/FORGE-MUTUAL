@@ -12,7 +12,7 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	CONSOLIDATED_TEST_DSN CORE_BRIDGE_TEST_DSN PARTNER_ROUTER_TEST_DSN NOTIFICATIONS_TEST_DSN EVENTBUS_TEST_DSN KAFKA_TEST_BROKERS \
 	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls proto up down
 
 ci: require-test-dbs lint test test-isolation
 
@@ -103,6 +103,13 @@ test-backoffice-web:
 test-stack:
 	cd apps/web && npm run build && npx playwright test -c playwright.stack.config.ts
 	cd apps/backoffice && npm run build && npx playwright test -c playwright.stack.config.ts
+
+# The same journeys with mutual TLS between every service, and the checks that the stack refuses what it should: a
+# caller with no certificate, a certificate from another authority, a service calling a method it has no need of.
+# Start the stack with `deploy/compose/up.sh mtls` first.
+test-stack-mtls:
+	deploy/compose/check-mtls.sh
+	$(MAKE) test-stack
 
 # Ledger gateway. Postgres tests run only when LEDGER_TEST_DSN is set (see test-ledger-pg). With TB_ADDRESSES and
 # TB_CLUSTER_ID set, which `make ci` requires, the gateway suite and the differential test against the in-memory model
