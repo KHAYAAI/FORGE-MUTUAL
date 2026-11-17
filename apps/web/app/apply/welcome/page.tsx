@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLink, Shell } from "@/components/apply/Shell";
+import { ArrowLink, Shell, titleClass } from "@/components/apply/Shell";
 
 // The step from approved applicant to customer.
 export default function Welcome() {
@@ -23,16 +23,16 @@ export default function Welcome() {
   }, [router]);
   return (
     <Shell>
-      <h1 className="text-3xl font-normal tracking-tight">Welcome to Forge</h1>
+      <h1 className={titleClass}>Welcome to Forge</h1>
       {message ? (
         <div className="mt-6 space-y-4">
-          <p className="text-sm text-[#3B3A36]">{message}</p>
+          <p className="text-sm text-[#3A3A42]">{message}</p>
           <ArrowLink href="/sign-in?next=/accounts" solid>
             Sign in
           </ArrowLink>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-[#6B6860]">Opening your account…</p>
+        <p className="mt-4 text-sm text-[#5C5C66]">Opening your account…</p>
       )}
     </Shell>
   );

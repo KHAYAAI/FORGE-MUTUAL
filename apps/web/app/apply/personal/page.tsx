@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { RequireApplicant } from "@/components/apply/RequireApplicant";
-import { Field, Shell, buttonClass, inputClass } from "@/components/apply/Shell";
+import { Field, Panel, Shell, buttonClass, eyebrowClass, inputClass, titleClass } from "@/components/apply/Shell";
 import { applyPerson, validSAID } from "@/lib/apply";
 
 export default function ApplyPersonal() {
@@ -27,12 +27,12 @@ export default function ApplyPersonal() {
 
   return (
     <Shell>
-      <p className="text-xs uppercase tracking-widest text-[#6B6860]">Personal account</p>
-      <h1 className="mt-2 text-3xl font-normal tracking-tight">Tell us who you are</h1>
-      <p className="mt-3 text-sm text-[#3B3A36]">
+      <p className={eyebrowClass}>Personal account</p>
+      <h1 className={titleClass}>Tell us who you are</h1>
+      <p className="mt-4 max-w-lg text-lg text-[#3A3A42]">
         Next, you will verify your identity with our verification partner: your ID and a selfie, about two minutes.
       </p>
-      <div className="mt-8">
+      <Panel className="mt-10">
         <RequireApplicant next="/apply/personal">
           <form onSubmit={submit} className="space-y-6" aria-label="Personal account application" noValidate>
             <Field label="Full legal name" hint="As it appears on your ID">
@@ -57,7 +57,7 @@ export default function ApplyPersonal() {
               </span>
             </label>
             {error ? (
-              <p role="alert" className="rounded-md bg-[#F6E7E1] px-3 py-2 text-sm text-[#7A2E17]">
+              <p role="alert" className="rounded-xl bg-[#F6E7E1] px-3 py-2 text-sm text-[#7A2E17]">
                 {error}
               </p>
             ) : null}
@@ -66,7 +66,7 @@ export default function ApplyPersonal() {
             </button>
           </form>
         </RequireApplicant>
-      </div>
+      </Panel>
     </Shell>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLink, Shell } from "@/components/apply/Shell";
+import { ArrowLink, Shell, eyebrowClass, titleClass } from "@/components/apply/Shell";
 import { type Application, type Kind, getApplication } from "@/lib/apply";
 
 const STAGES: { step: string; label: string }[] = [
@@ -44,8 +44,8 @@ export default function ApplicationStatus() {
   const done = new Set(app?.steps ?? []);
   return (
     <Shell>
-      <p className="text-xs uppercase tracking-widest text-[#6B6860]">{kind === "business" ? "Business account" : "Personal account"}</p>
-      <h1 className="mt-2 text-3xl font-normal tracking-tight">{headline(app)}</h1>
+      <p className={eyebrowClass}>{kind === "business" ? "Business account" : "Personal account"}</p>
+      <h1 className={titleClass}>{headline(app)}</h1>
 
       {error ? (
         <div className="mt-6 space-y-4">
@@ -57,9 +57,9 @@ export default function ApplicationStatus() {
       ) : null}
 
       {app?.next === "verify" && app.verify?.length ? (
-        <div className="mt-8 rounded-lg bg-[#1A1A18] p-6 text-[#F8F7F4]">
+        <div className="mt-8 rounded-[2rem] bg-[#1E1E1E] p-8 text-[#FFFFFF]">
           <h2 className="text-lg font-normal">Verify your identity</h2>
-          <p className="mt-2 text-sm text-[#D9D4C7]">
+          <p className="mt-2 text-sm text-[#C9CBFF]">
             {kind === "business"
               ? "Each link is for one person or for the company. Send each director their own link; it lets whoever opens it complete that verification."
               : "It opens our verification partner in a new tab. Keep this page open; it updates by itself."}
@@ -71,7 +71,7 @@ export default function ApplicationStatus() {
                   href={v.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md bg-[#F8F7F4] px-4 py-2 text-sm font-medium text-[#1A1A18] hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-[#1E1E1E] hover:bg-white"
                 >
                   {v.kind === "business" ? "Verify the company" : kind === "business" ? `Verify director ${i}` : "Start verification"}
                   <span aria-hidden="true">↗</span>
@@ -83,14 +83,14 @@ export default function ApplicationStatus() {
       ) : null}
 
       {app && app.state !== "declined" ? (
-        <ol className="mt-10 space-y-3" aria-label="Progress">
+        <ol className="mt-10 space-y-4 rounded-[2rem] bg-[#F5F5F5] p-8" aria-label="Progress">
           {STAGES.map((s) => (
             <li key={s.step} className="flex items-center gap-3 text-sm">
               <span
                 aria-hidden="true"
-                className={`h-2.5 w-2.5 rounded-full ${done.has(s.step) ? "bg-[#1A1A18]" : "border border-[#B9B3A5]"}`}
+                className={`h-2.5 w-2.5 rounded-full ${done.has(s.step) ? "bg-[#5A60E8]" : "border border-[#A9A9B2]"}`}
               />
-              <span className={done.has(s.step) ? "" : "text-[#6B6860]"}>
+              <span className={done.has(s.step) ? "" : "text-[#5C5C66]"}>
                 {s.label}
                 <span className="sr-only">{done.has(s.step) ? " (done)" : " (to do)"}</span>
               </span>
@@ -107,12 +107,12 @@ export default function ApplicationStatus() {
         </div>
       ) : null}
       {app?.state === "declined" ? (
-        <p className="mt-6 text-sm text-[#3B3A36]">
+        <p className="mt-6 text-sm text-[#3A3A42]">
           We are not able to open this account. If you think this is wrong, contact us and we will review it.
         </p>
       ) : null}
       {app?.state === "failed" ? (
-        <p className="mt-6 text-sm text-[#3B3A36]">Something went wrong on our side. Our team has been told; there is nothing you need to do.</p>
+        <p className="mt-6 text-sm text-[#3A3A42]">Something went wrong on our side. Our team has been told; there is nothing you need to do.</p>
       ) : null}
     </Shell>
   );

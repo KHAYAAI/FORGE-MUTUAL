@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { RequireApplicant } from "@/components/apply/RequireApplicant";
-import { Field, Shell, buttonClass, inputClass } from "@/components/apply/Shell";
+import { Field, Panel, Shell, buttonClass, eyebrowClass, inputClass, titleClass } from "@/components/apply/Shell";
 import { type Director, SECTORS, applyBusiness, validSAID } from "@/lib/apply";
 
 type Row = { name: string; id: string; percent: string; ubo: boolean };
@@ -45,12 +45,12 @@ export default function ApplyBusiness() {
 
   return (
     <Shell>
-      <p className="text-xs uppercase tracking-widest text-[#6B6860]">Business account</p>
-      <h1 className="mt-2 text-3xl font-normal tracking-tight">Tell us about your company</h1>
-      <p className="mt-3 text-sm text-[#3B3A36]">
+      <p className={eyebrowClass}>Business account</p>
+      <h1 className={titleClass}>Tell us about your company</h1>
+      <p className="mt-4 max-w-lg text-lg text-[#3A3A42]">
         We verify the company with the registry, and each director verifies their identity with our verification partner.
       </p>
-      <div className="mt-8">
+      <Panel className="mt-10">
         <RequireApplicant next="/apply/business">
           <form onSubmit={submit} className="space-y-6" aria-label="Business account application" noValidate>
             <Field label="Registered company name">
@@ -72,9 +72,9 @@ export default function ApplyBusiness() {
             <fieldset className="space-y-4">
               <legend className="text-sm font-medium">Directors</legend>
               {rows.map((r, i) => (
-                <div key={i} className="space-y-3 rounded-lg bg-[#EFECE5] p-4" aria-label={`Director ${i + 1}`} role="group">
+                <div key={i} className="space-y-3 rounded-2xl bg-white p-5" aria-label={`Director ${i + 1}`} role="group">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-widest text-[#6B6860]">Director {i + 1}</span>
+                    <span className={eyebrowClass}>Director {i + 1}</span>
                     {rows.length > 1 ? (
                       <button type="button" className="text-xs underline" onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>
                         Remove
@@ -113,7 +113,7 @@ export default function ApplyBusiness() {
               </span>
             </label>
             {error ? (
-              <p role="alert" className="rounded-md bg-[#F6E7E1] px-3 py-2 text-sm text-[#7A2E17]">
+              <p role="alert" className="rounded-xl bg-[#F6E7E1] px-3 py-2 text-sm text-[#7A2E17]">
                 {error}
               </p>
             ) : null}
@@ -122,7 +122,7 @@ export default function ApplyBusiness() {
             </button>
           </form>
         </RequireApplicant>
-      </div>
+      </Panel>
     </Shell>
   );
 }

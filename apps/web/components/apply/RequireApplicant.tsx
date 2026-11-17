@@ -13,11 +13,11 @@ export function RequireApplicant({ next, children }: { next: string; children: R
       .then((b: { signedIn?: boolean; applicant?: boolean }) => setState(b.signedIn && b.applicant ? "in" : "out"))
       .catch(() => setState("out"));
   }, []);
-  if (state === "checking") return <p className="text-sm text-[#6B6860]">Checking that you are signed in…</p>;
+  if (state === "checking") return <p className="text-sm text-[#5C5C66]">Checking that you are signed in…</p>;
   if (state === "out") {
     return (
       <div className="space-y-5">
-        <p className="text-sm text-[#3B3A36]">
+        <p className="text-sm text-[#3A3A42]">
           Sign in first. It keeps your application safe, and lets you come back to it on any device.
         </p>
         <ArrowLink href={`/sign-in?next=${encodeURIComponent(next)}`} solid>

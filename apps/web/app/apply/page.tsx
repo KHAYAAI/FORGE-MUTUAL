@@ -1,56 +1,51 @@
 import type { Metadata } from "next";
-import { ArrowLink } from "@/components/apply/Shell";
+import { ArrowLink, Notice } from "@/components/apply/Shell";
 
 export const metadata: Metadata = {
   title: "Open an account · Forge",
   description: "Apply for a Forge account for yourself or your business.",
 };
 
-// The front door. A quiet landscape drawn in code, the name large and faint across it, and two ways in.
+// The front door: a periwinkle sky with glass discs drifting across it, a large light headline, and two ways in.
 export default function ApplyLanding() {
   return (
-    <div className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 bg-[#F8F7F4] text-[#1A1A18]">
-      <p className="bg-[#1A1A18] px-4 py-1.5 text-xs italic text-[#F8F7F4] sm:px-6">
-        Forge Mutual is not yet a licensed bank. Applications open accounts in a pre-licence preview: no money is held.
-      </p>
+    <div className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 bg-white text-[#1E1E1E]">
+      <Notice />
 
-      <section className="relative isolate overflow-hidden" aria-labelledby="apply-title">
-        <Landscape />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -bottom-[0.12em] select-none text-center font-light leading-none tracking-tighter text-white/35"
-          style={{ fontSize: "clamp(6rem, 24vw, 22rem)" }}
-        >
-          FORGE
-        </div>
-        <div className="relative mx-auto flex min-h-[78vh] max-w-6xl flex-col justify-start px-4 pb-64 pt-16 sm:px-6 sm:pt-24">
-          <h1 id="apply-title" className="max-w-xl text-4xl font-normal tracking-tight sm:text-5xl">
-            Banking for the people who build.
-          </h1>
-          <p className="mt-5 max-w-md text-base text-[#3B3A36]">
-            One account for you, or one for your company. Apply in a few minutes, verify who you are, and we will tell you
-            as soon as it is open.
-          </p>
+      <section className="px-3 pt-3 sm:px-6 sm:pt-6" aria-labelledby="apply-title">
+        <div className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#7C82FF] via-[#9A9EFF] to-[#C7CAFF]">
+          <Discs />
+          <div className="relative mx-auto flex min-h-[72vh] max-w-6xl flex-col justify-end px-6 pb-14 pt-24 sm:px-10 sm:pb-20">
+            <h1 id="apply-title" className="max-w-3xl text-5xl font-light leading-[1.05] tracking-tight text-[#1E1E1E] sm:text-7xl lg:text-8xl">
+              Banking for the people who build.
+            </h1>
+            <p className="mt-6 max-w-lg text-lg text-[#1E1E1E]">
+              One account for you, or one for your company. Apply in a few minutes, verify who you are, and we will tell you
+              as soon as it is open.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-14 sm:grid-cols-2 sm:px-6" aria-label="Choose an account">
-        <Choice
-          title="Personal account"
-          text="For you. Your South African ID and a selfie are all it takes."
-          href="/apply/personal"
-        />
-        <Choice
-          title="Business account"
-          text="For a registered company. We verify the company and each director."
-          href="/apply/business"
-        />
+      <section className="mx-auto max-w-6xl px-4 pb-6 pt-20 sm:px-6" aria-label="Choose an account">
+        <h2 className="max-w-2xl text-4xl font-light tracking-tight sm:text-5xl">Choose your account.</h2>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <Choice title="Personal account" text="For you. Your South African ID and a selfie are all it takes." href="/apply/personal" />
+          <Choice
+            title="Business account"
+            text="For a registered company. We verify the company and each director."
+            href="/apply/business"
+          />
+        </div>
       </section>
 
-      <footer className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2 px-4 pb-10 text-xs text-[#6B6860] sm:px-6">
+      <footer className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2 px-4 py-12 text-sm text-[#5C5C66] sm:px-6">
         <span>© 2026 Forge Mutual</span>
         <span>
-          Already a customer? <a className="underline hover:text-[#1A1A18]" href="/sign-in">Sign in</a>
+          Already a customer?{" "}
+          <a className="underline hover:text-[#1E1E1E]" href="/sign-in">
+            Sign in
+          </a>
         </span>
       </footer>
     </div>
@@ -59,10 +54,10 @@ export default function ApplyLanding() {
 
 function Choice({ title, text, href }: { title: string; text: string; href: string }) {
   return (
-    <div className="flex flex-col justify-between gap-8 rounded-lg bg-[#EFECE5] p-6 sm:p-8">
+    <div className="flex min-h-64 flex-col justify-between gap-10 rounded-[2rem] bg-[#F5F5F5] p-8 sm:p-10">
       <div>
-        <h2 className="text-xl font-normal tracking-tight">{title}</h2>
-        <p className="mt-2 text-sm text-[#4A4842]">{text}</p>
+        <h3 className="text-3xl font-light tracking-tight">{title}</h3>
+        <p className="mt-3 max-w-sm text-base text-[#3A3A42]">{text}</p>
       </div>
       <div>
         <ArrowLink href={href} solid>
@@ -73,51 +68,30 @@ function Choice({ title, text, href }: { title: string; text: string; href: stri
   );
 }
 
-// An original illustration: terraced hills, water and fields, in the palette of the page. Drawn as SVG so it costs
-// no image request and needs no licence.
-function Landscape() {
+// An original illustration: translucent glass discs at different tilts, drawn as SVG so it costs no image request.
+function Discs() {
+  const discs = [
+    { cx: 1130, cy: 170, rx: 120, ry: 34, rot: -18, o: 0.55 },
+    { cx: 1290, cy: 360, rx: 150, ry: 150, rot: 0, o: 0.35 },
+    { cx: 930, cy: 300, rx: 70, ry: 170, rot: 24, o: 0.45 },
+    { cx: 1200, cy: 600, rx: 95, ry: 30, rot: 12, o: 0.6 },
+    { cx: 760, cy: 120, rx: 55, ry: 55, rot: 0, o: 0.3 },
+  ];
   return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 -z-10 h-full w-full"
-      viewBox="0 0 1440 800"
-      preserveAspectRatio="xMidYMid slice"
-    >
+    <svg aria-hidden="true" className="absolute inset-0 -z-10 h-full w-full" viewBox="0 0 1440 800" preserveAspectRatio="xMaxYMid slice">
       <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#E9EEEA" />
-          <stop offset="1" stopColor="#F4F1EA" />
-        </linearGradient>
-        <linearGradient id="water" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8FB9B8" />
-          <stop offset="1" stopColor="#5E918F" />
+        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.95" />
+          <stop offset="0.45" stopColor="#B4B8FF" stopOpacity="0.6" />
+          <stop offset="1" stopColor="#3D44D6" stopOpacity="0.85" />
         </linearGradient>
       </defs>
-      <rect width="1440" height="800" fill="url(#sky)" />
-      <path d="M0 470 C 240 400 420 430 640 380 S 1040 330 1440 360 L1440 800 L0 800 Z" fill="#C9D3B8" />
-      <path d="M0 540 C 260 480 520 520 760 470 S 1180 430 1440 460 L1440 800 L0 800 Z" fill="#A9BC93" />
-      <path d="M0 620 C 300 560 560 610 840 560 S 1220 540 1440 570 L1440 800 L0 800 Z" fill="#7F9C6E" />
-      <path d="M-20 700 C 260 640 520 690 760 650 S 1180 640 1460 680 L1460 820 L-20 820 Z" fill="url(#water)" />
-      <g fill="none" stroke="#F8F7F4" strokeOpacity="0.5" strokeWidth="1.2">
-        <path d="M0 505 C 260 450 470 480 700 430 S 1100 395 1440 410" />
-        <path d="M0 580 C 280 520 540 565 800 515 S 1200 490 1440 515" />
-        <path d="M0 655 C 300 600 560 650 820 605 S 1220 595 1440 625" />
-      </g>
-      <g fill="#E8DFC9" stroke="#B9AE95" strokeWidth="1">
-        <rect x="1030" y="300" width="22" height="64" />
-        <rect x="1058" y="282" width="22" height="82" />
-        <rect x="1086" y="318" width="22" height="46" />
-      </g>
-      <g stroke="#F8F7F4" strokeWidth="2" strokeLinecap="round">
-        <line x1="1250" y1="250" x2="1250" y2="345" />
-        <line x1="1250" y1="250" x2="1232" y2="232" />
-        <line x1="1250" y1="250" x2="1274" y2="244" />
-        <line x1="1250" y1="250" x2="1246" y2="276" />
-        <line x1="1330" y1="270" x2="1330" y2="352" />
-        <line x1="1330" y1="270" x2="1314" y2="254" />
-        <line x1="1330" y1="270" x2="1351" y2="265" />
-        <line x1="1330" y1="270" x2="1327" y2="293" />
-      </g>
+      {discs.map((d, i) => (
+        <g key={i} transform={`rotate(${d.rot} ${d.cx} ${d.cy})`} opacity={d.o + 0.3}>
+          <ellipse cx={d.cx + 6} cy={d.cy + 8} rx={d.rx} ry={d.ry} fill="#3D44D6" opacity="0.35" />
+          <ellipse cx={d.cx} cy={d.cy} rx={d.rx} ry={d.ry} fill="url(#glass)" stroke="#FFFFFF" strokeOpacity="0.8" strokeWidth="2" />
+        </g>
+      ))}
     </svg>
   );
 }
