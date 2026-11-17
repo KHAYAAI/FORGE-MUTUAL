@@ -6,7 +6,9 @@ package sim
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
@@ -271,8 +273,9 @@ func (p partnerFX) OpenAccount(_ context.Context, req banklayer.OpenAccountReque
 	req.Asset = p.asset
 	p.b.mu.Lock()
 	defer p.b.mu.Unlock()
-	p.b.seq++
-	id := fmt.Sprintf("PB%08d", p.b.seq)
+	// Random, not a counter: the simulator's memory is lost on restart, and a partner never reuses an account
+	// reference. A counter would start again at 1 and hand out references already bound to other accounts.
+	id := "PB" + randomRef()
 	acc := &banklayer.Account{
 		ID: id, Owner: req.Owner, Asset: p.asset, Reference: "FORGE" + p.asset + id, Status: "OPEN", OpenedAt: p.b.now(),
 	}
@@ -333,4 +336,11 @@ func (noPrudential) Required() bool { return false }
 
 func (noPrudential) Submit(context.Context, string, []byte) error {
 	return fmt.Errorf("%w: prudential returns are not required on the sponsor route", banklayer.ErrNotSupported)
+}
+
+// randomRef is 10 random upper-case hex digits.
+func randomRef() string {
+	b := make([]byte, 5)
+	_, _ = rand.Read(b)
+	return strings.ToUpper(hex.EncodeToString(b))
 }
