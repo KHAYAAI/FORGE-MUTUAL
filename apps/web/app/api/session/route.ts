@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { ACCESS_COOKIE, verifyAccessToken } from "@/lib/oidc";
-import { SESSION_COOKIE, parseSession, validSession } from "@/lib/session";
+import { SESSION_COOKIE, devApplicant, parseSession, validSession } from "@/lib/session";
 
-type Who = { party: string; actor: string };
+type Who = { party: string; applicant: string; actor: string };
 
 // Who the browser is signed in as. In oidc mode it is read from the verified token; in dev mode from the dev cookie.
 async function current(): Promise<Who | null> {
@@ -17,7 +17,8 @@ async function current(): Promise<Who | null> {
       const p = await verifyAccessToken(cfg, token);
       const party = typeof p.forge_party === "string" ? p.forge_party : "";
       const name = [p.name, p.email, p.sub].find((v): v is string => typeof v === "string" && v.trim() !== "") ?? "";
-      return validSession({ party, actor: name.slice(0, 64) });
+      const applicant = typeof p.sub === "string" ? p.sub : "";
+      return validSession({ party, applicant, actor: name.slice(0, 64) });
     } catch {
       return null;
     }
@@ -29,7 +30,7 @@ async function current(): Promise<Who | null> {
 export async function GET() {
   const who = await current();
   if (!who) return NextResponse.json({ signedIn: false }, { status: 401 });
-  return NextResponse.json({ signedIn: true, party: who.party, actor: who.actor });
+  return NextResponse.json({ signedIn: true, party: who.party, applicant: who.applicant !== "", actor: who.actor });
 }
 
 // Dev sign-in. It does not exist in oidc mode.
@@ -41,14 +42,18 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: { code: "invalid_argument", message: "send a JSON body" } }, { status: 400 });
   }
-  const session = validSession(body);
+  // With no party, the dev user is an applicant, identified by their name.
+  const b = (body ?? {}) as Record<string, unknown>;
+  const actor = typeof b.actor === "string" ? b.actor : "";
+  const party = typeof b.party === "string" ? b.party.trim() : "";
+  const session = validSession({ party, applicant: actor.trim() ? devApplicant(actor) : "", actor });
   if (!session) {
     return NextResponse.json(
-      { error: { code: "invalid_argument", message: "enter a party id (a UUID) and your name" } },
+      { error: { code: "invalid_argument", message: "enter your name, and a party id (a UUID) if you are already a customer" } },
       { status: 400 },
     );
   }
-  const res = NextResponse.json({ signedIn: true, party: session.party, actor: session.actor });
+  const res = NextResponse.json({ signedIn: true, party: session.party, applicant: true, actor: session.actor });
   res.cookies.set(SESSION_COOKIE, JSON.stringify(session), {
     httpOnly: true,
     sameSite: "strict",

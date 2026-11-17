@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Who = { signedIn: true; actor: string } | { signedIn: false };
+type Who = { signedIn: true; actor: string; customer: boolean } | { signedIn: false };
 
 const LINKS = [
   { href: "/accounts", label: "Accounts" },
@@ -22,8 +22,9 @@ export default function Nav() {
     let live = true;
     fetch("/api/session", { cache: "no-store" })
       .then(async (res) => {
-        const body = (await res.json()) as { signedIn: boolean; actor?: string };
-        if (live) setWho(body.signedIn && body.actor ? { signedIn: true, actor: body.actor } : { signedIn: false });
+        const body = (await res.json()) as { signedIn: boolean; actor?: string; party?: string };
+        if (live)
+          setWho(body.signedIn && body.actor ? { signedIn: true, actor: body.actor, customer: !!body.party } : { signedIn: false });
       })
       .catch(() => live && setWho({ signedIn: false }));
     return () => {
@@ -45,7 +46,7 @@ export default function Nav() {
         </Link>
         {who?.signedIn ? (
           <nav aria-label="Main" className="flex flex-wrap items-center gap-4 text-sm">
-            {LINKS.map((l) => (
+            {(who.customer ? LINKS : [{ href: "/apply", label: "Apply" }]).map((l) => (
               <Link key={l.href} href={l.href} className="text-stone-700 hover:text-stone-950">
                 {l.label}
               </Link>

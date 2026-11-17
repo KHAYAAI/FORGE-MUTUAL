@@ -6,5 +6,10 @@
   "svc-stack-journeys": [
     "GetOnboarding",
     "StartBusinessOnboarding"
+  ],
+  "svc-workspace": [
+    "FindApplication",
+    "StartBusinessOnboarding",
+    "StartPersonOnboarding"
   ]
 }

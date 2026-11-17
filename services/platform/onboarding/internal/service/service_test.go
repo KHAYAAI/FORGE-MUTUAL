@@ -31,15 +31,24 @@ type fakeTemporal struct {
 	signals       []onboarding.KYCSignal
 	reviewSignals []onboarding.KYCReviewSignal
 	signalErr     error
+	kinds         map[string]string
 }
 
-func newFakeTemporal() *fakeTemporal { return &fakeTemporal{started: map[string]onboarding.Input{}} }
+func newFakeTemporal() *fakeTemporal {
+	return &fakeTemporal{started: map[string]onboarding.Input{}, kinds: map[string]string{}}
+}
 
 func (f *fakeTemporal) ExecuteWorkflow(_ context.Context, opts client.StartWorkflowOptions, _ interface{}, args ...interface{}) (client.WorkflowRun, error) {
 	if _, ok := f.started[opts.ID]; ok {
 		return nil, serviceerror.NewWorkflowExecutionAlreadyStarted("already started", "req", "run")
 	}
-	f.started[opts.ID] = args[0].(onboarding.Input)
+	switch in := args[0].(type) {
+	case onboarding.Input:
+		f.started[opts.ID] = in
+	case onboarding.PersonInput:
+		f.started[opts.ID] = onboarding.Input{OnboardingID: in.OnboardingID, RequestHash: in.RequestHash, LegalName: in.LegalName}
+		f.kinds[opts.ID] = "person"
+	}
 	return nil, nil
 }
 
@@ -64,7 +73,7 @@ func (f *fakeTemporal) QueryWorkflow(_ context.Context, workflowID, _, _ string,
 	if !ok {
 		return nil, serviceerror.NewNotFound("workflow not found")
 	}
-	st := onboarding.Status{OnboardingID: workflowID, RequestHash: in.RequestHash, State: onboarding.StateRunning, Steps: []string{"prospects_created"}}
+	st := onboarding.Status{OnboardingID: workflowID, RequestHash: in.RequestHash, State: onboarding.StateRunning, Steps: []string{"prospects_created"}, Kind: f.kinds[workflowID]}
 	return jsonValue{st}, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
@@ -48,7 +49,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	urls := map[string]string{}
-	for _, name := range []string{"CONSOLIDATED_URL", "PAYMENTS_URL", "FX_URL", "PAYOUTS_URL"} {
+	for _, name := range []string{"CONSOLIDATED_URL", "PAYMENTS_URL", "FX_URL", "PAYOUTS_URL", "ONBOARDING_URL"} {
 		v := os.Getenv(name)
 		if v == "" {
 			return fmt.Errorf("%s is required", name)
@@ -63,6 +64,7 @@ func run(log *slog.Logger) error {
 			Payments:     paymentsv1connect.NewPaymentsServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			FX:           fxv1connect.NewFXServiceClient(outbound, urls["FX_URL"], caller()),
 			Payouts:      payoutsv1connect.NewPayoutsServiceClient(outbound, urls["PAYOUTS_URL"], caller()),
+			Onboarding:   onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")

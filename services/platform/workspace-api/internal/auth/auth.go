@@ -74,6 +74,36 @@ func (o OIDC) Session(r *http.Request) (api.Session, error) {
 	return api.Session{Party: c.Party, Actor: actor}, nil
 }
 
+// Applicant implements api.Authenticator: a verified token with a subject. The party claim is not required, because
+// an applicant has no party until they are approved.
+func (o OIDC) Applicant(r *http.Request) (api.Applicant, error) {
+	raw, ok := bearer(r)
+	if !ok {
+		return api.Applicant{}, errNoSession
+	}
+	c, err := o.V.Verify(r.Context(), raw)
+	if err != nil || !validSubject(c.Subject) {
+		return api.Applicant{}, errNoSession
+	}
+	actor := first(c.Name, c.Email, c.Subject)
+	if len(actor) > 64 {
+		actor = actor[:64]
+	}
+	return api.Applicant{Subject: c.Subject, Actor: actor}, nil
+}
+
+func validSubject(s string) bool {
+	if s == "" || len(s) > 200 {
+		return false
+	}
+	for _, r := range s {
+		if r < 0x21 || r == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 func bearer(r *http.Request) (string, bool) {
 	h := r.Header.Get("Authorization")
 	const prefix = "Bearer "
@@ -103,4 +133,14 @@ func (DevHeaders) Session(r *http.Request) (api.Session, error) {
 		return api.Session{}, errNoSession
 	}
 	return api.Session{Party: party, Actor: actor}, nil
+}
+
+// Applicant implements api.Authenticator: X-Forge-Applicant is the subject, X-Forge-Actor the name. Local use only.
+func (DevHeaders) Applicant(r *http.Request) (api.Applicant, error) {
+	subject := strings.TrimSpace(r.Header.Get("X-Forge-Applicant"))
+	actor := strings.TrimSpace(r.Header.Get("X-Forge-Actor"))
+	if !validSubject(subject) || actor == "" || len(actor) > 64 {
+		return api.Applicant{}, errNoSession
+	}
+	return api.Applicant{Subject: subject, Actor: actor}, nil
 }

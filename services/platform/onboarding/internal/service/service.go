@@ -89,6 +89,12 @@ func New(tc Temporal, provider kyc.Provider, taskQueue string) *Service {
 // so a repeated request names the same workflow. The same key with a different request is refused.
 func (s *Service) StartBusinessOnboarding(ctx context.Context, req *connect.Request[onboardingv1.StartBusinessOnboardingRequest]) (*connect.Response[onboardingv1.StartBusinessOnboardingResponse], error) {
 	m := req.Msg
+	if m.ApplicantSubject != "" {
+		if !validSubject(m.ApplicantSubject) {
+			return nil, invalid("applicant_subject must be 1 to 200 printable characters")
+		}
+		m.IdempotencyKey = applicantKey("business", m.ApplicantSubject)
+	}
 	if m.IdempotencyKey == "" || len(m.IdempotencyKey) > 128 {
 		return nil, invalid("idempotency_key must be 1 to 128 characters")
 	}
@@ -138,31 +144,145 @@ func (s *Service) StartBusinessOnboarding(ctx context.Context, req *connect.Requ
 		OnboardingID: id, RequestHash: hash, LegalName: m.LegalName, RegistrationNumber: m.RegistrationNumber,
 		Country: m.Country, SectorCode: m.SectorCode, Directors: directors, Actor: m.Actor,
 	}
+	if err := s.start(ctx, id, hash, onboarding.OnboardBusiness, input); err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&onboardingv1.StartBusinessOnboardingResponse{OnboardingId: id}), nil
+}
+
+// start runs a workflow under the onboarding ID. A second start with the same request answers as the first did; a
+// different request under the same ID is refused.
+func (s *Service) start(ctx context.Context, id, hash string, wf, input any) error {
 	// WorkflowExecutionErrorWhenAlreadyStarted is required. Without it the SDK swallows the
 	// already-started error and returns a handle to the existing run, so the duplicate-key check
 	// below would never run and a changed request under the same key would be accepted silently.
-	_, err = s.tc.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+	_, err := s.tc.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID:                                       id,
 		TaskQueue:                                s.taskQueue,
 		WorkflowIDReusePolicy:                    enumspb.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		WorkflowExecutionErrorWhenAlreadyStarted: true,
-	}, onboarding.OnboardBusiness, input)
+	}, wf, input)
 	var started *serviceerror.WorkflowExecutionAlreadyStarted
 	if errors.As(err, &started) {
-		// The key was used before. The same request gets the same answer; a different one is refused.
 		prev, err := s.status(ctx, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if prev.RequestHash != hash {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("idempotency key reused with a different request"))
+			return connect.NewError(connect.CodeAlreadyExists, errors.New("idempotency key reused with a different request"))
 		}
-		return connect.NewResponse(&onboardingv1.StartBusinessOnboardingResponse{OnboardingId: id}), nil
+		return nil
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("workflow service unavailable"))
+		return connect.NewError(connect.CodeUnavailable, errors.New("workflow service unavailable"))
 	}
-	return connect.NewResponse(&onboardingv1.StartBusinessOnboardingResponse{OnboardingId: id}), nil
+	return nil
+}
+
+// StartPersonOnboarding implements OnboardingServiceHandler.
+func (s *Service) StartPersonOnboarding(ctx context.Context, req *connect.Request[onboardingv1.StartPersonOnboardingRequest]) (*connect.Response[onboardingv1.StartPersonOnboardingResponse], error) {
+	m := req.Msg
+	if m.ApplicantSubject != "" {
+		if !validSubject(m.ApplicantSubject) {
+			return nil, invalid("applicant_subject must be 1 to 200 printable characters")
+		}
+		m.IdempotencyKey = applicantKey("person", m.ApplicantSubject)
+	}
+	if m.IdempotencyKey == "" || len(m.IdempotencyKey) > 256 {
+		return nil, invalid("idempotency_key must be 1 to 256 characters")
+	}
+	if strings.TrimSpace(m.LegalName) == "" || len(m.LegalName) > 200 {
+		return nil, invalid("legal_name must be 1 to 200 characters")
+	}
+	if !countryRe.MatchString(m.Country) {
+		return nil, invalid("country must be an ISO 3166-1 alpha-2 code")
+	}
+	nid := strings.ReplaceAll(m.NationalId, " ", "")
+	if !nationalRe.MatchString(nid) || (m.Country == "ZA" && !validSAID(nid)) {
+		return nil, invalid("national_id is not a valid identity number")
+	}
+	if m.Actor == "" {
+		return nil, invalid("actor is required")
+	}
+	id, err := uuid.NewV5(onboardingNamespace, m.IdempotencyKey)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	hash, err := requestHash(m)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	input := onboarding.PersonInput{
+		OnboardingID: id, RequestHash: hash, LegalName: m.LegalName, NationalID: nid, Country: m.Country,
+		Actor: m.Actor, ApplicantSubject: m.ApplicantSubject,
+	}
+	if err := s.start(ctx, id, hash, onboarding.OnboardPerson, input); err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&onboardingv1.StartPersonOnboardingResponse{OnboardingId: id}), nil
+}
+
+// FindApplication implements OnboardingServiceHandler. An applicant's application is keyed by their subject and its
+// kind, so it is found without the applicant keeping any ID.
+func (s *Service) FindApplication(ctx context.Context, req *connect.Request[onboardingv1.FindApplicationRequest]) (*connect.Response[onboardingv1.FindApplicationResponse], error) {
+	if req.Msg.Kind != "business" && req.Msg.Kind != "person" {
+		return nil, invalid(`kind must be "business" or "person"`)
+	}
+	if !validSubject(req.Msg.ApplicantSubject) {
+		return nil, invalid("applicant_subject must be 1 to 200 printable characters")
+	}
+	id, err := uuid.NewV5(onboardingNamespace, applicantKey(req.Msg.Kind, req.Msg.ApplicantSubject))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	out, err := s.statusWithLinks(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&onboardingv1.FindApplicationResponse{Status: out}), nil
+}
+
+// applicantKey is the idempotency key of an applicant's application of a kind: one each.
+func applicantKey(kind, subject string) string { return "applicant/" + kind + "/" + subject }
+
+func validSubject(s string) bool {
+	if s == "" || len(s) > 200 {
+		return false
+	}
+	for _, r := range s {
+		if r < 0x21 || r == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
+// validSAID checks a South African identity number: 13 digits, a real date of birth, and the Luhn check digit.
+func validSAID(id string) bool {
+	if len(id) != 13 {
+		return false
+	}
+	sum := 0
+	for i := 0; i < 13; i++ {
+		d := int(id[i] - '0')
+		if d < 0 || d > 9 {
+			return false
+		}
+		if i%2 == 1 {
+			d *= 2
+			if d > 9 {
+				d -= 9
+			}
+		}
+		sum += d
+	}
+	if sum%10 != 0 {
+		return false
+	}
+	if _, err := time.Parse("060102", id[:6]); err != nil {
+		return false
+	}
+	return true
 }
 
 // GetOnboarding implements OnboardingServiceHandler.
@@ -170,13 +290,22 @@ func (s *Service) GetOnboarding(ctx context.Context, req *connect.Request[onboar
 	if _, err := uuid.Parse(req.Msg.OnboardingId); err != nil {
 		return nil, invalid("onboarding_id must be a canonical UUID")
 	}
-	st, err := s.status(ctx, req.Msg.OnboardingId)
+	out, err := s.statusWithLinks(ctx, req.Msg.OnboardingId)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&onboardingv1.GetOnboardingResponse{Status: out}), nil
+}
+
+// statusWithLinks is the workflow's state with each subject's verification link.
+func (s *Service) statusWithLinks(ctx context.Context, id string) (*onboardingv1.OnboardingStatus, error) {
+	st, err := s.status(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	out := toProto(st)
 	if s.sessions != nil {
-		links, err := s.sessions.Sessions(ctx, req.Msg.OnboardingId)
+		links, err := s.sessions.Sessions(ctx, id)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
 		}
@@ -186,7 +315,7 @@ func (s *Service) GetOnboarding(ctx context.Context, req *connect.Request[onboar
 			})
 		}
 	}
-	return connect.NewResponse(&onboardingv1.GetOnboardingResponse{Status: out}), nil
+	return out, nil
 }
 
 // status reads the workflow's state with its query handler.
@@ -303,6 +432,10 @@ func toProto(st onboarding.Status) *onboardingv1.OnboardingStatus {
 		Tier:           st.Tier,
 		DeclineReason:  st.DeclineReason,
 		Steps:          st.Steps,
+		Kind:           st.Kind,
+	}
+	if out.Kind == "" {
+		out.Kind = "business" // runs started before the kind was recorded
 	}
 	return out
 }

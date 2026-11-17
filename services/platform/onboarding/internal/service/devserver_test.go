@@ -66,6 +66,7 @@ func devServiceWith(t *testing.T, provider kyc.Provider) (*Service, client.Clien
 	queue := "onboarding-svc-dev-" + devRand(t)
 	w := worker.New(c, queue, worker.Options{})
 	w.RegisterWorkflow(onboarding.OnboardBusiness)
+	w.RegisterWorkflow(onboarding.OnboardPerson)
 	w.RegisterActivity(fakes.New(true))
 	if err := w.Start(); err != nil {
 		t.Fatal(err)

@@ -7,6 +7,10 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1
 
 service OnboardingService {
   rpc StartBusinessOnboarding(StartBusinessOnboardingRequest) returns (StartBusinessOnboardingResponse);
+  // StartPersonOnboarding onboards one individual: identity verification, screening, and a personal ZAR account.
+  rpc StartPersonOnboarding(StartPersonOnboardingRequest) returns (StartPersonOnboardingResponse);
+  // FindApplication returns the application a signed-in applicant made, of the given kind. NotFound if there is none.
+  rpc FindApplication(FindApplicationRequest) returns (FindApplicationResponse);
   rpc GetOnboarding(GetOnboardingRequest) returns (GetOnboardingResponse);
   // ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
   rpc ListKYCReviews(ListKYCReviewsRequest) returns (ListKYCReviewsResponse);
@@ -29,6 +33,28 @@ message StartBusinessOnboardingRequest {
   string sector_code = 5;
   repeated Director directors = 6;
   string actor = 7;
+  // The identity provider's subject of the person who applied, when the application came through the customer
+  // front door. With it, the onboarding is keyed to the applicant (one business application each) and
+  // idempotency_key is ignored.
+  string applicant_subject = 8;
+}
+message StartPersonOnboardingRequest {
+  string idempotency_key = 1; // ignored when applicant_subject is set
+  string legal_name = 2;
+  string national_id = 3;     // South African identity number, 13 digits
+  string country = 4;
+  string actor = 5;
+  string applicant_subject = 6;
+}
+message StartPersonOnboardingResponse {
+  string onboarding_id = 1;
+}
+message FindApplicationRequest {
+  string applicant_subject = 1;
+  string kind = 2; // "business" or "person"
+}
+message FindApplicationResponse {
+  OnboardingStatus status = 1;
 }
 
 message StartBusinessOnboardingResponse {
@@ -59,6 +85,7 @@ message OnboardingStatus {
   // The hosted pages where each subject completes their verification, once they have been started. A link is a
   // bearer link: whoever has it can complete that verification, so it is given only to the person it is for.
   repeated VerificationLink verification_links = 9;
+  string kind = 10; // "business" or "person"
 }
 
 // VerificationLink is one subject's verification with the identity provider.

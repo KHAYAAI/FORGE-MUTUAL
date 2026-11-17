@@ -15,9 +15,14 @@ export default function SignInPage() {
   const [actor, setActor] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [next, setNext] = useState<string | null>(null);
 
   useEffect(() => {
-    setCallbackError(new URLSearchParams(window.location.search).get("error"));
+    const params = new URLSearchParams(window.location.search);
+    setCallbackError(params.get("error"));
+    // Only a path on this site: an absolute or protocol-relative URL here would be an open redirect.
+    const n = params.get("next");
+    setNext(n && n.startsWith("/") && !n.startsWith("//") ? n : null);
     fetch("/api/auth/mode", { cache: "no-store" })
       .then((r) => r.json())
       .then((b: { mode: Mode }) => setMode(b.mode))
@@ -38,7 +43,7 @@ export default function SignInPage() {
       const body = await res.json().catch(() => null);
       return setError(errorText(body, "We could not sign you in. Check the details and try again."));
     }
-    router.push("/accounts");
+    router.push(next ?? (party.trim() ? "/accounts" : "/apply"));
     router.refresh();
   }
 
@@ -61,18 +66,20 @@ export default function SignInPage() {
     <section className="mx-auto max-w-md space-y-6">
       <h1 className="text-2xl font-semibold">Sign in</h1>
       {mode === "dev" ? (
-        <Notice tone="info">Development sign-in: enter the party's ID and your name. It is not available in production.</Notice>
+        <Notice tone="info">
+          Development sign-in: enter your name. A customer also enters their party ID; leave it empty to apply for an
+          account. It is not available in production.
+        </Notice>
       ) : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       {mode === "dev" ? (
         <form onSubmit={submit} className="space-y-4" aria-label="Sign in">
           <label className="block text-sm">
-            <span className="font-medium">Party ID</span>
+            <span className="font-medium">Party ID (customers only)</span>
             <input
               name="party"
               value={party}
               onChange={(e) => setParty(e.target.value)}
-              required
               autoComplete="off"
               className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 font-mono text-sm"
             />

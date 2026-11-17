@@ -126,6 +126,7 @@ func run(log *slog.Logger) error {
 
 	w := worker.New(tc, taskQueue, worker.Options{})
 	w.RegisterWorkflow(onboarding.OnboardBusiness)
+	w.RegisterWorkflow(onboarding.OnboardPerson)
 	w.RegisterActivity(acts)
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("worker: %w", err)

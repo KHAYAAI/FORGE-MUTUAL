@@ -40,6 +40,14 @@ func (fakeAuth) Session(r *http.Request) (Session, error) {
 	return Session{Party: p, Actor: r.Header.Get("X-Test-Actor")}, nil
 }
 
+func (fakeAuth) Applicant(r *http.Request) (Applicant, error) {
+	sub := r.Header.Get("X-Test-Applicant")
+	if sub == "" {
+		return Applicant{}, errors.New("not signed in")
+	}
+	return Applicant{Subject: sub, Actor: "applicant"}, nil
+}
+
 type fakeConsolidated struct {
 	consolidatedv1connect.ConsolidatedViewServiceClient
 	accounts map[string][]*consolidatedv1.AccountView // by party

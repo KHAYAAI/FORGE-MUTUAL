@@ -23,7 +23,8 @@ async function forward(req: Request, ctx: { params: Promise<{ path: string[] }> 
   } else {
     const session = parseSession(jar.get(SESSION_COOKIE)?.value);
     if (!session) return unauthenticated();
-    headers.set("x-forge-party", session.party);
+    if (session.party) headers.set("x-forge-party", session.party);
+    if (session.applicant) headers.set("x-forge-applicant", session.applicant);
     headers.set("x-forge-actor", session.actor);
   }
 

@@ -38,6 +38,12 @@ const (
 	// OnboardingServiceStartBusinessOnboardingProcedure is the fully-qualified name of the
 	// OnboardingService's StartBusinessOnboarding RPC.
 	OnboardingServiceStartBusinessOnboardingProcedure = "/forge.onboarding.v1.OnboardingService/StartBusinessOnboarding"
+	// OnboardingServiceStartPersonOnboardingProcedure is the fully-qualified name of the
+	// OnboardingService's StartPersonOnboarding RPC.
+	OnboardingServiceStartPersonOnboardingProcedure = "/forge.onboarding.v1.OnboardingService/StartPersonOnboarding"
+	// OnboardingServiceFindApplicationProcedure is the fully-qualified name of the OnboardingService's
+	// FindApplication RPC.
+	OnboardingServiceFindApplicationProcedure = "/forge.onboarding.v1.OnboardingService/FindApplication"
 	// OnboardingServiceGetOnboardingProcedure is the fully-qualified name of the OnboardingService's
 	// GetOnboarding RPC.
 	OnboardingServiceGetOnboardingProcedure = "/forge.onboarding.v1.OnboardingService/GetOnboarding"
@@ -52,6 +58,10 @@ const (
 // OnboardingServiceClient is a client for the forge.onboarding.v1.OnboardingService service.
 type OnboardingServiceClient interface {
 	StartBusinessOnboarding(context.Context, *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error)
+	// StartPersonOnboarding onboards one individual: identity verification, screening, and a personal ZAR account.
+	StartPersonOnboarding(context.Context, *connect.Request[v1.StartPersonOnboardingRequest]) (*connect.Response[v1.StartPersonOnboardingResponse], error)
+	// FindApplication returns the application a signed-in applicant made, of the given kind. NotFound if there is none.
+	FindApplication(context.Context, *connect.Request[v1.FindApplicationRequest]) (*connect.Response[v1.FindApplicationResponse], error)
 	GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error)
 	// ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
 	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
@@ -74,6 +84,18 @@ func NewOnboardingServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			httpClient,
 			baseURL+OnboardingServiceStartBusinessOnboardingProcedure,
 			connect.WithSchema(onboardingServiceMethods.ByName("StartBusinessOnboarding")),
+			connect.WithClientOptions(opts...),
+		),
+		startPersonOnboarding: connect.NewClient[v1.StartPersonOnboardingRequest, v1.StartPersonOnboardingResponse](
+			httpClient,
+			baseURL+OnboardingServiceStartPersonOnboardingProcedure,
+			connect.WithSchema(onboardingServiceMethods.ByName("StartPersonOnboarding")),
+			connect.WithClientOptions(opts...),
+		),
+		findApplication: connect.NewClient[v1.FindApplicationRequest, v1.FindApplicationResponse](
+			httpClient,
+			baseURL+OnboardingServiceFindApplicationProcedure,
+			connect.WithSchema(onboardingServiceMethods.ByName("FindApplication")),
 			connect.WithClientOptions(opts...),
 		),
 		getOnboarding: connect.NewClient[v1.GetOnboardingRequest, v1.GetOnboardingResponse](
@@ -100,6 +122,8 @@ func NewOnboardingServiceClient(httpClient connect.HTTPClient, baseURL string, o
 // onboardingServiceClient implements OnboardingServiceClient.
 type onboardingServiceClient struct {
 	startBusinessOnboarding *connect.Client[v1.StartBusinessOnboardingRequest, v1.StartBusinessOnboardingResponse]
+	startPersonOnboarding   *connect.Client[v1.StartPersonOnboardingRequest, v1.StartPersonOnboardingResponse]
+	findApplication         *connect.Client[v1.FindApplicationRequest, v1.FindApplicationResponse]
 	getOnboarding           *connect.Client[v1.GetOnboardingRequest, v1.GetOnboardingResponse]
 	listKYCReviews          *connect.Client[v1.ListKYCReviewsRequest, v1.ListKYCReviewsResponse]
 	decideKYCReview         *connect.Client[v1.DecideKYCReviewRequest, v1.DecideKYCReviewResponse]
@@ -108,6 +132,16 @@ type onboardingServiceClient struct {
 // StartBusinessOnboarding calls forge.onboarding.v1.OnboardingService.StartBusinessOnboarding.
 func (c *onboardingServiceClient) StartBusinessOnboarding(ctx context.Context, req *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error) {
 	return c.startBusinessOnboarding.CallUnary(ctx, req)
+}
+
+// StartPersonOnboarding calls forge.onboarding.v1.OnboardingService.StartPersonOnboarding.
+func (c *onboardingServiceClient) StartPersonOnboarding(ctx context.Context, req *connect.Request[v1.StartPersonOnboardingRequest]) (*connect.Response[v1.StartPersonOnboardingResponse], error) {
+	return c.startPersonOnboarding.CallUnary(ctx, req)
+}
+
+// FindApplication calls forge.onboarding.v1.OnboardingService.FindApplication.
+func (c *onboardingServiceClient) FindApplication(ctx context.Context, req *connect.Request[v1.FindApplicationRequest]) (*connect.Response[v1.FindApplicationResponse], error) {
+	return c.findApplication.CallUnary(ctx, req)
 }
 
 // GetOnboarding calls forge.onboarding.v1.OnboardingService.GetOnboarding.
@@ -129,6 +163,10 @@ func (c *onboardingServiceClient) DecideKYCReview(ctx context.Context, req *conn
 // service.
 type OnboardingServiceHandler interface {
 	StartBusinessOnboarding(context.Context, *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error)
+	// StartPersonOnboarding onboards one individual: identity verification, screening, and a personal ZAR account.
+	StartPersonOnboarding(context.Context, *connect.Request[v1.StartPersonOnboardingRequest]) (*connect.Response[v1.StartPersonOnboardingResponse], error)
+	// FindApplication returns the application a signed-in applicant made, of the given kind. NotFound if there is none.
+	FindApplication(context.Context, *connect.Request[v1.FindApplicationRequest]) (*connect.Response[v1.FindApplicationResponse], error)
 	GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error)
 	// ListKYCReviews lists the verifications a person must decide. Open reviews are oldest first.
 	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
@@ -147,6 +185,18 @@ func NewOnboardingServiceHandler(svc OnboardingServiceHandler, opts ...connect.H
 		OnboardingServiceStartBusinessOnboardingProcedure,
 		svc.StartBusinessOnboarding,
 		connect.WithSchema(onboardingServiceMethods.ByName("StartBusinessOnboarding")),
+		connect.WithHandlerOptions(opts...),
+	)
+	onboardingServiceStartPersonOnboardingHandler := connect.NewUnaryHandler(
+		OnboardingServiceStartPersonOnboardingProcedure,
+		svc.StartPersonOnboarding,
+		connect.WithSchema(onboardingServiceMethods.ByName("StartPersonOnboarding")),
+		connect.WithHandlerOptions(opts...),
+	)
+	onboardingServiceFindApplicationHandler := connect.NewUnaryHandler(
+		OnboardingServiceFindApplicationProcedure,
+		svc.FindApplication,
+		connect.WithSchema(onboardingServiceMethods.ByName("FindApplication")),
 		connect.WithHandlerOptions(opts...),
 	)
 	onboardingServiceGetOnboardingHandler := connect.NewUnaryHandler(
@@ -171,6 +221,10 @@ func NewOnboardingServiceHandler(svc OnboardingServiceHandler, opts ...connect.H
 		switch r.URL.Path {
 		case OnboardingServiceStartBusinessOnboardingProcedure:
 			onboardingServiceStartBusinessOnboardingHandler.ServeHTTP(w, r)
+		case OnboardingServiceStartPersonOnboardingProcedure:
+			onboardingServiceStartPersonOnboardingHandler.ServeHTTP(w, r)
+		case OnboardingServiceFindApplicationProcedure:
+			onboardingServiceFindApplicationHandler.ServeHTTP(w, r)
 		case OnboardingServiceGetOnboardingProcedure:
 			onboardingServiceGetOnboardingHandler.ServeHTTP(w, r)
 		case OnboardingServiceListKYCReviewsProcedure:
@@ -188,6 +242,14 @@ type UnimplementedOnboardingServiceHandler struct{}
 
 func (UnimplementedOnboardingServiceHandler) StartBusinessOnboarding(context.Context, *connect.Request[v1.StartBusinessOnboardingRequest]) (*connect.Response[v1.StartBusinessOnboardingResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.StartBusinessOnboarding is not implemented"))
+}
+
+func (UnimplementedOnboardingServiceHandler) StartPersonOnboarding(context.Context, *connect.Request[v1.StartPersonOnboardingRequest]) (*connect.Response[v1.StartPersonOnboardingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.StartPersonOnboarding is not implemented"))
+}
+
+func (UnimplementedOnboardingServiceHandler) FindApplication(context.Context, *connect.Request[v1.FindApplicationRequest]) (*connect.Response[v1.FindApplicationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.FindApplication is not implemented"))
 }
 
 func (UnimplementedOnboardingServiceHandler) GetOnboarding(context.Context, *connect.Request[v1.GetOnboardingRequest]) (*connect.Response[v1.GetOnboardingResponse], error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	fxv1 "github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	paymentsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	payoutsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1"
@@ -30,9 +31,18 @@ type Session struct {
 	Actor string
 }
 
+// Applicant is someone signed in who may not be a customer yet: there is no party until their application is approved.
+// Subject is the identity provider's stable ID for them, and the only key to their applications.
+type Applicant struct {
+	Subject string
+	Actor   string
+}
+
 // Authenticator turns a request into a session, or refuses it.
 type Authenticator interface {
 	Session(r *http.Request) (Session, error)
+	// Applicant authenticates a signed-in person who need not have a party yet.
+	Applicant(r *http.Request) (Applicant, error)
 }
 
 // Services are the downstream clients the workspace reads and writes through.
@@ -41,12 +51,15 @@ type Services struct {
 	Payments     paymentsv1connect.PaymentsServiceClient
 	FX           fxv1connect.FXServiceClient
 	Payouts      payoutsv1connect.PayoutsServiceClient
+	Onboarding   onboardingv1connect.OnboardingServiceClient
 }
 
 // API serves the workspace routes.
 type API struct {
 	Auth     Authenticator
 	Services Services
+	// Limit bounds how often one applicant may submit an application. Nil means the default (applyLimit).
+	Limit *RateLimit
 }
 
 // Handler returns the routes. Health checks are open; every other route needs a session.
@@ -63,6 +76,9 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/payout-batches", a.session(a.createBatch))
 	mux.HandleFunc("GET /v1/payout-batches/{batch}", a.session(a.getBatch))
 	mux.HandleFunc("POST /v1/payout-batches/{batch}/approve", a.session(a.approveBatch))
+	mux.HandleFunc("POST /v1/applications/person", a.applicant(a.applyPerson))
+	mux.HandleFunc("POST /v1/applications/business", a.applicant(a.applyBusiness))
+	mux.HandleFunc("GET /v1/applications/{kind}", a.applicant(a.getApplication))
 	return mux
 }
 

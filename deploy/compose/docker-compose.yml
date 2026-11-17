@@ -569,6 +569,7 @@ services:
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       FX_URL: ${STACK_SCHEME:-http}://127.0.0.1:8100
       PAYOUTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8200
+      ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.
