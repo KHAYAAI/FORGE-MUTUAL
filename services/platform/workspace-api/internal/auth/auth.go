@@ -33,6 +33,11 @@ func Build(ctx context.Context, c Config) (api.Authenticator, error) {
 		if c.Env == "production" && c.OIDC.AllowHTTP {
 			return nil, errors.New("OIDC_ALLOW_HTTP is refused in production")
 		}
+		if c.Env == "production" && len(c.OIDC.RequireAMR) == 0 {
+			// Joint Standard 2 of 2024, 8.3: multi-factor authentication is required. Set OIDC_REQUIRE_AMR to the
+			// authentication method values the identity provider sends (see pkg/oidc/amr.go).
+			return nil, errors.New("OIDC_REQUIRE_AMR is required in production: sign-in must show multi-factor authentication")
+		}
 		v, err := oidc.New(ctx, c.OIDC)
 		if err != nil {
 			return nil, err

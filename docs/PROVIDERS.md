@@ -185,6 +185,30 @@ Do these in order, and stop at the first surprise.
   queue, the onboarding moves on and the Forge review stays open until someone closes it. Decide whether Didit's console
   is allowed to decide at all, or whether `In Review` must always be decided in the Forge back office.
 
+## Multi-factor authentication (Joint Standard 2 of 2024, paragraph 8.3)
+
+The standard requires multi-factor authentication for users of critical system functions, for every administrative and
+privileged account, and for any account that reaches sensitive information over the internet. In this repository that
+means staff on the back office and customers on the workspace.
+
+**What the code does.** `pkg/oidc` can refuse a token whose `amr` claim (RFC 8176, the authentication methods used) shows
+none of a list of required values (`Config.RequireAMR`, `ErrMFARequired`). `backoffice-api` and `workspace-api` read the
+list from `OIDC_REQUIRE_AMR` (comma or space separated) and **refuse to start in production without it**. Development and
+the local stack are unchanged. Tests cover the check, and the production refusal in both services.
+
+**What nobody has confirmed.** Whether WorkOS AuthKit access tokens carry an `amr` claim, and with which values, is not
+known (VERIFY-WORKOS). A search of WorkOS's public documentation did not settle it. Once the WorkOS environment exists:
+
+1. Turn on the environment's multi-factor policy (require it for all users, staff and customers).
+2. Sign in with a test user who has enrolled a factor, and read the decoded access token.
+3. If it carries `amr`, set `OIDC_REQUIRE_AMR` to the value that shows the second factor. If it does not, either add the
+   fact as a claim through the provider's token customisation, or change `pkg/oidc` to read whatever signal the token does
+   carry. Do not set `OIDC_REQUIRE_AMR` to a value the provider never sends: every login would then be refused.
+4. Record the result in `docs/DECISIONS.md` and in `docs/regulatory/register.csv` (JS2-04).
+
+The privileged accounts outside these two apps (cloud tenant, database, Kubernetes, Temporal, Kafka) need their own
+multi-factor setting at whoever provides them. That is part of hosting (ADR-0002) and is not covered by this change.
+
 ## What is still missing around the providers
 
 Choosing and connecting the providers does not build the customer's way in. As of 2026-11-13 the code has none of:

@@ -124,6 +124,9 @@ func oidcConfig() oidc.Config {
 		Audience:  os.Getenv("OIDC_AUDIENCE"),
 		JWKSURL:   os.Getenv("OIDC_JWKS_URL"),
 		AllowHTTP: os.Getenv("OIDC_ALLOW_HTTP") == "true",
+		// OIDC_REQUIRE_AMR lists the authentication methods a token must show at least one of, for example "mfa".
+		// Production refuses to start without it (internal/auth).
+		RequireAMR: oidc.ParseAMRList(os.Getenv("OIDC_REQUIRE_AMR")),
 	}
 }
 

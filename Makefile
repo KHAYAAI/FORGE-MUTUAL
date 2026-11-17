@@ -13,7 +13,7 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	DEPOSITS_TEST_DSN LENDING_TEST_DSN ACQUIRING_TEST_DSN \
 	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-deposits test-lending test-acquiring test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster load-ledger proto up down
+.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-deposits test-lending test-acquiring test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-regulatory test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster load-ledger proto up down
 
 ci: require-test-dbs lint test test-isolation vulncheck
 
@@ -42,7 +42,7 @@ ci-db:
 	else scripts/tigerbeetle.sh single up && scripts/tigerbeetle.sh env single >> .test-dbs.env; fi
 	set -a; . ./.test-dbs.env; set +a; $(MAKE) ci
 
-test: test-deposits test-lending test-acquiring test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web
+test: test-regulatory test-deposits test-lending test-acquiring test-ledger test-policy test-platform test-bank test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-outbox test-fx test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web
 	cd pkg/money && $(GO) test ./...
 	cd tools/isolation && $(GO) test ./...
 	cd pkg/callerauth && $(GO) test ./...
@@ -262,6 +262,14 @@ test-outbox:
 # Regulatory reporting (ARCHITECTURE.md 15.2): evidence packs and the goAML refusal. No database.
 test-reg-reporting:
 	cd services/bank/reg-reporting && $(GO) test -count=1 ./...
+
+# Regulatory registers and operations checks: the requirement register, the asset register, the alert catalogue and the
+# backup freshness script. No database, no Docker. Needs python3 and bash.
+test-regulatory:
+	python3 -I scripts/check-regulatory-register.py
+	python3 -I scripts/check-asset-register.py
+	python3 -I scripts/check-monitoring.py
+	scripts/test-backup-freshness.sh
 
 # BankLayer (ARCHITECTURE.md 5.2): the contract suite on the simulator and on the HTTP client, the config bootstrap,
 # the simulator, and the route check. Only pkg/banklayer may read the licence route.

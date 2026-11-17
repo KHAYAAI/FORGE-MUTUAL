@@ -47,6 +47,9 @@ type Config struct {
 	// AllowHTTP permits http:// addresses. Only tests set it: production addresses must be https.
 	AllowHTTP  bool
 	HTTPClient *http.Client
+	// RequireAMR, when set, refuses any token whose amr claim shows none of these methods. Empty means no requirement.
+	// Production deployments set it (see amr.go).
+	RequireAMR []string
 }
 
 // Claims is what a verified token says about its holder.
@@ -56,6 +59,7 @@ type Claims struct {
 	Name    string
 	Party   string
 	Roles   []string
+	AMR     []string // authentication methods the holder used, from the amr claim
 }
 
 // Verifier checks tokens against one issuer's keys.
@@ -135,7 +139,14 @@ func (v *Verifier) Verify(ctx context.Context, raw string) (Claims, error) {
 	if !ok || !tok.Valid {
 		return Claims{}, errors.New("oidc: token refused")
 	}
-	return claimsOf(mc)
+	c, err := claimsOf(mc)
+	if err != nil {
+		return Claims{}, err
+	}
+	if err := checkAMR(c.AMR, v.cfg.RequireAMR); err != nil {
+		return Claims{}, err
+	}
+	return c, nil
 }
 
 func claimsOf(mc jwt.MapClaims) (Claims, error) {
@@ -147,6 +158,7 @@ func claimsOf(mc jwt.MapClaims) (Claims, error) {
 	c.Email, _ = mc["email"].(string)
 	c.Name, _ = mc["name"].(string)
 	c.Party, _ = mc[ClaimParty].(string)
+	c.AMR = amrOf(mc[ClaimAMR])
 	switch r := mc[ClaimRoles].(type) {
 	case []any:
 		for _, x := range r {

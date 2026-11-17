@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -100,6 +101,10 @@ func TestBuildRefusesWhatProductionMustRefuse(t *testing.T) {
 	}
 	if _, err := Build(ctx, Config{Mode: "oidc", Env: "production", OIDC: oidcConfig(is)}); err == nil {
 		t.Error("plain-http OIDC must be refused in production")
+	}
+	_, err := Build(ctx, Config{Mode: "oidc", Env: "production", OIDC: oidc.Config{Issuer: "https://id.example.com", Audience: "x"}})
+	if err == nil || !strings.Contains(err.Error(), "OIDC_REQUIRE_AMR") {
+		t.Errorf("production without a multi-factor requirement must be refused for that reason, got %v", err)
 	}
 	if _, err := Build(ctx, Config{Mode: "", Env: "development"}); err == nil {
 		t.Error("no mode configured must refuse to start")

@@ -25,10 +25,24 @@ its digest and row count, the queries used, and who prepared and approved it.
 (VERIFY-GOAML), so no report can reach the regulator from this code. This is intentional. A report that cannot be
 validated must not be sent. A test asserts the refusal on every payload.
 
+## Incident notification (`internal/incident`)
+
+Joint Notice 2 of 2026. Models an IT or cyber incident from detection through classification, the 24-hour immediate notice,
+the 14-day update and the full report, with deadline tracking (`Obligations`) and a CSV export of the Annexure A tabs. The
+institution classifies materiality; the 24 clock hours run from that decision. Notify needs complete tabs and an approver who
+differs from the preparer. It does not submit to the PA's Umoja portal (VERIFY-UMOJA); a person does. The 14 days are counted
+as 14x24 hours from notification (confirm with the PA).
+
+## Prudential returns framework (`internal/returns`)
+
+The frame only: line computation from named inputs, form arithmetic checks, reconciliation to other sources, preparer plus
+a different approver, tied to an evidence digest. It holds no line definitions. `Submittable` returns `ErrUnverified` until each
+line is verified against the form instructions by a named person (VERIFY-FORMS). Nothing is sent to the PA.
+
 ## Not started
 
 - Balance of Payments data handed to the AD partner (VERIFY the division of responsibility).
-- Prudential returns, which apply only once Forge is the licensed bank (Stage B).
+- The prudential return line definitions (BA 100 to BA 950, DI forms) and their submission channel.
 - The report builders that read compliance cases and ledger balances into a pack.
 - Any binary, schedule or ConnectRPC API.
 

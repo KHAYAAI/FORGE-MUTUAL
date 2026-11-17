@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -42,6 +43,33 @@ func TestValidRS256AndES256TokensVerify(t *testing.T) {
 	}
 	if _, err := v.Verify(ctx, is.Token(jwt.SigningMethodES256, is.ECKey(), "ec-1", is.Good())); err != nil {
 		t.Fatalf("es256: %v", err)
+	}
+}
+
+// With RequireAMR set, a token that does not show a second factor is refused, and one that does is accepted.
+func TestRequireAMRRefusesPasswordOnlyTokens(t *testing.T) {
+	is := oidctest.New(t)
+	v, err := New(context.Background(), Config{Issuer: is.URL(), Audience: oidctest.Audience, AllowHTTP: true, RequireAMR: []string{"mfa"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	pwd := is.Good()
+	pwd["amr"] = []any{"pwd"}
+	if _, err := v.Verify(ctx, is.RS256(pwd)); !errors.Is(err, ErrMFARequired) {
+		t.Fatalf("password-only token: %v", err)
+	}
+	if _, err := v.Verify(ctx, is.RS256(is.Good())); !errors.Is(err, ErrMFARequired) {
+		t.Fatalf("token with no amr claim: %v", err)
+	}
+	mfa := is.Good()
+	mfa["amr"] = []any{"pwd", "mfa"}
+	c, err := v.Verify(ctx, is.RS256(mfa))
+	if err != nil {
+		t.Fatalf("mfa token: %v", err)
+	}
+	if len(c.AMR) != 2 {
+		t.Fatalf("amr = %v", c.AMR)
 	}
 }
 
