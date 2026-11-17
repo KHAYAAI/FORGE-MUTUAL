@@ -1,5 +1,7 @@
 # Placeholder thresholds and their owners
 
+A mock roster of the 16 people who would own and approve these, with hiring advice, is in [`THRESHOLD_OWNERS.md`](THRESHOLD_OWNERS.md).
+
 Every number below is a placeholder marked VERIFY. None may go live until its owner has confirmed it. The owner role
 is what the architecture requires. The owner name is blank, because no person has been named for any of them.
 Changing a value is a configuration or data change, so it needs no code change, but it does need the owner's sign-off
