@@ -120,6 +120,10 @@ export default function RiskPage() {
               </table>
             </div>
           ) : null}
+          <p className="text-sm">
+            <a className="underline" href="/api/v1/risk/single-customer-view.csv">Download the single customer view</a>{" "}
+            (deposit insurance: each depositor&apos;s covered and uncovered deposits; operations role).
+          </p>
           <h2 className="text-lg font-semibold">What this report does not yet see</h2>
           <ul className="list-disc pl-5 text-sm text-stone-700">{r.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
         </>

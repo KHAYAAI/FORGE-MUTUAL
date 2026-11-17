@@ -11,6 +11,26 @@ service TreasuryService {
   // The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
   // sheet in rand built from it. The base the management accounts and the returns are built on.
   rpc GetTrialBalance(GetTrialBalanceRequest) returns (GetTrialBalanceResponse);
+  // The single customer view for deposit insurance: each depositor's covered and uncovered deposits.
+  rpc GetSingleCustomerView(GetSingleCustomerViewRequest) returns (GetSingleCustomerViewResponse);
+}
+
+message GetSingleCustomerViewRequest {}
+
+message DepositorView {
+  string party_id = 1;
+  uint32 accounts = 2;
+  string insured_eligible_minor = 3;  // rand deposits flagged insured
+  string covered_minor = 4;           // up to the cover limit
+  string uncovered_minor = 5;         // eligible above the limit, plus deposits not eligible (foreign, or not flagged)
+}
+
+message GetSingleCustomerViewResponse {
+  string as_of = 1;
+  string cover_limit_minor = 2;
+  repeated DepositorView depositors = 3;
+  string total_covered_minor = 4;
+  string total_uncovered_minor = 5;
 }
 
 message GetTrialBalanceRequest {}

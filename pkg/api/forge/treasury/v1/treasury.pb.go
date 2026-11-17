@@ -24,6 +24,194 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetSingleCustomerViewRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSingleCustomerViewRequest) Reset() {
+	*x = GetSingleCustomerViewRequest{}
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSingleCustomerViewRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSingleCustomerViewRequest) ProtoMessage() {}
+
+func (x *GetSingleCustomerViewRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSingleCustomerViewRequest.ProtoReflect.Descriptor instead.
+func (*GetSingleCustomerViewRequest) Descriptor() ([]byte, []int) {
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{0}
+}
+
+type DepositorView struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	PartyId              string                 `protobuf:"bytes,1,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Accounts             uint32                 `protobuf:"varint,2,opt,name=accounts,proto3" json:"accounts,omitempty"`
+	InsuredEligibleMinor string                 `protobuf:"bytes,3,opt,name=insured_eligible_minor,json=insuredEligibleMinor,proto3" json:"insured_eligible_minor,omitempty"` // rand deposits flagged insured
+	CoveredMinor         string                 `protobuf:"bytes,4,opt,name=covered_minor,json=coveredMinor,proto3" json:"covered_minor,omitempty"`                           // up to the cover limit
+	UncoveredMinor       string                 `protobuf:"bytes,5,opt,name=uncovered_minor,json=uncoveredMinor,proto3" json:"uncovered_minor,omitempty"`                     // eligible above the limit, plus deposits not eligible (foreign, or not flagged)
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *DepositorView) Reset() {
+	*x = DepositorView{}
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DepositorView) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DepositorView) ProtoMessage() {}
+
+func (x *DepositorView) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DepositorView.ProtoReflect.Descriptor instead.
+func (*DepositorView) Descriptor() ([]byte, []int) {
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DepositorView) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *DepositorView) GetAccounts() uint32 {
+	if x != nil {
+		return x.Accounts
+	}
+	return 0
+}
+
+func (x *DepositorView) GetInsuredEligibleMinor() string {
+	if x != nil {
+		return x.InsuredEligibleMinor
+	}
+	return ""
+}
+
+func (x *DepositorView) GetCoveredMinor() string {
+	if x != nil {
+		return x.CoveredMinor
+	}
+	return ""
+}
+
+func (x *DepositorView) GetUncoveredMinor() string {
+	if x != nil {
+		return x.UncoveredMinor
+	}
+	return ""
+}
+
+type GetSingleCustomerViewResponse struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	AsOf                string                 `protobuf:"bytes,1,opt,name=as_of,json=asOf,proto3" json:"as_of,omitempty"`
+	CoverLimitMinor     string                 `protobuf:"bytes,2,opt,name=cover_limit_minor,json=coverLimitMinor,proto3" json:"cover_limit_minor,omitempty"`
+	Depositors          []*DepositorView       `protobuf:"bytes,3,rep,name=depositors,proto3" json:"depositors,omitempty"`
+	TotalCoveredMinor   string                 `protobuf:"bytes,4,opt,name=total_covered_minor,json=totalCoveredMinor,proto3" json:"total_covered_minor,omitempty"`
+	TotalUncoveredMinor string                 `protobuf:"bytes,5,opt,name=total_uncovered_minor,json=totalUncoveredMinor,proto3" json:"total_uncovered_minor,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *GetSingleCustomerViewResponse) Reset() {
+	*x = GetSingleCustomerViewResponse{}
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSingleCustomerViewResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSingleCustomerViewResponse) ProtoMessage() {}
+
+func (x *GetSingleCustomerViewResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSingleCustomerViewResponse.ProtoReflect.Descriptor instead.
+func (*GetSingleCustomerViewResponse) Descriptor() ([]byte, []int) {
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetSingleCustomerViewResponse) GetAsOf() string {
+	if x != nil {
+		return x.AsOf
+	}
+	return ""
+}
+
+func (x *GetSingleCustomerViewResponse) GetCoverLimitMinor() string {
+	if x != nil {
+		return x.CoverLimitMinor
+	}
+	return ""
+}
+
+func (x *GetSingleCustomerViewResponse) GetDepositors() []*DepositorView {
+	if x != nil {
+		return x.Depositors
+	}
+	return nil
+}
+
+func (x *GetSingleCustomerViewResponse) GetTotalCoveredMinor() string {
+	if x != nil {
+		return x.TotalCoveredMinor
+	}
+	return ""
+}
+
+func (x *GetSingleCustomerViewResponse) GetTotalUncoveredMinor() string {
+	if x != nil {
+		return x.TotalUncoveredMinor
+	}
+	return ""
+}
+
 type GetTrialBalanceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -32,7 +220,7 @@ type GetTrialBalanceRequest struct {
 
 func (x *GetTrialBalanceRequest) Reset() {
 	*x = GetTrialBalanceRequest{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[0]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +232,7 @@ func (x *GetTrialBalanceRequest) String() string {
 func (*GetTrialBalanceRequest) ProtoMessage() {}
 
 func (x *GetTrialBalanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[0]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +245,7 @@ func (x *GetTrialBalanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrialBalanceRequest.ProtoReflect.Descriptor instead.
 func (*GetTrialBalanceRequest) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{0}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{3}
 }
 
 type TrialBalanceLine struct {
@@ -75,7 +263,7 @@ type TrialBalanceLine struct {
 
 func (x *TrialBalanceLine) Reset() {
 	*x = TrialBalanceLine{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[1]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +275,7 @@ func (x *TrialBalanceLine) String() string {
 func (*TrialBalanceLine) ProtoMessage() {}
 
 func (x *TrialBalanceLine) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[1]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,7 +288,7 @@ func (x *TrialBalanceLine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrialBalanceLine.ProtoReflect.Descriptor instead.
 func (*TrialBalanceLine) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{1}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TrialBalanceLine) GetAsset() string {
@@ -163,7 +351,7 @@ type LedgerCheck struct {
 
 func (x *LedgerCheck) Reset() {
 	*x = LedgerCheck{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[2]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +363,7 @@ func (x *LedgerCheck) String() string {
 func (*LedgerCheck) ProtoMessage() {}
 
 func (x *LedgerCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[2]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +376,7 @@ func (x *LedgerCheck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LedgerCheck.ProtoReflect.Descriptor instead.
 func (*LedgerCheck) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{2}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *LedgerCheck) GetAsset() string {
@@ -223,7 +411,7 @@ type BalanceSheetLine struct {
 
 func (x *BalanceSheetLine) Reset() {
 	*x = BalanceSheetLine{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[3]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -235,7 +423,7 @@ func (x *BalanceSheetLine) String() string {
 func (*BalanceSheetLine) ProtoMessage() {}
 
 func (x *BalanceSheetLine) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[3]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -248,7 +436,7 @@ func (x *BalanceSheetLine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BalanceSheetLine.ProtoReflect.Descriptor instead.
 func (*BalanceSheetLine) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{3}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BalanceSheetLine) GetSection() string {
@@ -287,7 +475,7 @@ type GetTrialBalanceResponse struct {
 
 func (x *GetTrialBalanceResponse) Reset() {
 	*x = GetTrialBalanceResponse{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[4]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +487,7 @@ func (x *GetTrialBalanceResponse) String() string {
 func (*GetTrialBalanceResponse) ProtoMessage() {}
 
 func (x *GetTrialBalanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[4]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +500,7 @@ func (x *GetTrialBalanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrialBalanceResponse.ProtoReflect.Descriptor instead.
 func (*GetTrialBalanceResponse) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{4}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetTrialBalanceResponse) GetAsOf() string {
@@ -372,7 +560,7 @@ type GetPrudentialReportRequest struct {
 
 func (x *GetPrudentialReportRequest) Reset() {
 	*x = GetPrudentialReportRequest{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[5]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -384,7 +572,7 @@ func (x *GetPrudentialReportRequest) String() string {
 func (*GetPrudentialReportRequest) ProtoMessage() {}
 
 func (x *GetPrudentialReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[5]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -397,7 +585,7 @@ func (x *GetPrudentialReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPrudentialReportRequest.ProtoReflect.Descriptor instead.
 func (*GetPrudentialReportRequest) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{5}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{8}
 }
 
 type StressScenario struct {
@@ -413,7 +601,7 @@ type StressScenario struct {
 
 func (x *StressScenario) Reset() {
 	*x = StressScenario{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[6]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -425,7 +613,7 @@ func (x *StressScenario) String() string {
 func (*StressScenario) ProtoMessage() {}
 
 func (x *StressScenario) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[6]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -438,7 +626,7 @@ func (x *StressScenario) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StressScenario.ProtoReflect.Descriptor instead.
 func (*StressScenario) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{6}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *StressScenario) GetName() string {
@@ -505,7 +693,7 @@ type GetPrudentialReportResponse struct {
 
 func (x *GetPrudentialReportResponse) Reset() {
 	*x = GetPrudentialReportResponse{}
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[7]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -517,7 +705,7 @@ func (x *GetPrudentialReportResponse) String() string {
 func (*GetPrudentialReportResponse) ProtoMessage() {}
 
 func (x *GetPrudentialReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[7]
+	mi := &file_forge_treasury_v1_treasury_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,7 +718,7 @@ func (x *GetPrudentialReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPrudentialReportResponse.ProtoReflect.Descriptor instead.
 func (*GetPrudentialReportResponse) Descriptor() ([]byte, []int) {
-	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{7}
+	return file_forge_treasury_v1_treasury_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetPrudentialReportResponse) GetAsOf() string {
@@ -684,7 +872,22 @@ var File_forge_treasury_v1_treasury_proto protoreflect.FileDescriptor
 
 const file_forge_treasury_v1_treasury_proto_rawDesc = "" +
 	"\n" +
-	" forge/treasury/v1/treasury.proto\x12\x11forge.treasury.v1\"\x18\n" +
+	" forge/treasury/v1/treasury.proto\x12\x11forge.treasury.v1\"\x1e\n" +
+	"\x1cGetSingleCustomerViewRequest\"\xca\x01\n" +
+	"\rDepositorView\x12\x19\n" +
+	"\bparty_id\x18\x01 \x01(\tR\apartyId\x12\x1a\n" +
+	"\baccounts\x18\x02 \x01(\rR\baccounts\x124\n" +
+	"\x16insured_eligible_minor\x18\x03 \x01(\tR\x14insuredEligibleMinor\x12#\n" +
+	"\rcovered_minor\x18\x04 \x01(\tR\fcoveredMinor\x12'\n" +
+	"\x0funcovered_minor\x18\x05 \x01(\tR\x0euncoveredMinor\"\x86\x02\n" +
+	"\x1dGetSingleCustomerViewResponse\x12\x13\n" +
+	"\x05as_of\x18\x01 \x01(\tR\x04asOf\x12*\n" +
+	"\x11cover_limit_minor\x18\x02 \x01(\tR\x0fcoverLimitMinor\x12@\n" +
+	"\n" +
+	"depositors\x18\x03 \x03(\v2 .forge.treasury.v1.DepositorViewR\n" +
+	"depositors\x12.\n" +
+	"\x13total_covered_minor\x18\x04 \x01(\tR\x11totalCoveredMinor\x122\n" +
+	"\x15total_uncovered_minor\x18\x05 \x01(\tR\x13totalUncoveredMinor\"\x18\n" +
 	"\x16GetTrialBalanceRequest\"\xd1\x01\n" +
 	"\x10TrialBalanceLine\x12\x14\n" +
 	"\x05asset\x18\x01 \x01(\tR\x05asset\x12\x12\n" +
@@ -742,10 +945,11 @@ const file_forge_treasury_v1_treasury_proto_rawDesc = "" +
 	"\x0edeposits_minor\x18\x13 \x01(\tR\rdepositsMinor\x12\x1f\n" +
 	"\vloans_minor\x18\x14 \x01(\tR\n" +
 	"loansMinor\x126\n" +
-	"\x17largest_depositor_minor\x18\x15 \x01(\tR\x15largestDepositorMinor2\xf1\x01\n" +
+	"\x17largest_depositor_minor\x18\x15 \x01(\tR\x15largestDepositorMinor2\xed\x02\n" +
 	"\x0fTreasuryService\x12t\n" +
 	"\x13GetPrudentialReport\x12-.forge.treasury.v1.GetPrudentialReportRequest\x1a..forge.treasury.v1.GetPrudentialReportResponse\x12h\n" +
-	"\x0fGetTrialBalance\x12).forge.treasury.v1.GetTrialBalanceRequest\x1a*.forge.treasury.v1.GetTrialBalanceResponseBFZDgithub.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1;treasuryv1b\x06proto3"
+	"\x0fGetTrialBalance\x12).forge.treasury.v1.GetTrialBalanceRequest\x1a*.forge.treasury.v1.GetTrialBalanceResponse\x12z\n" +
+	"\x15GetSingleCustomerView\x12/.forge.treasury.v1.GetSingleCustomerViewRequest\x1a0.forge.treasury.v1.GetSingleCustomerViewResponseBFZDgithub.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1;treasuryv1b\x06proto3"
 
 var (
 	file_forge_treasury_v1_treasury_proto_rawDescOnce sync.Once
@@ -759,31 +963,37 @@ func file_forge_treasury_v1_treasury_proto_rawDescGZIP() []byte {
 	return file_forge_treasury_v1_treasury_proto_rawDescData
 }
 
-var file_forge_treasury_v1_treasury_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_forge_treasury_v1_treasury_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_forge_treasury_v1_treasury_proto_goTypes = []any{
-	(*GetTrialBalanceRequest)(nil),      // 0: forge.treasury.v1.GetTrialBalanceRequest
-	(*TrialBalanceLine)(nil),            // 1: forge.treasury.v1.TrialBalanceLine
-	(*LedgerCheck)(nil),                 // 2: forge.treasury.v1.LedgerCheck
-	(*BalanceSheetLine)(nil),            // 3: forge.treasury.v1.BalanceSheetLine
-	(*GetTrialBalanceResponse)(nil),     // 4: forge.treasury.v1.GetTrialBalanceResponse
-	(*GetPrudentialReportRequest)(nil),  // 5: forge.treasury.v1.GetPrudentialReportRequest
-	(*StressScenario)(nil),              // 6: forge.treasury.v1.StressScenario
-	(*GetPrudentialReportResponse)(nil), // 7: forge.treasury.v1.GetPrudentialReportResponse
+	(*GetSingleCustomerViewRequest)(nil),  // 0: forge.treasury.v1.GetSingleCustomerViewRequest
+	(*DepositorView)(nil),                 // 1: forge.treasury.v1.DepositorView
+	(*GetSingleCustomerViewResponse)(nil), // 2: forge.treasury.v1.GetSingleCustomerViewResponse
+	(*GetTrialBalanceRequest)(nil),        // 3: forge.treasury.v1.GetTrialBalanceRequest
+	(*TrialBalanceLine)(nil),              // 4: forge.treasury.v1.TrialBalanceLine
+	(*LedgerCheck)(nil),                   // 5: forge.treasury.v1.LedgerCheck
+	(*BalanceSheetLine)(nil),              // 6: forge.treasury.v1.BalanceSheetLine
+	(*GetTrialBalanceResponse)(nil),       // 7: forge.treasury.v1.GetTrialBalanceResponse
+	(*GetPrudentialReportRequest)(nil),    // 8: forge.treasury.v1.GetPrudentialReportRequest
+	(*StressScenario)(nil),                // 9: forge.treasury.v1.StressScenario
+	(*GetPrudentialReportResponse)(nil),   // 10: forge.treasury.v1.GetPrudentialReportResponse
 }
 var file_forge_treasury_v1_treasury_proto_depIdxs = []int32{
-	1, // 0: forge.treasury.v1.GetTrialBalanceResponse.lines:type_name -> forge.treasury.v1.TrialBalanceLine
-	2, // 1: forge.treasury.v1.GetTrialBalanceResponse.checks:type_name -> forge.treasury.v1.LedgerCheck
-	3, // 2: forge.treasury.v1.GetTrialBalanceResponse.balance_sheet:type_name -> forge.treasury.v1.BalanceSheetLine
-	6, // 3: forge.treasury.v1.GetPrudentialReportResponse.stress:type_name -> forge.treasury.v1.StressScenario
-	5, // 4: forge.treasury.v1.TreasuryService.GetPrudentialReport:input_type -> forge.treasury.v1.GetPrudentialReportRequest
-	0, // 5: forge.treasury.v1.TreasuryService.GetTrialBalance:input_type -> forge.treasury.v1.GetTrialBalanceRequest
-	7, // 6: forge.treasury.v1.TreasuryService.GetPrudentialReport:output_type -> forge.treasury.v1.GetPrudentialReportResponse
-	4, // 7: forge.treasury.v1.TreasuryService.GetTrialBalance:output_type -> forge.treasury.v1.GetTrialBalanceResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1,  // 0: forge.treasury.v1.GetSingleCustomerViewResponse.depositors:type_name -> forge.treasury.v1.DepositorView
+	4,  // 1: forge.treasury.v1.GetTrialBalanceResponse.lines:type_name -> forge.treasury.v1.TrialBalanceLine
+	5,  // 2: forge.treasury.v1.GetTrialBalanceResponse.checks:type_name -> forge.treasury.v1.LedgerCheck
+	6,  // 3: forge.treasury.v1.GetTrialBalanceResponse.balance_sheet:type_name -> forge.treasury.v1.BalanceSheetLine
+	9,  // 4: forge.treasury.v1.GetPrudentialReportResponse.stress:type_name -> forge.treasury.v1.StressScenario
+	8,  // 5: forge.treasury.v1.TreasuryService.GetPrudentialReport:input_type -> forge.treasury.v1.GetPrudentialReportRequest
+	3,  // 6: forge.treasury.v1.TreasuryService.GetTrialBalance:input_type -> forge.treasury.v1.GetTrialBalanceRequest
+	0,  // 7: forge.treasury.v1.TreasuryService.GetSingleCustomerView:input_type -> forge.treasury.v1.GetSingleCustomerViewRequest
+	10, // 8: forge.treasury.v1.TreasuryService.GetPrudentialReport:output_type -> forge.treasury.v1.GetPrudentialReportResponse
+	7,  // 9: forge.treasury.v1.TreasuryService.GetTrialBalance:output_type -> forge.treasury.v1.GetTrialBalanceResponse
+	2,  // 10: forge.treasury.v1.TreasuryService.GetSingleCustomerView:output_type -> forge.treasury.v1.GetSingleCustomerViewResponse
+	8,  // [8:11] is the sub-list for method output_type
+	5,  // [5:8] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_forge_treasury_v1_treasury_proto_init() }
@@ -797,7 +1007,7 @@ func file_forge_treasury_v1_treasury_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_treasury_v1_treasury_proto_rawDesc), len(file_forge_treasury_v1_treasury_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

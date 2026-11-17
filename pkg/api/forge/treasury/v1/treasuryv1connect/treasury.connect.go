@@ -42,6 +42,9 @@ const (
 	// TreasuryServiceGetTrialBalanceProcedure is the fully-qualified name of the TreasuryService's
 	// GetTrialBalance RPC.
 	TreasuryServiceGetTrialBalanceProcedure = "/forge.treasury.v1.TreasuryService/GetTrialBalance"
+	// TreasuryServiceGetSingleCustomerViewProcedure is the fully-qualified name of the
+	// TreasuryService's GetSingleCustomerView RPC.
+	TreasuryServiceGetSingleCustomerViewProcedure = "/forge.treasury.v1.TreasuryService/GetSingleCustomerView"
 )
 
 // TreasuryServiceClient is a client for the forge.treasury.v1.TreasuryService service.
@@ -50,6 +53,8 @@ type TreasuryServiceClient interface {
 	// The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
 	// sheet in rand built from it. The base the management accounts and the returns are built on.
 	GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error)
+	// The single customer view for deposit insurance: each depositor's covered and uncovered deposits.
+	GetSingleCustomerView(context.Context, *connect.Request[v1.GetSingleCustomerViewRequest]) (*connect.Response[v1.GetSingleCustomerViewResponse], error)
 }
 
 // NewTreasuryServiceClient constructs a client for the forge.treasury.v1.TreasuryService service.
@@ -75,13 +80,20 @@ func NewTreasuryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(treasuryServiceMethods.ByName("GetTrialBalance")),
 			connect.WithClientOptions(opts...),
 		),
+		getSingleCustomerView: connect.NewClient[v1.GetSingleCustomerViewRequest, v1.GetSingleCustomerViewResponse](
+			httpClient,
+			baseURL+TreasuryServiceGetSingleCustomerViewProcedure,
+			connect.WithSchema(treasuryServiceMethods.ByName("GetSingleCustomerView")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // treasuryServiceClient implements TreasuryServiceClient.
 type treasuryServiceClient struct {
-	getPrudentialReport *connect.Client[v1.GetPrudentialReportRequest, v1.GetPrudentialReportResponse]
-	getTrialBalance     *connect.Client[v1.GetTrialBalanceRequest, v1.GetTrialBalanceResponse]
+	getPrudentialReport   *connect.Client[v1.GetPrudentialReportRequest, v1.GetPrudentialReportResponse]
+	getTrialBalance       *connect.Client[v1.GetTrialBalanceRequest, v1.GetTrialBalanceResponse]
+	getSingleCustomerView *connect.Client[v1.GetSingleCustomerViewRequest, v1.GetSingleCustomerViewResponse]
 }
 
 // GetPrudentialReport calls forge.treasury.v1.TreasuryService.GetPrudentialReport.
@@ -94,12 +106,19 @@ func (c *treasuryServiceClient) GetTrialBalance(ctx context.Context, req *connec
 	return c.getTrialBalance.CallUnary(ctx, req)
 }
 
+// GetSingleCustomerView calls forge.treasury.v1.TreasuryService.GetSingleCustomerView.
+func (c *treasuryServiceClient) GetSingleCustomerView(ctx context.Context, req *connect.Request[v1.GetSingleCustomerViewRequest]) (*connect.Response[v1.GetSingleCustomerViewResponse], error) {
+	return c.getSingleCustomerView.CallUnary(ctx, req)
+}
+
 // TreasuryServiceHandler is an implementation of the forge.treasury.v1.TreasuryService service.
 type TreasuryServiceHandler interface {
 	GetPrudentialReport(context.Context, *connect.Request[v1.GetPrudentialReportRequest]) (*connect.Response[v1.GetPrudentialReportResponse], error)
 	// The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
 	// sheet in rand built from it. The base the management accounts and the returns are built on.
 	GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error)
+	// The single customer view for deposit insurance: each depositor's covered and uncovered deposits.
+	GetSingleCustomerView(context.Context, *connect.Request[v1.GetSingleCustomerViewRequest]) (*connect.Response[v1.GetSingleCustomerViewResponse], error)
 }
 
 // NewTreasuryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -121,12 +140,20 @@ func NewTreasuryServiceHandler(svc TreasuryServiceHandler, opts ...connect.Handl
 		connect.WithSchema(treasuryServiceMethods.ByName("GetTrialBalance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	treasuryServiceGetSingleCustomerViewHandler := connect.NewUnaryHandler(
+		TreasuryServiceGetSingleCustomerViewProcedure,
+		svc.GetSingleCustomerView,
+		connect.WithSchema(treasuryServiceMethods.ByName("GetSingleCustomerView")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.treasury.v1.TreasuryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TreasuryServiceGetPrudentialReportProcedure:
 			treasuryServiceGetPrudentialReportHandler.ServeHTTP(w, r)
 		case TreasuryServiceGetTrialBalanceProcedure:
 			treasuryServiceGetTrialBalanceHandler.ServeHTTP(w, r)
+		case TreasuryServiceGetSingleCustomerViewProcedure:
+			treasuryServiceGetSingleCustomerViewHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -142,4 +169,8 @@ func (UnimplementedTreasuryServiceHandler) GetPrudentialReport(context.Context, 
 
 func (UnimplementedTreasuryServiceHandler) GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.treasury.v1.TreasuryService.GetTrialBalance is not implemented"))
+}
+
+func (UnimplementedTreasuryServiceHandler) GetSingleCustomerView(context.Context, *connect.Request[v1.GetSingleCustomerViewRequest]) (*connect.Response[v1.GetSingleCustomerViewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.treasury.v1.TreasuryService.GetSingleCustomerView is not implemented"))
 }

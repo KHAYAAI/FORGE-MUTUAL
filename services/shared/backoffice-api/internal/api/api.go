@@ -90,6 +90,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/kyc/reviews/{review}/decision", a.staff(needRole(RoleCompliance, a.decideKYCReview)))
 	mux.HandleFunc("GET /v1/risk/prudential", a.staff(a.prudentialReport))
 	mux.HandleFunc("GET /v1/risk/trial-balance", a.staff(a.trialBalance))
+	mux.HandleFunc("GET /v1/risk/single-customer-view.csv", a.staff(needRole(RoleOperations, a.singleCustomerView)))
 	mux.HandleFunc("GET /v1/credit/applications", a.staff(needRole(RoleCredit, a.listCreditApplications)))
 	mux.HandleFunc("POST /v1/credit/applications/{facility}/decision", a.staff(needRole(RoleCredit, a.decideCredit)))
 	return mux

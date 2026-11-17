@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/csv"
 	"net/http"
+	"strconv"
 
 	"connectrpc.com/connect"
 
@@ -48,4 +50,25 @@ func (a *API) trialBalance(w http.ResponseWriter, r *http.Request, _ Session) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)
+}
+
+// singleCustomerView downloads the deposit insurance single customer view as CSV. It names parties by id only.
+func (a *API) singleCustomerView(w http.ResponseWriter, r *http.Request, _ Session) {
+	if a.Services.Treasury == nil {
+		writeJSON(w, http.StatusNotFound, errBody("not_found", "the single customer view is not configured"))
+		return
+	}
+	res, err := a.Services.Treasury.GetSingleCustomerView(r.Context(), connect.NewRequest(&treasuryv1.GetSingleCustomerViewRequest{}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="single-customer-view.csv"`)
+	cw := csv.NewWriter(w)
+	_ = cw.Write([]string{"party_id", "accounts", "insured_eligible_minor", "covered_minor", "uncovered_minor", "cover_limit_minor", "as_of"})
+	for _, d := range res.Msg.Depositors {
+		_ = cw.Write([]string{d.PartyId, strconv.Itoa(int(d.Accounts)), d.InsuredEligibleMinor, d.CoveredMinor, d.UncoveredMinor, res.Msg.CoverLimitMinor, res.Msg.AsOf})
+	}
+	cw.Flush()
 }

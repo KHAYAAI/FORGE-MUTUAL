@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1/acquiringv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/oidc"
@@ -74,6 +76,8 @@ func run(log *slog.Logger) error {
 			Lending:      lendingClient(outbound, caller()),
 			Acquiring:    acquiringClient(outbound, caller()),
 			Checkout:     checkoutClient(outbound, caller()),
+			Party:        partyClient(outbound, caller()),
+			Consent:      consentClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")
@@ -159,6 +163,21 @@ func acquiringClient(h connect.HTTPClient, opt connect.ClientOption) acquiringv1
 func checkoutClient(h connect.HTTPClient, opt connect.ClientOption) acquiringv1connect.CheckoutServiceClient {
 	if u := os.Getenv("ACQUIRING_URL"); u != "" {
 		return acquiringv1connect.NewCheckoutServiceClient(h, u, opt)
+	}
+	return nil
+}
+
+// partyClient and consentClient answer data access requests; nil when PARTY_URL or CONSENT_URL is not set.
+func partyClient(h connect.HTTPClient, opt connect.ClientOption) partyv1connect.PartyServiceClient {
+	if u := os.Getenv("PARTY_URL"); u != "" {
+		return partyv1connect.NewPartyServiceClient(h, u, opt)
+	}
+	return nil
+}
+
+func consentClient(h connect.HTTPClient, opt connect.ClientOption) consentv1connect.ConsentServiceClient {
+	if u := os.Getenv("CONSENT_URL"); u != "" {
+		return consentv1connect.NewConsentServiceClient(h, u, opt)
 	}
 	return nil
 }

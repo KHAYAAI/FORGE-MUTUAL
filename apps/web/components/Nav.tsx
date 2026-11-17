@@ -60,6 +60,11 @@ export default function Nav() {
                 {l.label}
               </Link>
             ))}
+            {who.customer ? (
+              <a href="/api/v1/my-data" className="rounded-full px-3 py-2 text-sm text-stone-500 hover:bg-stone-100" title="Download what Forge holds about you">
+                My data
+              </a>
+            ) : null}
             <span className="px-3 text-stone-500" data-testid="signed-in-as">
               {who.actor}
             </span>

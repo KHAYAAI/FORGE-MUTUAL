@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1/acquiringv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,6 +77,8 @@ type Services struct {
 	Deposits     depositsv1connect.DepositsServiceClient   // nil: savings are not offered
 	Lending      lendingv1connect.LendingServiceClient     // nil: credit is not offered
 	Acquiring    acquiringv1connect.AcquiringServiceClient // nil: card payments are not offered
+	Party        partyv1connect.PartyServiceClient         // nil: data access is not offered
+	Consent      consentv1connect.ConsentServiceClient
 	Checkout     acquiringv1connect.CheckoutServiceClient
 }
 
@@ -117,6 +121,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/facilities/{facility}/accept", a.session(a.acceptOffer))
 	mux.HandleFunc("POST /v1/facilities/{facility}/draw", a.session(a.moveCredit(false)))
 	mux.HandleFunc("POST /v1/facilities/{facility}/repay", a.session(a.moveCredit(true)))
+	mux.HandleFunc("GET /v1/my-data", a.session(a.myData))
 	mux.HandleFunc("GET /v1/payment-links", a.session(a.listPaymentLinks))
 	mux.HandleFunc("POST /v1/payment-links", a.session(a.createPaymentLink))
 	mux.HandleFunc("POST /v1/payment-links/{link}/cancel", a.session(a.cancelPaymentLink))

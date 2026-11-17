@@ -8,5 +8,8 @@
   ],
   "svc-payments": [
     "GetParty"
+  ],
+  "svc-workspace": [
+    "GetParty"
   ]
 }

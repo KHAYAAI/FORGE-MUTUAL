@@ -639,6 +639,8 @@ services:
       DEPOSITS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8110
       LENDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8120
       ACQUIRING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8130
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+      CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.

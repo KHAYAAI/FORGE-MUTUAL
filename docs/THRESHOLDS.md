@@ -37,6 +37,8 @@ recorded here.
 | 24 | Liquidity run-off rates and LCR minimum | retail and savings 10%, business 40%, foreign 40%, inflows 50% capped at 75%; LCR 100% | same | Head of Treasury | _unassigned_ | Placeholder; BA 300 defines the real ones |
 | 25 | Capital and gross income used by the report | configured (`TREASURY_CAPITAL_MINOR`, `TREASURY_GROSS_INCOME_MINOR`) | treasury-risk | CFO | _unassigned_ | Zero until capital is raised |
 
+| 26 | Deposit insurance cover per depositor | R100 000 | `internal/prudential/scv.go` `CoverLimit` | CFO | _unassigned_ | Placeholder: confirm the CODI limit and which deposits qualify |
+
 Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).
 
