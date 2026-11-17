@@ -18,7 +18,9 @@ import (
 
 type owners map[string]map[string]string
 
-func (o owners) Accounts(_ context.Context, party string) (map[string]string, error) { return o[party], nil }
+func (o owners) Accounts(_ context.Context, party string) (map[string]string, error) {
+	return o[party], nil
+}
 
 type world struct {
 	svc     *Service
