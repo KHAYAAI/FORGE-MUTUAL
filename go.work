@@ -18,6 +18,7 @@ use (
 	./services/bank/core-bridge
 	./services/bank/deposits-service
 	./services/bank/lending-service
+	./services/bank/acquiring-service
 	./services/bank/fx-service
 	./services/bank/ledger-gateway-bank
 	./services/bank/partner-bank-router

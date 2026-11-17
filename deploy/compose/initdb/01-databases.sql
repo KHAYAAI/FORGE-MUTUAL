@@ -8,6 +8,7 @@ create database payouts;
 create database fx;
 create database deposits;
 create database lending;
+create database acquiring;
 create database consolidated;
 create database recon;
 create database treasury;

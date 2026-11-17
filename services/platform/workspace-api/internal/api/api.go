@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1/acquiringv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"net/http"
@@ -56,8 +57,10 @@ type Services struct {
 	Onboarding   onboardingv1connect.OnboardingServiceClient
 	CrossBorder  paymentsv1connect.CrossBorderServiceClient
 	References   paymentsv1connect.InboundReferenceServiceClient
-	Deposits     depositsv1connect.DepositsServiceClient // nil: savings are not offered
-	Lending      lendingv1connect.LendingServiceClient   // nil: credit is not offered
+	Deposits     depositsv1connect.DepositsServiceClient   // nil: savings are not offered
+	Lending      lendingv1connect.LendingServiceClient     // nil: credit is not offered
+	Acquiring    acquiringv1connect.AcquiringServiceClient // nil: card payments are not offered
+	Checkout     acquiringv1connect.CheckoutServiceClient
 }
 
 // API serves the workspace routes.
@@ -99,6 +102,14 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/facilities/{facility}/accept", a.session(a.acceptOffer))
 	mux.HandleFunc("POST /v1/facilities/{facility}/draw", a.session(a.moveCredit(false)))
 	mux.HandleFunc("POST /v1/facilities/{facility}/repay", a.session(a.moveCredit(true)))
+	mux.HandleFunc("GET /v1/payment-links", a.session(a.listPaymentLinks))
+	mux.HandleFunc("POST /v1/payment-links", a.session(a.createPaymentLink))
+	mux.HandleFunc("POST /v1/payment-links/{link}/cancel", a.session(a.cancelPaymentLink))
+	mux.HandleFunc("POST /v1/payment-links/{link}/refund", a.session(a.refundPayment))
+	mux.HandleFunc("GET /v1/settlements", a.session(a.listSettlements))
+	mux.HandleFunc("GET /v1/checkout/{token}", a.getCheckout)
+	mux.HandleFunc("POST /v1/checkout/{token}/start", a.startCheckout)
+	mux.HandleFunc("POST /v1/checkout/{token}/simulate", a.simulateCheckout)
 	mux.HandleFunc("POST /v1/applications/person", a.applicant(a.applyPerson))
 	mux.HandleFunc("POST /v1/applications/business", a.applicant(a.applyBusiness))
 	mux.HandleFunc("GET /v1/applications/{kind}", a.applicant(a.getApplication))

@@ -438,6 +438,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payment-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The merchant's payment links and point-of-sale requests. */
+        get: operations["listPaymentLinks"];
+        put?: never;
+        /** Create a payment link (or a point-of-sale request) the payer pays by card at the acquirer. */
+        post: operations["createPaymentLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-links/{link}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an open link. */
+        post: operations["cancelPaymentLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-links/{link}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refund a settled card payment, up to what is left to refund. */
+        post: operations["refundPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Card takings settled to the merchant, per day, with the merchant discount. */
+        get: operations["listSettlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checkout/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The payer's view of a payment, by its token. No sign-in. */
+        get: operations["getCheckout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checkout/{token}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the payer to the acquirer's hosted checkout. No sign-in. */
+        post: operations["startCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checkout/{token}/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The acquirer simulator's test checkout. Refused unless the simulator is in use. */
+        post: operations["simulateCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/applications/person": {
         parameters: {
             query?: never;
@@ -754,6 +874,41 @@ export interface components {
             purpose?: string;
             days_past_due: number;
             schedule: components["schemas"]["Instalment"][];
+        };
+        PaymentLink: {
+            link_id: string;
+            token: string;
+            /** @enum {string} */
+            channel: "link" | "pos";
+            amount_minor: string;
+            description: string;
+            reference: string;
+            /** @enum {string} */
+            status: "OPEN" | "PAID" | "EXPIRED" | "CANCELLED";
+            created_at: string;
+            expires_at: string;
+            paid_at: string;
+            refunded_minor: string;
+            settlement_account_id: string;
+            merchant_name: string;
+        };
+        Settlement: {
+            settlement_id: string;
+            day: string;
+            gross_minor: string;
+            fee_minor: string;
+            net_minor: string;
+            payments: number;
+            status: string;
+        };
+        Checkout: {
+            merchant_name: string;
+            amount_minor: string;
+            description: string;
+            reference: string;
+            /** @enum {string} */
+            status: "OPEN" | "PAID" | "EXPIRED" | "CANCELLED";
+            expires_at: string;
         };
     };
     responses: {
@@ -1536,6 +1691,241 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Facility"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    listPaymentLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The links. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        links: components["schemas"]["PaymentLink"][];
+                    };
+                };
+            };
+        };
+    };
+    createPaymentLink: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    settlement_account_id: string;
+                    amount_minor: string;
+                    description: string;
+                    reference?: string;
+                    /** @enum {string} */
+                    channel?: "link" | "pos";
+                    merchant_name: string;
+                    valid_hours?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The link. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentLink"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    cancelPaymentLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancelled link. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentLink"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    refundPayment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                link: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amount_minor: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The link after the refund. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentLink"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    listSettlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settlements. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        mdr_bps: number;
+                        settlements: components["schemas"]["Settlement"][];
+                    };
+                };
+            };
+        };
+    };
+    getCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What is being paid, and to whom. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Checkout"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    startCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Where to send the payer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkout_url: string;
+                        simulated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    simulateCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    approve: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                    };
                 };
             };
             400: components["responses"]["Error"];

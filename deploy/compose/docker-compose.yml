@@ -418,6 +418,27 @@ services:
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
     volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
+  acquiring:
+    <<: *go
+    image: forge/acquiring-service:dev
+    network_mode: host
+    environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-acquiring.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-acquiring.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/acquiring?sslmode=disable
+      ACQUIRING_CALLERS_FILE: /stack/callers/acquiring.json
+      ACQUIRING_ADDR: ":8130"
+      ACQUIRING_WORK_INTERVAL: 1m
+      # The only acquirer built is the simulator (VERIFY-ACQUIRER); production refuses it.
+      ACQUIRER: sim
+      ACQUIRER_WEBHOOK_SECRET_FILE: /stack/secrets/ACQUIRER_WEBHOOK_SECRET
+      PAY_BASE_URL: http://127.0.0.1:3000
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+
   rails:
     <<: *go
     image: forge/rails-gateway:dev
@@ -612,6 +633,7 @@ services:
       ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
       DEPOSITS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8110
       LENDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8120
+      ACQUIRING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8130
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.

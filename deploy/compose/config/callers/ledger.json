@@ -40,5 +40,9 @@
     "CreateAccounts",
     "CreateTransfers",
     "GetBalances"
+  ],
+  "svc-acquiring": [
+    "CreateAccounts",
+    "CreateTransfers"
   ]
 }

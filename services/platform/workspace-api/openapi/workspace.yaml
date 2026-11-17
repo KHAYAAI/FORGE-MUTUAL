@@ -731,6 +731,250 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/payment-links:
+    get:
+      operationId: listPaymentLinks
+      summary: The merchant's payment links and point-of-sale requests.
+      responses:
+        "200":
+          description: The links.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PaymentLink"
+    post:
+      operationId: createPaymentLink
+      summary: Create a payment link (or a point-of-sale request) the payer pays by card at the acquirer.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [settlement_account_id, amount_minor, description, merchant_name]
+              properties:
+                settlement_account_id:
+                  type: string
+                amount_minor:
+                  type: string
+                description:
+                  type: string
+                  maxLength: 140
+                reference:
+                  type: string
+                  maxLength: 35
+                channel:
+                  type: string
+                  enum: [link, pos]
+                merchant_name:
+                  type: string
+                  maxLength: 80
+                valid_hours:
+                  type: integer
+      responses:
+        "201":
+          description: The link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payment-links/{link}/cancel:
+    post:
+      operationId: cancelPaymentLink
+      summary: Cancel an open link.
+      parameters:
+        - name: link
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The cancelled link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payment-links/{link}/refund:
+    post:
+      operationId: refundPayment
+      summary: Refund a settled card payment, up to what is left to refund.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: link
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The link after the refund.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/settlements:
+    get:
+      operationId: listSettlements
+      summary: Card takings settled to the merchant, per day, with the merchant discount.
+      responses:
+        "200":
+          description: The settlements.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [settlements, mdr_bps]
+                properties:
+                  mdr_bps:
+                    type: integer
+                  settlements:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Settlement"
+  /v1/checkout/{token}:
+    get:
+      operationId: getCheckout
+      summary: The payer's view of a payment, by its token. No sign-in.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: What is being paid, and to whom.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkout"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/checkout/{token}/start:
+    post:
+      operationId: startCheckout
+      summary: Send the payer to the acquirer's hosted checkout. No sign-in.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Where to send the payer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checkout_url, simulated]
+                properties:
+                  checkout_url:
+                    type: string
+                  simulated:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/checkout/{token}/simulate:
+    post:
+      operationId: simulateCheckout
+      summary: The acquirer simulator's test checkout. Refused unless the simulator is in use.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [approve]
+              properties:
+                approve:
+                  type: boolean
+      responses:
+        "200":
+          description: The result.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
   /v1/applications/person:
     post:
       operationId: applyPerson
@@ -1373,3 +1617,70 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Instalment"
+    PaymentLink:
+      type: object
+      required: [link_id, token, channel, amount_minor, description, reference, status, created_at, expires_at, paid_at, refunded_minor, settlement_account_id, merchant_name]
+      properties:
+        link_id:
+          type: string
+        token:
+          type: string
+        channel:
+          type: string
+          enum: [link, pos]
+        amount_minor:
+          type: string
+        description:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, PAID, EXPIRED, CANCELLED]
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        paid_at:
+          type: string
+        refunded_minor:
+          type: string
+        settlement_account_id:
+          type: string
+        merchant_name:
+          type: string
+    Settlement:
+      type: object
+      required: [settlement_id, day, gross_minor, fee_minor, net_minor, payments, status]
+      properties:
+        settlement_id:
+          type: string
+        day:
+          type: string
+        gross_minor:
+          type: string
+        fee_minor:
+          type: string
+        net_minor:
+          type: string
+        payments:
+          type: integer
+        status:
+          type: string
+    Checkout:
+      type: object
+      required: [merchant_name, amount_minor, description, reference, status, expires_at]
+      properties:
+        merchant_name:
+          type: string
+        amount_minor:
+          type: string
+        description:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, PAID, EXPIRED, CANCELLED]
+        expires_at:
+          type: string

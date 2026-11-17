@@ -15,5 +15,8 @@
   "svc-lending": [
     "GetActivity",
     "GetBalances"
+  ],
+  "svc-acquiring": [
+    "GetBalances"
   ]
 }

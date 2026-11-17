@@ -9,6 +9,7 @@ require (
 	github.com/khayaai/forge-mutual/pkg/oidc v0.0.0
 	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc v1.85.0 // indirect
-	google.golang.org/protobuf v1.36.12 // indirect
 )
 
 replace github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api

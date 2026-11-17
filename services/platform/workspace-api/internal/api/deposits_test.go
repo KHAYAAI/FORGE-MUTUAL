@@ -87,3 +87,20 @@ func TestCreditApplicationsUseTheSessionAndHideTheNote(t *testing.T) {
 		t.Fatal("the decision note reached the customer")
 	}
 }
+
+// The payer's checkout needs no session, and sends only the token.
+func TestCheckoutNeedsNoSession(t *testing.T) {
+	h := (&API{Auth: fakeAuth{}}).Handler()
+	req := httptest.NewRequest("GET", "/v1/checkout/sometoken", nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound || !bytes.Contains(w.Body.Bytes(), []byte("card payments are not offered")) {
+		t.Fatalf("checkout without the service: %d %s", w.Code, w.Body)
+	}
+	req = httptest.NewRequest("GET", "/v1/payment-links", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("a merchant route without a session: %d", w.Code)
+	}
+}

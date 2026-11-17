@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"context"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1/acquiringv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
@@ -71,6 +72,8 @@ func run(log *slog.Logger) error {
 			References:   paymentsv1connect.NewInboundReferenceServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			Deposits:     depositsClient(outbound, caller()),
 			Lending:      lendingClient(outbound, caller()),
+			Acquiring:    acquiringClient(outbound, caller()),
+			Checkout:     checkoutClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")
@@ -140,4 +143,19 @@ func lendingClient(h connect.HTTPClient, opt connect.ClientOption) lendingv1conn
 		return nil
 	}
 	return lendingv1connect.NewLendingServiceClient(h, u, opt)
+}
+
+// acquiringClient and checkoutClient are the acquiring-service clients, or nil when ACQUIRING_URL is not set.
+func acquiringClient(h connect.HTTPClient, opt connect.ClientOption) acquiringv1connect.AcquiringServiceClient {
+	if u := os.Getenv("ACQUIRING_URL"); u != "" {
+		return acquiringv1connect.NewAcquiringServiceClient(h, u, opt)
+	}
+	return nil
+}
+
+func checkoutClient(h connect.HTTPClient, opt connect.ClientOption) acquiringv1connect.CheckoutServiceClient {
+	if u := os.Getenv("ACQUIRING_URL"); u != "" {
+		return acquiringv1connect.NewCheckoutServiceClient(h, u, opt)
+	}
+	return nil
 }
