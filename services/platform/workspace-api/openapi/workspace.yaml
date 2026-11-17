@@ -394,6 +394,159 @@ paths:
                           type: string
                         label:
                           type: string
+  /v1/deposit-products:
+    get:
+      operationId: listDepositProducts
+      summary: Savings and notice products, their rates, and whether each is available.
+      responses:
+        "200":
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DepositProduct"
+  /v1/deposit-accounts:
+    get:
+      operationId: listDepositAccounts
+      summary: The party's savings and notice accounts.
+      responses:
+        "200":
+          description: The accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DepositAccount"
+    post:
+      operationId: openDepositAccount
+      summary: Open a savings or notice account. One per product; asking again returns it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [product_id]
+              properties:
+                product_id:
+                  type: string
+      responses:
+        "201":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositAccount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/deposits:
+    post:
+      operationId: depositToSavings
+      summary: Move money from the party's rand current account into a deposit account.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositMove"
+      responses:
+        "200":
+          description: Moved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state]
+                properties:
+                  state:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/withdrawals:
+    post:
+      operationId: withdrawFromSavings
+      summary: Take money out of a deposit account. Instant for savings; gives notice for a notice account.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositMove"
+      responses:
+        "200":
+          description: Moved, or notice given.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state]
+                properties:
+                  state:
+                    type: string
+                    enum: [MOVED, NOTICE_GIVEN]
+                  notice:
+                    $ref: "#/components/schemas/Notice"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/notices/{notice}/cancel:
+    post:
+      operationId: cancelNotice
+      summary: Cancel a notice that has not yet paid out.
+      parameters:
+        - name: notice
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The cancelled notice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
   /v1/applications/person:
     post:
       operationId: applyPerson
@@ -885,4 +1038,74 @@ components:
         classified_by:
           type: string
         classified_at:
+          type: string
+    DepositProduct:
+      type: object
+      required: [product_id, name, rate_bps, notice_days, available]
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        rate_bps:
+          type: integer
+        notice_days:
+          type: integer
+        available:
+          type: boolean
+    Notice:
+      type: object
+      required: [notice_id, amount_minor, to_account_id, given_at, due_on, status]
+      properties:
+        notice_id:
+          type: string
+        amount_minor:
+          type: string
+        to_account_id:
+          type: string
+        given_at:
+          type: string
+        due_on:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, PAID, CANCELLED, FAILED]
+    DepositAccount:
+      type: object
+      required: [account_id, product_id, rate_bps, notice_days, balance_minor, accrued_minor, under_notice_minor, available_minor, opened_at, notices, interest_paid_minor]
+      properties:
+        account_id:
+          type: string
+        product_id:
+          type: string
+        rate_bps:
+          type: integer
+        notice_days:
+          type: integer
+        balance_minor:
+          type: string
+        accrued_minor:
+          type: string
+        under_notice_minor:
+          type: string
+        available_minor:
+          type: string
+        opened_at:
+          type: string
+        interest_paid_minor:
+          type: string
+        notices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+    DepositMove:
+      type: object
+      additionalProperties: false
+      required: [from_account_id, to_account_id, amount_minor]
+      properties:
+        from_account_id:
+          type: string
+        to_account_id:
+          type: string
+        amount_minor:
           type: string

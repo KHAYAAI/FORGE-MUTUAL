@@ -37,7 +37,7 @@ mkdir -p .pki
 sed -i -e '/^STACK_TLS=/d' -e '/^STACK_SCHEME=/d' "$env_file"
 scheme=http
 if [ "$mtls" = 1 ]; then
-  ./pki.sh .pki svc-ledger svc-party svc-consent svc-policy svc-onboarding svc-consolidated-view svc-notifications \
+  ./pki.sh .pki svc-deposits svc-ledger svc-party svc-consent svc-policy svc-onboarding svc-consolidated-view svc-notifications \
     svc-audit svc-fx svc-rails svc-partner-router svc-payments svc-payouts svc-reconciliation svc-treasury-risk \
     svc-compliance svc-backoffice-api svc-workspace svc-web svc-backoffice-web svc-stack-journeys svc-stack-probe
   printf 'STACK_TLS=1\nSTACK_SCHEME=https\n' >> "$env_file"
@@ -86,6 +86,7 @@ images=(
   "forge/audit-service:dev services/shared/audit-service audit-service"
   "forge/ledger-gateway-bank:dev services/bank/ledger-gateway-bank ledger-gateway-bank 1"
   "forge/fx-service:dev services/bank/fx-service fx-service"
+  "forge/deposits-service:dev services/bank/deposits-service deposits-service"
   "forge/rails-gateway:dev services/bank/rails-gateway rails-gateway"
   "forge/partner-bank-router:dev services/bank/partner-bank-router partner-bank-router"
   "forge/payments-orchestrator:dev services/bank/payments-orchestrator payments-orchestrator"
@@ -125,7 +126,7 @@ probe=(curl -s -o /dev/null -w '%{http_code}' --max-time 2 -X POST)
 [ "$mtls" = 1 ] && probe+=(--cacert .pki/ca.crt --cert .pki/svc-stack-probe.crt --key .pki/svc-stack-probe.key)
 declare -A ports=(
   [ledger]=8070 [party]=8081 [consent]=8082 [onboarding]=8083 [policy]=8084 [payments]=8085 [rails]=8086
-  [partner-router]=8099 [fx]=8100 [payouts]=8200 [recon]=8093 [treasury]=8095 [consolidated]=8096
+  [partner-router]=8099 [fx]=8100 [deposits]=8110 [payouts]=8200 [recon]=8093 [treasury]=8095 [consolidated]=8096
   [notifications]=8097 [audit]=8094 [compliance]=8400 [backoffice]=8500 [workspace]=8300
 )
 failed=()

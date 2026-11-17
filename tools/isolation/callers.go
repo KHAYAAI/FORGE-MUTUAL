@@ -32,6 +32,7 @@ var callerSource = map[string][]string{
 	"svc-consolidated-view": {"services/platform/consolidated-view"},
 	"svc-core-bridge":       {"services/bank/core-bridge"},
 	"svc-fx":                {"services/bank/fx-service", "pkg/systemaccounts"},
+	"svc-deposits":          {"services/bank/deposits-service", "pkg/systemaccounts"},
 	"svc-onboarding":        {"services/platform/onboarding"},
 	"svc-payments":          {"services/bank/payments-orchestrator", "pkg/systemaccounts"},
 	"svc-payouts":           {"services/bank/payouts-service"},

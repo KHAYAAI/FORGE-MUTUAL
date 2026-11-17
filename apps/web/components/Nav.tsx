@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/payments/new", label: "Pay" },
   { href: "/fx", label: "FX" },
   { href: "/currencies", label: "Currencies" },
+  { href: "/savings", label: "Savings" },
   { href: "/payouts/new", label: "Payouts" },
 ];
 

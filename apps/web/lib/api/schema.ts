@@ -266,6 +266,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/deposit-products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Savings and notice products, their rates, and whether each is available. */
+        get: operations["listDepositProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/deposit-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The party's savings and notice accounts. */
+        get: operations["listDepositAccounts"];
+        put?: never;
+        /** Open a savings or notice account. One per product; asking again returns it. */
+        post: operations["openDepositAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/deposits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move money from the party's rand current account into a deposit account. */
+        post: operations["depositToSavings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take money out of a deposit account. Instant for savings; gives notice for a notice account. */
+        post: operations["withdrawFromSavings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notices/{notice}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a notice that has not yet paid out. */
+        post: operations["cancelNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/applications/person": {
         parameters: {
             query?: never;
@@ -508,6 +594,40 @@ export interface components {
             reason_note: string;
             classified_by: string;
             classified_at: string;
+        };
+        DepositProduct: {
+            product_id: string;
+            name: string;
+            rate_bps: number;
+            notice_days: number;
+            available: boolean;
+        };
+        Notice: {
+            notice_id: string;
+            amount_minor: string;
+            to_account_id: string;
+            given_at: string;
+            due_on: string;
+            /** @enum {string} */
+            status: "PENDING" | "PAID" | "CANCELLED" | "FAILED";
+        };
+        DepositAccount: {
+            account_id: string;
+            product_id: string;
+            rate_bps: number;
+            notice_days: number;
+            balance_minor: string;
+            accrued_minor: string;
+            under_notice_minor: string;
+            available_minor: string;
+            opened_at: string;
+            interest_paid_minor: string;
+            notices: components["schemas"]["Notice"][];
+        };
+        DepositMove: {
+            from_account_id: string;
+            to_account_id: string;
+            amount_minor: string;
         };
     };
     responses: {
@@ -945,6 +1065,174 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    listDepositProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The products. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        products: components["schemas"]["DepositProduct"][];
+                    };
+                };
+            };
+        };
+    };
+    listDepositAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The accounts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accounts: components["schemas"]["DepositAccount"][];
+                    };
+                };
+            };
+        };
+    };
+    openDepositAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    product_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The account. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositAccount"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    depositToSavings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepositMove"];
+            };
+        };
+        responses: {
+            /** @description Moved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        state: string;
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    withdrawFromSavings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepositMove"];
+            };
+        };
+        responses: {
+            /** @description Moved, or notice given. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        state: "MOVED" | "NOTICE_GIVEN";
+                        notice?: components["schemas"]["Notice"];
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    cancelNotice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notice: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancelled notice. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
         };
     };
     applyPerson: {

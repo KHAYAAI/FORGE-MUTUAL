@@ -25,7 +25,10 @@ type Rail struct {
 // ZAR is the sponsor pooled account (Appendix B, code 3003) for ZAR on ledger 710.
 var ZAR = Rail{
 	Asset: "ZAR", Ledger: 710, Source: "sponsor", PoolCode: 3003,
-	LiabilityCodes: []uint16{1001, 2001, 2002, 2005, 3001},
+	// 1020 (loans), 2007 and 2008 (interest) and 3020 (acquirer settlement) move value inside the books: a loan
+	// disbursed or interest paid credits a customer and debits one of these, so the sum is unchanged until money
+	// actually reaches or leaves the sponsor pool.
+	LiabilityCodes: []uint16{1001, 1020, 2001, 2002, 2005, 2007, 2008, 3001, 3020},
 }
 
 // USD is the partner-bank mirror (Appendix B, code 5001) for USD on ledger 840.

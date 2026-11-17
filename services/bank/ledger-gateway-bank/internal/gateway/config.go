@@ -35,16 +35,20 @@ func DefaultConfig() Config {
 		},
 		AccountCodes: map[uint16]bool{
 			1001: true, // CUSTOMER_DEPOSIT
+			1020: true, // CUSTOMER_LOAN (lending-service; a debit balance is what the customer owes)
 			2001: true, // OPERATING
 			2002: true, // FEES_INCOME
 			2003: true, // FX_POOL
 			2004: true, // FX_POSITION
 			2005: true, // SUSPENSE
 			2006: true, // WRITE_OFF
+			2007: true, // INTEREST_EXPENSE (deposits-service pays interest from it)
+			2008: true, // INTEREST_INCOME (lending-service charges interest to it)
 			3001: true, // RAIL_SETTLEMENT_EFT
 			3002: true, // RAIL_SETTLEMENT_PAYSHAP
 			3003: true, // SPONSOR_POOLED
 			3010: true, // AD_PARTNER_SETTLEMENT
+			3020: true, // ACQUIRER_SETTLEMENT (acquiring-service: card takings due from the acquirer)
 			5001: true, // PARTNER_BANK_MIRROR
 		},
 		TransferCodes: map[uint16]bool{
@@ -56,6 +60,11 @@ func DefaultConfig() Config {
 			21: true, // FX_SPREAD
 			30: true, // FEE
 			31: true, // RAIL_SETTLE
+			52: true, // ACQUIRING_SETTLEMENT
+			65: true, // INTEREST_CREDIT (deposit interest paid to a customer)
+			66: true, // LOAN_DISBURSEMENT
+			67: true, // LOAN_REPAYMENT
+			68: true, // INTEREST_CHARGE (loan interest charged to a customer)
 			62: true, // INVOICE_PAYMENT
 			63: true, // PERSON_ENTITY_TRANSFER (policy-approved upstream)
 			64: true, // PARTNER_BANK_SWEEP

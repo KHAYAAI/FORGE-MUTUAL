@@ -8,5 +8,8 @@
   "svc-workspace": [
     "GetActivity",
     "GetBalances"
+  ],
+  "svc-deposits": [
+    "GetBalances"
   ]
 }

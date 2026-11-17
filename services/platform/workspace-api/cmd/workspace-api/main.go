@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
@@ -67,6 +68,7 @@ func run(log *slog.Logger) error {
 			Onboarding:   onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
 			CrossBorder:  paymentsv1connect.NewCrossBorderServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			References:   paymentsv1connect.NewInboundReferenceServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
+			Deposits:     depositsClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")
@@ -118,4 +120,13 @@ func oidcConfig() oidc.Config {
 		JWKSURL:   os.Getenv("OIDC_JWKS_URL"),
 		AllowHTTP: os.Getenv("OIDC_ALLOW_HTTP") == "true",
 	}
+}
+
+// depositsClient is the deposits-service client, or nil when DEPOSITS_URL is not set (savings are not offered).
+func depositsClient(h connect.HTTPClient, opt connect.ClientOption) depositsv1connect.DepositsServiceClient {
+	u := os.Getenv("DEPOSITS_URL")
+	if u == "" {
+		return nil
+	}
+	return depositsv1connect.NewDepositsServiceClient(h, u, opt)
 }

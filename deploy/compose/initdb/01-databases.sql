@@ -6,6 +6,7 @@ create database onboarding;
 create database payments;
 create database payouts;
 create database fx;
+create database deposits;
 create database consolidated;
 create database recon;
 create database treasury;

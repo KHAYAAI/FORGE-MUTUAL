@@ -1445,16 +1445,20 @@ All licences VERIFY before commitment. "Avoid" means do not adopt without an app
 |---|---|---|---|
 | 1001 | CUSTOMER_DEPOSIT | Customer fiat deposit | `debits_must_not_exceed_credits`, `history` |
 | 1010 | CUSTOMER_OVERDRAFT | Overdraft-enabled deposit (later) | `history`; limit via policy |
+| 1020 | CUSTOMER_LOAN | Amount a customer owes on a loan or overdraft facility (debit balance) | `history`; lending-service only |
 | 2001 | OPERATING | Forge operating | — |
 | 2002 | FEES_INCOME | Fees and spread income | — |
 | 2003 | FX_POOL | Per-asset conversion pool | — |
 | 2004 | FX_POSITION | Net FX position | Monitored |
 | 2005 | SUSPENSE | Unmatched receipts, repairs | Age alerts |
 | 2006 | WRITE_OFF | Loss recognition | Dual control |
+| 2007 | INTEREST_EXPENSE | Deposit interest paid to customers | deposits-service only |
+| 2008 | INTEREST_INCOME | Loan interest charged to customers | lending-service only |
 | 3001 | RAIL_SETTLEMENT_EFT | EFT settlement with sponsor | — |
 | 3002 | RAIL_SETTLEMENT_PAYSHAP | PayShap settlement with sponsor | — |
 | 3003 | SPONSOR_POOLED | Mirror of the sponsor pooled account | Reconciled daily |
 | 3010 | AD_PARTNER_SETTLEMENT | Cross-border payouts via AD partner | Reconciled daily |
+| 3020 | ACQUIRER_SETTLEMENT | Card takings due from the acquiring bank | Reconciled daily |
 | 5001 | PARTNER_BANK_MIRROR | Balance at a partner bank, per currency | Reconciled daily |
 | 5002 | REWARDS_POOL | Capped incentives (later) | `debits_must_not_exceed_credits` |
 | 6001 | INTERCO_DUE_TO_DAST | Payable to digital-asset entity | Stage C |
@@ -1475,6 +1479,9 @@ All licences VERIFY before commitment. "Avoid" means do not adopt without an app
 | 21 | FX_SPREAD | 63 | PERSON_ENTITY_TRANSFER (policy-approved) |
 | 30 | FEE | 64 | PARTNER_BANK_SWEEP |
 | 31 | RAIL_SETTLE | 70 | INTERCO_SETTLEMENT |
+| 52 | ACQUIRING_SETTLEMENT | 65 | INTEREST_CREDIT |
+| 66 | LOAN_DISBURSEMENT | 67 | LOAN_REPAYMENT |
+| 68 | INTEREST_CHARGE | | |
 | 40 | CHAIN_WITHDRAWAL (deferred) | 90 | REVERSAL |
 | 41 | CHAIN_DEPOSIT (deferred) | 91 | ADJUSTMENT (dual control) |
 | 80 | MEMBER_DISTRIBUTION (mutual only, reserved) | | |
