@@ -28,3 +28,24 @@ func (a *API) prudentialReport(w http.ResponseWriter, r *http.Request, _ Session
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)
 }
+
+// trialBalance is the management accounts' base: the trial balance, each ledger's double-entry check, and the balance
+// sheet in rand.
+func (a *API) trialBalance(w http.ResponseWriter, r *http.Request, _ Session) {
+	if a.Services.Treasury == nil {
+		writeJSON(w, http.StatusNotFound, errBody("not_found", "the management accounts are not configured"))
+		return
+	}
+	res, err := a.Services.Treasury.GetTrialBalance(r.Context(), connect.NewRequest(&treasuryv1.GetTrialBalanceRequest{}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	b, err := creditJSON.Marshal(res.Msg)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("internal", "internal error"))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}

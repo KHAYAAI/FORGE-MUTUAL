@@ -39,11 +39,17 @@ const (
 	// TreasuryServiceGetPrudentialReportProcedure is the fully-qualified name of the TreasuryService's
 	// GetPrudentialReport RPC.
 	TreasuryServiceGetPrudentialReportProcedure = "/forge.treasury.v1.TreasuryService/GetPrudentialReport"
+	// TreasuryServiceGetTrialBalanceProcedure is the fully-qualified name of the TreasuryService's
+	// GetTrialBalance RPC.
+	TreasuryServiceGetTrialBalanceProcedure = "/forge.treasury.v1.TreasuryService/GetTrialBalance"
 )
 
 // TreasuryServiceClient is a client for the forge.treasury.v1.TreasuryService service.
 type TreasuryServiceClient interface {
 	GetPrudentialReport(context.Context, *connect.Request[v1.GetPrudentialReportRequest]) (*connect.Response[v1.GetPrudentialReportResponse], error)
+	// The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
+	// sheet in rand built from it. The base the management accounts and the returns are built on.
+	GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error)
 }
 
 // NewTreasuryServiceClient constructs a client for the forge.treasury.v1.TreasuryService service.
@@ -63,12 +69,19 @@ func NewTreasuryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(treasuryServiceMethods.ByName("GetPrudentialReport")),
 			connect.WithClientOptions(opts...),
 		),
+		getTrialBalance: connect.NewClient[v1.GetTrialBalanceRequest, v1.GetTrialBalanceResponse](
+			httpClient,
+			baseURL+TreasuryServiceGetTrialBalanceProcedure,
+			connect.WithSchema(treasuryServiceMethods.ByName("GetTrialBalance")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // treasuryServiceClient implements TreasuryServiceClient.
 type treasuryServiceClient struct {
 	getPrudentialReport *connect.Client[v1.GetPrudentialReportRequest, v1.GetPrudentialReportResponse]
+	getTrialBalance     *connect.Client[v1.GetTrialBalanceRequest, v1.GetTrialBalanceResponse]
 }
 
 // GetPrudentialReport calls forge.treasury.v1.TreasuryService.GetPrudentialReport.
@@ -76,9 +89,17 @@ func (c *treasuryServiceClient) GetPrudentialReport(ctx context.Context, req *co
 	return c.getPrudentialReport.CallUnary(ctx, req)
 }
 
+// GetTrialBalance calls forge.treasury.v1.TreasuryService.GetTrialBalance.
+func (c *treasuryServiceClient) GetTrialBalance(ctx context.Context, req *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error) {
+	return c.getTrialBalance.CallUnary(ctx, req)
+}
+
 // TreasuryServiceHandler is an implementation of the forge.treasury.v1.TreasuryService service.
 type TreasuryServiceHandler interface {
 	GetPrudentialReport(context.Context, *connect.Request[v1.GetPrudentialReportRequest]) (*connect.Response[v1.GetPrudentialReportResponse], error)
+	// The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
+	// sheet in rand built from it. The base the management accounts and the returns are built on.
+	GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error)
 }
 
 // NewTreasuryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -94,10 +115,18 @@ func NewTreasuryServiceHandler(svc TreasuryServiceHandler, opts ...connect.Handl
 		connect.WithSchema(treasuryServiceMethods.ByName("GetPrudentialReport")),
 		connect.WithHandlerOptions(opts...),
 	)
+	treasuryServiceGetTrialBalanceHandler := connect.NewUnaryHandler(
+		TreasuryServiceGetTrialBalanceProcedure,
+		svc.GetTrialBalance,
+		connect.WithSchema(treasuryServiceMethods.ByName("GetTrialBalance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.treasury.v1.TreasuryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TreasuryServiceGetPrudentialReportProcedure:
 			treasuryServiceGetPrudentialReportHandler.ServeHTTP(w, r)
+		case TreasuryServiceGetTrialBalanceProcedure:
+			treasuryServiceGetTrialBalanceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -109,4 +138,8 @@ type UnimplementedTreasuryServiceHandler struct{}
 
 func (UnimplementedTreasuryServiceHandler) GetPrudentialReport(context.Context, *connect.Request[v1.GetPrudentialReportRequest]) (*connect.Response[v1.GetPrudentialReportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.treasury.v1.TreasuryService.GetPrudentialReport is not implemented"))
+}
+
+func (UnimplementedTreasuryServiceHandler) GetTrialBalance(context.Context, *connect.Request[v1.GetTrialBalanceRequest]) (*connect.Response[v1.GetTrialBalanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.treasury.v1.TreasuryService.GetTrialBalance is not implemented"))
 }

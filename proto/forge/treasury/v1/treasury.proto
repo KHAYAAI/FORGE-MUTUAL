@@ -8,6 +8,43 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1;t
 
 service TreasuryService {
   rpc GetPrudentialReport(GetPrudentialReportRequest) returns (GetPrudentialReportResponse);
+  // The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
+  // sheet in rand built from it. The base the management accounts and the returns are built on.
+  rpc GetTrialBalance(GetTrialBalanceRequest) returns (GetTrialBalanceResponse);
+}
+
+message GetTrialBalanceRequest {}
+
+message TrialBalanceLine {
+  string asset = 1;
+  uint32 code = 2;
+  string name = 3;
+  uint32 accounts = 4;
+  string debits_minor = 5;
+  string credits_minor = 6;
+  string net_minor = 7;    // credits less debits: positive is owed by Forge (a liability), negative is owed to Forge
+}
+
+message LedgerCheck {
+  string asset = 1;
+  string net_minor = 2;    // the sum of every account on the ledger: zero in double entry
+  bool balanced = 3;
+}
+
+message BalanceSheetLine {
+  string section = 1;      // ASSETS, LIABILITIES, INTERNAL
+  string label = 2;
+  string rand_minor = 3;
+}
+
+message GetTrialBalanceResponse {
+  string as_of = 1;
+  repeated TrialBalanceLine lines = 2;
+  repeated LedgerCheck checks = 3;
+  repeated BalanceSheetLine balance_sheet = 4;
+  string total_assets_minor = 5;
+  string total_liabilities_minor = 6;
+  string internal_minor = 7;  // income, expense, positions and suspense: what makes assets and liabilities differ
 }
 
 message GetPrudentialReportRequest {}

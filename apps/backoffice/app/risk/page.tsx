@@ -7,6 +7,9 @@ import { formatMinor } from "@/lib/money";
 import { useStaff } from "@/lib/useStaff";
 
 type Scenario = { name: string; description: string; liquidity_left_minor: string; total_capital_bps: string; survives: boolean };
+type Sheet = { section: string; label: string; rand_minor: string };
+type Check = { asset: string; net_minor: string; balanced: boolean };
+type TB = { as_of: string; balance_sheet: Sheet[]; checks: Check[]; total_assets_minor: string; total_liabilities_minor: string; internal_minor: string };
 type Report = {
   as_of: string; capital_minor: string; total_rwa_minor: string; credit_rwa_minor: string; market_rwa_minor: string; operational_rwa_minor: string;
   total_capital_bps: string; min_total_capital_bps: string; leverage_bps: string; min_leverage_bps: string;
@@ -25,6 +28,13 @@ export default function RiskPage() {
   useStaff("/risk");
   const [r, setR] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tb, setTb] = useState<TB | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/risk/trial-balance", { cache: "no-store" }).then(async (res) => {
+      if (res.ok) setTb((await res.json()) as TB);
+    });
+  }, []);
 
   useEffect(() => {
     fetch("/api/v1/risk/prudential", { cache: "no-store" }).then(async (res) => {
@@ -85,6 +95,31 @@ export default function RiskPage() {
               ))}
             </tbody>
           </table>
+          {tb ? (
+            <div aria-labelledby="mgmt-heading" className="space-y-3">
+              <h2 id="mgmt-heading" className="text-lg font-semibold">Management accounts</h2>
+              {tb.checks.every((c) => c.balanced) ? (
+                <Notice tone="success">Every ledger balances: debits equal credits in {tb.checks.map((c) => c.asset).join(", ")}.</Notice>
+              ) : (
+                <Notice tone="error">A ledger does not balance: {tb.checks.filter((c) => !c.balanced).map((c) => `${c.asset} by ${c.net_minor}`).join(", ")}.</Notice>
+              )}
+              <table className="w-full text-left text-sm">
+                <tbody>
+                  {tb.balance_sheet.map((l) => (
+                    <tr key={l.section + l.label} className="border-t border-stone-200">
+                      <td className="py-1 text-stone-600">{l.section === "ASSETS" ? "Asset" : l.section === "LIABILITIES" ? "Liability" : "Internal"}</td>
+                      <td>{l.label}</td>
+                      <td className="text-right tabular-nums">{formatMinor(l.rand_minor, "ZAR")}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-stone-400 font-semibold">
+                    <td /><td>Assets less liabilities</td>
+                    <td className="text-right tabular-nums">{formatMinor((BigInt(tb.total_assets_minor) - BigInt(tb.total_liabilities_minor)).toString(), "ZAR")}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ) : null}
           <h2 className="text-lg font-semibold">What this report does not yet see</h2>
           <ul className="list-disc pl-5 text-sm text-stone-700">{r.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
         </>

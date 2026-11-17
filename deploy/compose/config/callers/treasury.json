@@ -1,5 +1,6 @@
 {
   "svc-backoffice-api": [
-    "GetPrudentialReport"
+    "GetPrudentialReport",
+    "GetTrialBalance"
   ]
 }

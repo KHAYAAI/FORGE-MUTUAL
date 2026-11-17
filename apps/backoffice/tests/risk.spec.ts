@@ -14,12 +14,25 @@ test("the risk page shows each ratio against its minimum, the stress results, an
       limitations: ["Capital and gross income are configured figures, not read from the ledger (no equity accounts yet)."],
     }),
   );
+  await page.route("**/api/v1/risk/trial-balance", (route) =>
+    reply(route, 200, {
+      as_of: "2026-11-17T16:00:00Z", total_assets_minor: "330000", total_liabilities_minor: "329000", internal_minor: "1000",
+      checks: [{ asset: "USD", net_minor: "0", balanced: true }, { asset: "ZAR", net_minor: "0", balanced: true }],
+      balance_sheet: [
+        { section: "ASSETS", label: "Cash at the sponsor and partner banks", rand_minor: "280000" },
+        { section: "LIABILITIES", label: "Customer deposits", rand_minor: "149000" },
+        { section: "INTERNAL", label: "FEES_INCOME", rand_minor: "1000" },
+      ],
+    }),
+  );
   await signIn(page, "Lerato", ["operations"]);
   await page.goto("/risk");
   await expect(page.getByText("In breach: Total capital ratio, Leverage ratio.")).toBeVisible();
   await expect(page.getByText("285.71%")).toBeVisible();
   await expect(page.getByText("Fails")).toBeVisible();
   await expect(page.getByText("no equity accounts yet")).toBeVisible();
+  await expect(page.getByText("Every ledger balances: debits equal credits in USD, ZAR.")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Assets less liabilities/ })).toContainText("R 10.00");
   const a11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(a11y.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
 });
