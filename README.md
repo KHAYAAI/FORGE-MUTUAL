@@ -11,13 +11,13 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 
 **Not ready to launch.** The v1 software is built, tested, and runs end to end on a local stack. Launch is blocked by
 decisions that only people can make, by external systems this build could not run, and by the engineering gaps below.
-Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-13.
+Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 
 **Verified**
 
-- The full gate passes on `7264619`: lint, 82 test packages against real Postgres 17 and Kafka 3.9, and the isolation
-  check.
-- 461 Go test functions in 37 modules. Playwright: 58 journeys across the two apps, including the accessibility scans
+- The full gate passes on `c4118a2`: lint, 83 test packages against real Postgres 17, Kafka 3.9 and TigerBeetle 0.16.60, the
+  entity-isolation check and the caller-list check.
+- 477 Go test functions in 37 modules. Playwright: 70 tests across the two apps, including the accessibility scans
   and the security-header checks.
 - The local stack starts from nothing in one command (`make up`). `make test-stack` passes on a fresh stack: a customer
   onboarded through the real workflow sees the account it opened, and a compliance person decides a real review and
