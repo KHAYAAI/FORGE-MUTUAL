@@ -59,12 +59,17 @@ function stackSecret() {
   return secret;
 }
 
-async function connect(method, body) {
-  const res = await send(`${ONBOARDING}/${ONBOARDING_SERVICE}/${method}`, {
+/** One onboarding call, returning the raw reply. */
+function call(method, body) {
+  return send(`${ONBOARDING}/${ONBOARDING_SERVICE}/${method}`, {
     method: "POST",
     headers: { "content-type": "application/json", "connect-protocol-version": "1", "x-forge-caller": JOURNEYS },
     body: JSON.stringify(body),
   });
+}
+
+async function connect(method, body) {
+  const res = await call(method, body);
   if (!res.ok) throw new Error(`${method}: ${res.status} ${res.text}`);
   return res.json();
 }
@@ -83,7 +88,10 @@ async function until(label, check, timeoutMs = 60_000) {
 // A 13-digit South African identity number with a valid Luhn check digit, unique per call. The party service refuses
 // an identity it already holds, so every journey needs its own.
 function nationalId() {
-  const digits = Array.from({ length: 12 }, (_, i) => (i === 0 ? 7 + Math.floor(Math.random() * 2) : Math.floor(Math.random() * 10)));
+  // A real birth date (YYMMDD, a month and a day that exist), then six random digits.
+  const pad = (n) => String(n).padStart(2, "0");
+  const date = `${pad(70 + Math.floor(Math.random() * 30))}${pad(1 + Math.floor(Math.random() * 12))}${pad(1 + Math.floor(Math.random() * 28))}`;
+  const digits = [...date, ...Array.from({ length: 6 }, () => String(Math.floor(Math.random() * 10)))].map(Number);
   // Double every second digit counting from the right, starting with the rightmost payload digit; the check digit
   // makes the total a multiple of ten.
   let sum = 0;
@@ -122,11 +130,7 @@ async function startCompany(label) {
  */
 async function findApplication(subject, kind, timeoutMs = 60_000) {
   return until(`${kind} application of ${subject}`, async () => {
-    const res = await send(`${ONBOARDING}/${ONBOARDING_SERVICE}/FindApplication`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "connect-protocol-version": "1", "x-forge-caller": JOURNEYS },
-      body: JSON.stringify({ applicantSubject: subject, kind }),
-    });
+    const res = await call("FindApplication", { applicantSubject: subject, kind });
     if (res.status === 404) return { done: false, seen: "not found" };
     if (!res.ok) throw new Error(`FindApplication: ${res.status} ${res.text}`);
     const { status } = res.json();

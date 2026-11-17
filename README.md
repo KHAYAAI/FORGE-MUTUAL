@@ -48,9 +48,12 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
   signed-in applicants only, rate-limited, with no decline reason shown (no tipping-off).
 - [x] The `OnboardPerson` workflow: personal account, KYC, screening, account opening.
 - [x] Apply, status and welcome pages, restyled; Playwright and accessibility tests.
-- [ ] **Engineering.** A personal application journey on the running stack, with nothing mocked.
-- [ ] **Engineering.** Update the onboarding SPEC and the workspace API description for the new endpoints.
-- [ ] **Engineering.** Restyle the signed-in customer pages (accounts, payments) to match the front door.
+- [x] A personal application journey on the running stack (`make test-stack`): sign in, apply, verify, approved,
+  account opened in the ledger and shown to its owner; and a decline, shown without a reason. The one stand-in is the
+  identity provider, whose signed verdict the test delivers until Didit is connected. It found two bugs, both fixed:
+  every personal application stopped at verification, and the stand-in provider gave no verification link.
+- [x] The onboarding SPEC, the workspace-api SPEC and its OpenAPI describe the application routes and `OnboardPerson`.
+- [x] The signed-in customer pages share the front door's style.
 - [ ] **Engineering.** Give an approved director a login, and create the Fineract client the design lists.
 - [ ] **Owner.** Terms and conditions, privacy notice and fee schedule, reviewed by a lawyer, linked from the forms.
 - [ ] **Owner.** Decide how soon an account reaches its owner. Today reconciliation names the owner every 15 minutes
@@ -81,10 +84,10 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 
 1. **Owner:** sign in to the WorkOS and Didit MCP servers with the Forge account.
 2. **Engineering:** configure WorkOS and Didit, and run the first live sandbox onboarding.
-3. **Engineering:** the stack journey for a personal application, the docs, and the customer pages' restyle.
-4. **Owner:** name the threshold owners, choose the sanctions source, and start the licence or sponsor conversation.
-5. **Engineering:** production infrastructure as code, then the production clusters, measured.
-6. **External:** sponsor sandbox, security review, then a pilot.
+3. **Owner:** name the threshold owners (a mock roster with hiring advice is in
+   [`docs/THRESHOLD_OWNERS.md`](docs/THRESHOLD_OWNERS.md)), choose the sanctions source, and start the licence or sponsor conversation.
+4. **Engineering:** production infrastructure as code, then the production clusters, measured.
+5. **External:** sponsor sandbox, security review, then a pilot.
 
 **Verified**
 

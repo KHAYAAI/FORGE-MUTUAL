@@ -169,12 +169,15 @@ func (a *Activities) RecordConsents(ctx context.Context, in Input, pro Prospects
 }
 
 // StartVerifications moves every party to KYC_PENDING and starts its verification with the provider.
+// A person's onboarding has no company, and verifies only the person.
 func (a *Activities) StartVerifications(ctx context.Context, in Input, pro ProspectsResult) error {
-	if err := a.setStatus(ctx, pro.CompanyID, partyv1.PartyStatus_PARTY_STATUS_KYC_PENDING, in.Actor); err != nil {
-		return err
-	}
-	if err := a.startVerification(ctx, in.OnboardingID, pro.CompanyID, "business"); err != nil {
-		return err
+	if pro.CompanyID != "" {
+		if err := a.setStatus(ctx, pro.CompanyID, partyv1.PartyStatus_PARTY_STATUS_KYC_PENDING, in.Actor); err != nil {
+			return err
+		}
+		if err := a.startVerification(ctx, in.OnboardingID, pro.CompanyID, "business"); err != nil {
+			return err
+		}
 	}
 	for _, id := range pro.PersonIDs {
 		if err := a.setStatus(ctx, id, partyv1.PartyStatus_PARTY_STATUS_KYC_PENDING, in.Actor); err != nil {

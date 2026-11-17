@@ -73,12 +73,18 @@ func NewFake(secret []byte) (*FakeProvider, error) {
 
 // StartPersonVerification implements Provider.
 func (f *FakeProvider) StartPersonVerification(_ context.Context, onboardingID, subjectID string) (Session, error) {
-	return Session{ID: "fake-person-" + subjectID}, nil
+	return fakeSession("fake-person-" + subjectID), nil
 }
 
 // StartBusinessVerification implements Provider.
 func (f *FakeProvider) StartBusinessVerification(_ context.Context, onboardingID, subjectID string) (Session, error) {
-	return Session{ID: "fake-business-" + subjectID}, nil
+	return fakeSession("fake-business-" + subjectID), nil
+}
+
+// fakeSession has a hosted link like a real provider's, so the customer journey is the same. The link is on the
+// reserved .invalid domain: it can never resolve, and never reaches anyone.
+func fakeSession(id string) Session {
+	return Session{ID: id, URL: "https://verify.invalid/session/" + id}
 }
 
 // VerifyWebhook implements Provider. The fake's signature is in X-Forge-Signature.
