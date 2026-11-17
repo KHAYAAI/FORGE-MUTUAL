@@ -28,6 +28,10 @@ func DefaultConfig() Config {
 		Assets: map[string]AssetConfig{
 			"ZAR": {Ledger: 710, MaxAmountMinor: 1_000_000_000}, // R10,000,000.00
 			"USD": {Ledger: 840, MaxAmountMinor: 1_000_000_000}, // $10,000,000.00
+			// Partner-bank mirrors (ARCHITECTURE.md 7.2). Offering them to customers is gated by pkg/licence upstream;
+			// the ledger only keeps each currency on its own ledger.
+			"EUR": {Ledger: 978, MaxAmountMinor: 1_000_000_000}, // EUR 10,000,000.00
+			"GBP": {Ledger: 826, MaxAmountMinor: 1_000_000_000}, // GBP 10,000,000.00
 		},
 		AccountCodes: map[uint16]bool{
 			1001: true, // CUSTOMER_DEPOSIT

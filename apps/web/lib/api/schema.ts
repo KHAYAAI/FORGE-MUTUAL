@@ -31,7 +31,11 @@ export interface paths {
         /** The session party's accounts and balances. */
         get: operations["listAccounts"];
         put?: never;
-        post?: never;
+        /**
+         * Open a further current account in a currency (ZAR, USD, EUR or GBP). One per currency; asking again returns it.
+         * @description EUR and GBP are refused (409) in production until approved (pkg/licence).
+         */
+        post: operations["openCurrencyAccount"];
         delete?: never;
         options?: never;
         head?: never;
@@ -194,6 +198,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/receiving-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The reference for each of the party's accounts, which a payer quotes to pay into it. */
+        get: operations["receivingDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cross-border-credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Foreign-currency payments the party received, each with the reason it was paid (for SARB reporting). */
+        get: operations["listCrossBorderCredits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cross-border-credits/{credit}/reason": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give the reason for a payment received from abroad. Once given, it is not changed here. */
+        post: operations["classifyCrossBorderCredit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The reasons a customer may give for a payment received from abroad. */
+        get: operations["listPaymentReasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/applications/person": {
         parameters: {
             query?: never;
@@ -263,7 +335,7 @@ export interface components {
         Account: {
             account_id: string;
             /** @enum {string} */
-            asset: "ZAR" | "USD";
+            asset: "ZAR" | "USD" | "EUR" | "GBP";
             available_minor: string;
             /** @description The entity that holds the money. Every balance names it. */
             holding_entity: string;
@@ -304,9 +376,9 @@ export interface components {
         };
         QuoteRequest: {
             /** @enum {string} */
-            sell_asset: "ZAR" | "USD";
+            sell_asset: "ZAR" | "USD" | "EUR" | "GBP";
             /** @enum {string} */
-            buy_asset: "ZAR" | "USD";
+            buy_asset: "ZAR" | "USD" | "EUR" | "GBP";
             sell_amount_minor: string;
         };
         Quote: {
@@ -411,6 +483,32 @@ export interface components {
              */
             party_id?: string;
         };
+        OpenedAccount: {
+            account_id: string;
+            asset: string;
+            reference: string;
+            /** @description The partner bank that holds a foreign account; empty for the rand. */
+            partner: string;
+        };
+        ReceivingDetail: {
+            reference: string;
+            asset: string;
+            account_id: string;
+        };
+        CrossBorderCredit: {
+            credit_id: string;
+            account_id: string;
+            asset: string;
+            amount_minor: string;
+            reference: string;
+            booked_at: string;
+            /** @enum {string} */
+            status: "AWAITING_REASON" | "CLASSIFIED";
+            reason_code: string;
+            reason_note: string;
+            classified_by: string;
+            classified_at: string;
+        };
     };
     responses: {
         /** @description An error. */
@@ -472,6 +570,36 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    openCurrencyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    asset: "ZAR" | "USD" | "EUR" | "GBP";
+                };
+            };
+        };
+        responses: {
+            /** @description The account, and the reference a payer quotes. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenedAccount"];
+                };
+            };
+            400: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
         };
     };
     listActivity: {
@@ -716,6 +844,107 @@ export interface operations {
             403: components["responses"]["Error"];
             409: components["responses"]["Error"];
             503: components["responses"]["Error"];
+        };
+    };
+    receivingDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The references. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        details: components["schemas"]["ReceivingDetail"][];
+                    };
+                };
+            };
+        };
+    };
+    listCrossBorderCredits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credits, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        credits: components["schemas"]["CrossBorderCredit"][];
+                    };
+                };
+            };
+        };
+    };
+    classifyCrossBorderCredit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credit: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason_code: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The credit, with its reason. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossBorderCredit"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    listPaymentReasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reasons. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reasons: {
+                            code: string;
+                            label: string;
+                        }[];
+                    };
+                };
+            };
         };
     };
     applyPerson: {

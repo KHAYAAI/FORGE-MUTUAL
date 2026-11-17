@@ -1,8 +1,9 @@
 // Package pricing computes FX quotes in integers. It is pure. Rounding always favours the bank, so the customer is never
 // shown a rate that gives more than the bank can deliver.
 //
-// Rates are ZAR per USD, scaled by 10^8. Amounts are minor units; both assets use two decimals, so a ratio of minor units
-// is the same ratio as of major units.
+// Every pair is the rand against one foreign currency (USD, EUR or GBP). Rates are ZAR per unit of the foreign
+// currency, scaled by 10^8. Amounts are minor units; every asset uses two decimals, so a ratio of minor units is the
+// same ratio as of major units. Below, "USD" in a comment stands for whichever foreign currency is quoted.
 package pricing
 
 import (
@@ -13,11 +14,27 @@ import (
 // Scale is 10^8, the rate scale.
 const Scale = 100_000_000
 
-// Pair is one currency pair, quoted as ZAR per USD.
+// The assets.
 const (
-	USD = "USD"
 	ZAR = "ZAR"
+	USD = "USD"
+	EUR = "EUR"
+	GBP = "GBP"
 )
+
+// Foreign reports whether an asset is a foreign currency quoted against the rand.
+func Foreign(asset string) bool { return asset == USD || asset == EUR || asset == GBP }
+
+// ForeignOf returns the foreign currency of a pair, or "" when the pair is not the rand against a foreign currency.
+func ForeignOf(sellAsset, buyAsset string) string {
+	switch {
+	case sellAsset == ZAR && Foreign(buyAsset):
+		return buyAsset
+	case buyAsset == ZAR && Foreign(sellAsset):
+		return sellAsset
+	}
+	return ""
+}
 
 // Quote is one priced conversion.
 type Quote struct {
@@ -32,7 +49,7 @@ type Quote struct {
 }
 
 // ErrInvalid is returned for amounts or rates that cannot be priced.
-var ErrInvalid = errors.New("pricing: amount, rate and spread must be positive, and the pair must be ZAR and USD")
+var ErrInvalid = errors.New("pricing: amount, rate and spread must be positive, and the pair must be ZAR against USD, EUR or GBP")
 
 // Price prices selling sellAmount of sellAsset for buyAsset at the market rate mid, with a spread in basis points. The
 // customer pays the spread: buying USD costs more ZAR than the market rate; selling USD returns fewer ZAR.
@@ -40,7 +57,7 @@ func Price(sellAsset, buyAsset string, sellAmount, mid, spreadBps int64) (Quote,
 	if sellAmount <= 0 || mid <= 0 || spreadBps < 0 || spreadBps >= 10000 {
 		return Quote{}, ErrInvalid
 	}
-	if !((sellAsset == ZAR && buyAsset == USD) || (sellAsset == USD && buyAsset == ZAR)) {
+	if ForeignOf(sellAsset, buyAsset) == "" {
 		return Quote{}, ErrInvalid
 	}
 	q := Quote{SellAsset: sellAsset, BuyAsset: buyAsset, SellAmount: sellAmount, MidScaled: mid, SpreadBps: spreadBps}

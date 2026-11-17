@@ -65,6 +65,8 @@ func run(log *slog.Logger) error {
 			FX:           fxv1connect.NewFXServiceClient(outbound, urls["FX_URL"], caller()),
 			Payouts:      payoutsv1connect.NewPayoutsServiceClient(outbound, urls["PAYOUTS_URL"], caller()),
 			Onboarding:   onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
+			CrossBorder:  paymentsv1connect.NewCrossBorderServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
+			References:   paymentsv1connect.NewInboundReferenceServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")

@@ -116,7 +116,7 @@ func (c *Client) Rails() banklayer.Rail { return sponsorRail{c} }
 
 // ForeignCurrency implements banklayer.BankLayer.
 func (c *Client) ForeignCurrency() []banklayer.ForeignAccountProvider {
-	return []banklayer.ForeignAccountProvider{usdPartner{c}}
+	return []banklayer.ForeignAccountProvider{fxPartner{c, "USD"}, fxPartner{c, "EUR"}, fxPartner{c, "GBP"}}
 }
 
 // StatementSource implements banklayer.BankLayer.
@@ -149,40 +149,51 @@ func (r sponsorRail) Status(ctx context.Context, id string) (banklayer.PayResult
 	return res, err
 }
 
-type usdPartner struct{ c *Client }
+// fxPartner is the sponsor's foreign-currency partner for one currency. The paths are Forge's own wire format, like
+// the rest of this client (VERIFY-SPONSOR); the dollar keeps the path it always had.
+type fxPartner struct {
+	c     *Client
+	asset string
+}
 
-func (usdPartner) Partner() string { return "usd-partner" }
-func (usdPartner) Asset() string   { return "USD" }
+func (p fxPartner) Partner() string {
+	if p.asset == "USD" {
+		return "usd-partner"
+	}
+	return strings.ToLower(p.asset) + "-partner"
+}
+func (p fxPartner) Asset() string { return p.asset }
+func (p fxPartner) base() string  { return "/v1/partner/" + strings.ToLower(p.asset) }
 
-func (p usdPartner) OpenAccount(ctx context.Context, req banklayer.OpenAccountRequest) (banklayer.Account, error) {
+func (p fxPartner) OpenAccount(ctx context.Context, req banklayer.OpenAccountRequest) (banklayer.Account, error) {
 	var acc banklayer.Account
-	err := p.c.do(ctx, http.MethodPost, "/v1/partner/usd/accounts", req, &acc)
+	err := p.c.do(ctx, http.MethodPost, p.base()+"/accounts", req, &acc)
 	return acc, err
 }
 
-func (p usdPartner) Payout(ctx context.Context, req banklayer.PayRequest) (banklayer.PayResult, error) {
+func (p fxPartner) Payout(ctx context.Context, req banklayer.PayRequest) (banklayer.PayResult, error) {
 	var res banklayer.PayResult
-	err := p.c.do(ctx, http.MethodPost, "/v1/partner/usd/payouts", req, &res)
+	err := p.c.do(ctx, http.MethodPost, p.base()+"/payouts", req, &res)
 	return res, err
 }
 
-func (p usdPartner) PayoutStatus(ctx context.Context, id string) (banklayer.PayResult, error) {
+func (p fxPartner) PayoutStatus(ctx context.Context, id string) (banklayer.PayResult, error) {
 	var res banklayer.PayResult
-	err := p.c.do(ctx, http.MethodGet, "/v1/partner/usd/payouts/"+url.PathEscape(id), nil, &res)
+	err := p.c.do(ctx, http.MethodGet, p.base()+"/payouts/"+url.PathEscape(id), nil, &res)
 	return res, err
 }
 
-func (p usdPartner) Statement(ctx context.Context, date time.Time) (banklayer.Statement, error) {
+func (p fxPartner) Statement(ctx context.Context, date time.Time) (banklayer.Statement, error) {
 	var st banklayer.Statement
 	q := url.Values{"date": {date.UTC().Format("2006-01-02")}}
-	err := p.c.do(ctx, http.MethodGet, "/v1/partner/usd/statements?"+q.Encode(), nil, &st)
+	err := p.c.do(ctx, http.MethodGet, p.base()+"/statements?"+q.Encode(), nil, &st)
 	return st, err
 }
 
-func (p usdPartner) Inbound(ctx context.Context, since time.Time) ([]banklayer.Movement, error) {
+func (p fxPartner) Inbound(ctx context.Context, since time.Time) ([]banklayer.Movement, error) {
 	var list []banklayer.Movement
 	q := url.Values{"since": {since.UTC().Format(time.RFC3339Nano)}}
-	err := p.c.do(ctx, http.MethodGet, "/v1/partner/usd/inbound?"+q.Encode(), nil, &list)
+	err := p.c.do(ctx, http.MethodGet, p.base()+"/inbound?"+q.Encode(), nil, &list)
 	return list, err
 }
 

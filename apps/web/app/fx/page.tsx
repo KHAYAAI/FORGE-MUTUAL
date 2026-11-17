@@ -9,14 +9,22 @@ import { formatMinor, parseToMinor } from "@/lib/money";
 
 type Account = components["schemas"]["Account"];
 type Quote = components["schemas"]["Quote"];
-type Asset = "ZAR" | "USD";
+type Asset = "ZAR" | "USD" | "EUR" | "GBP";
 
-const OTHER: Record<Asset, Asset> = { ZAR: "USD", USD: "ZAR" };
+// Every conversion is the rand against one foreign currency, either way.
+const PAIRS: { sell: Asset; buy: Asset }[] = [
+  { sell: "ZAR", buy: "USD" },
+  { sell: "ZAR", buy: "EUR" },
+  { sell: "ZAR", buy: "GBP" },
+  { sell: "USD", buy: "ZAR" },
+  { sell: "EUR", buy: "ZAR" },
+  { sell: "GBP", buy: "ZAR" },
+];
 
 export default function FxPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [sellAsset, setSellAsset] = useState<Asset>("ZAR");
+  const [pair, setPair] = useState("ZAR-USD");
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -26,7 +34,7 @@ export default function FxPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const buyAsset = OTHER[sellAsset];
+  const [sellAsset, buyAsset] = pair.split("-") as [Asset, Asset];
   const sellOptions = accounts.filter((a) => a.asset === sellAsset);
   const buyOptions = accounts.filter((a) => a.asset === buyAsset);
 
@@ -44,7 +52,7 @@ export default function FxPage() {
     setQuote(null);
     setAcknowledged(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sellAsset, accounts]);
+  }, [pair, accounts]);
 
   const expired = quote !== null && Date.parse(quote.expires_at) <= Date.now();
 
@@ -93,13 +101,16 @@ export default function FxPage() {
         <label className="block text-sm">
           <span className="font-medium">I am converting</span>
           <select
-            name="sellAsset"
-            value={sellAsset}
-            onChange={(e) => setSellAsset(e.target.value as Asset)}
+            name="pair"
+            value={pair}
+            onChange={(e) => setPair(e.target.value)}
             className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
           >
-            <option value="ZAR">ZAR to USD</option>
-            <option value="USD">USD to ZAR</option>
+            {PAIRS.map((p) => (
+              <option key={`${p.sell}-${p.buy}`} value={`${p.sell}-${p.buy}`}>
+                {p.sell} to {p.buy}
+              </option>
+            ))}
           </select>
         </label>
         <label className="block text-sm">

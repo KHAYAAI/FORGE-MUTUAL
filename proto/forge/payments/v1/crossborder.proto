@@ -1,0 +1,97 @@
+// Cross-border reporting (ARCHITECTURE.md 12). Every foreign-currency credit a customer receives is reported to the
+// South African Reserve Bank's financial surveillance department through the authorised dealer, with the reason for
+// the payment (its balance-of-payments category). The customer gives the reason; Forge records it with the credit.
+// The submission format is not verified (VERIFY-FINSURV), so nothing is submitted: each record is kept as evidence
+// until the format and the authorised dealer's channel are confirmed.
+syntax = "proto3";
+
+package forge.payments.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1;paymentsv1";
+
+service CrossBorderService {
+  // The party's foreign-currency credits, newest first, with what each still needs.
+  rpc ListCrossBorderCredits(ListCrossBorderCreditsRequest) returns (ListCrossBorderCreditsResponse);
+  // Records the reason for one credit. A reason, once given, is not changed here: a correction goes through operations.
+  rpc ClassifyCrossBorderCredit(ClassifyCrossBorderCreditRequest) returns (ClassifyCrossBorderCreditResponse);
+  // The reasons a customer may choose from.
+  rpc ListPaymentReasons(ListPaymentReasonsRequest) returns (ListPaymentReasonsResponse);
+}
+
+message CrossBorderCredit {
+  string credit_id = 1;      // "<asset>:<movement>"
+  string account_id = 2;
+  string asset = 3;          // USD, EUR or GBP
+  string amount_minor = 4;
+  string reference = 5;
+  string booked_at = 6;      // RFC 3339
+  string status = 7;         // AWAITING_REASON, CLASSIFIED
+  string reason_code = 8;    // empty until classified
+  string reason_note = 9;
+  string classified_by = 10;
+  string classified_at = 11;
+}
+
+message ListCrossBorderCreditsRequest {
+  string party_id = 1;
+}
+
+message ListCrossBorderCreditsResponse {
+  repeated CrossBorderCredit credits = 1;
+}
+
+message ClassifyCrossBorderCreditRequest {
+  string party_id = 1;
+  string credit_id = 2;
+  string reason_code = 3;
+  string note = 4;    // up to 200 characters, for example the invoice the payment settles
+  string actor = 5;
+}
+
+message ClassifyCrossBorderCreditResponse {
+  CrossBorderCredit credit = 1;
+}
+
+message PaymentReason {
+  string code = 1;
+  string label = 2;
+}
+
+message ListPaymentReasonsRequest {}
+
+message ListPaymentReasonsResponse {
+  repeated PaymentReason reasons = 1;
+}
+
+// Inbound references bind the reference a payer quotes to the customer account it pays. Account opening registers
+// one for every account; the inbound worker books a credit to the account its reference names, or to suspense.
+service InboundReferenceService {
+  // Binds a reference to an account. The same binding again is a no-op; moving a reference to another account is
+  // refused, because a reference that moved would misdirect money.
+  rpc RegisterInboundReference(RegisterInboundReferenceRequest) returns (RegisterInboundReferenceResponse);
+  // The references of a party's accounts: what the customer gives a payer.
+  rpc ListInboundReferences(ListInboundReferencesRequest) returns (ListInboundReferencesResponse);
+}
+
+message InboundReference {
+  string reference = 1;
+  string asset = 2;
+  string account_id = 3;
+}
+
+message RegisterInboundReferenceRequest {
+  string reference = 1;
+  string asset = 2;
+  string account_id = 3;
+  string party_id = 4;
+}
+
+message RegisterInboundReferenceResponse {}
+
+message ListInboundReferencesRequest {
+  string party_id = 1;
+}
+
+message ListInboundReferencesResponse {
+  repeated InboundReference references = 1;
+}

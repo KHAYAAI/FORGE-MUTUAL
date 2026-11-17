@@ -54,6 +54,7 @@ type Service struct {
 	reviews   ReviewQueue
 	sessions  SessionLister
 	log       *slog.Logger
+	accounts  AccountOpener
 }
 
 // SessionLister returns the verification sessions started for an onboarding.

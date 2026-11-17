@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/licence"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,6 +30,8 @@ type Partner struct {
 type Service struct {
 	Pool     *pgxpool.Pool
 	Partners []Partner
+	// Licence keeps euro and pound accounts and payouts off in production until they are approved.
+	Licence licence.Gate
 }
 
 func (s *Service) byName(name string) (Partner, bool) {
@@ -78,6 +81,9 @@ func (s *Service) OpenAccount(ctx context.Context, req *connect.Request[partnerv
 	if req.Msg.Owner == "" || req.Msg.Asset == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("owner and asset are required"))
 	}
+	if err := s.Licence.AllowCurrency(req.Msg.Asset); err != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	}
 	p, err := s.choose(ctx, req.Msg.Asset)
 	if err != nil {
 		return nil, err
@@ -101,6 +107,9 @@ func (s *Service) Payout(ctx context.Context, req *connect.Request[partnerv1.Pay
 	m := req.Msg
 	if m.PaymentId == "" || m.Asset == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("payment_id and asset are required"))
+	}
+	if err := s.Licence.AllowCurrency(m.Asset); err != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	var amount int64
 	if _, err := fmt.Sscan(m.AmountMinor, &amount); err != nil || amount <= 0 {

@@ -13,11 +13,15 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/partner/v1/partnerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1/policyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/licence"
 	"github.com/khayaai/forge-mutual/pkg/screening"
 	"github.com/khayaai/forge-mutual/pkg/serve"
+	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/accounts"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/kyc"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/onboarding"
 	"github.com/khayaai/forge-mutual/services/platform/onboarding/internal/service"
@@ -134,6 +138,24 @@ func run(log *slog.Logger) error {
 	defer w.Stop()
 
 	svc := service.New(tc, provider, taskQueue).WithReviews(reviews).WithSessions(reviews).WithLogger(log)
+	// Further currency accounts. They need payments, to register the payer's reference; a foreign currency also needs
+	// the partner-bank router. Without PAYMENTS_URL, OpenCurrencyAccount is unavailable.
+	if paymentsURL := os.Getenv("PAYMENTS_URL"); paymentsURL != "" {
+		gate, err := licence.FromEnv(os.Getenv)
+		if err != nil {
+			return err
+		}
+		opener := &accounts.Opener{
+			Pool: pool, Parties: acts.Party, Ledger: acts.Ledger, Licence: gate, Entity: "BANK",
+			References: paymentsv1connect.NewInboundReferenceServiceClient(outbound, paymentsURL, callerAs("svc-onboarding")),
+			Insured:    os.Getenv("INSURED_DEPOSITS") == "true",
+		}
+		if partnerURL := os.Getenv("PARTNER_URL"); partnerURL != "" {
+			opener.Partners = partnerv1connect.NewPartnerRouterServiceClient(outbound, partnerURL, callerAs("svc-onboarding"))
+		}
+		svc = svc.WithAccounts(opener)
+		log.Info("currency accounts enabled", "foreign", opener.Partners != nil, "licence", gate.Status())
+	}
 	// A decision is recorded before the workflow is told. This tells it again if the first attempt failed.
 	go svc.RunRedelivery(ctx, 15*time.Second, log)
 	path, handler := onboardingv1connect.NewOnboardingServiceHandler(svc,

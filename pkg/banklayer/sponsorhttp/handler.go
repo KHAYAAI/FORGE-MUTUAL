@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/khayaai/forge-mutual/pkg/banklayer"
@@ -32,11 +33,11 @@ func Handler(b *sim.Bank) http.Handler {
 	mux.HandleFunc("GET /v1/inbound/{asset}", s.inbound)
 	mux.HandleFunc("POST /v1/insurance/{asset}", s.insurance)
 	mux.HandleFunc("POST /v1/prudential", s.prudential)
-	mux.HandleFunc("POST /v1/partner/usd/accounts", s.partnerOpen)
-	mux.HandleFunc("POST /v1/partner/usd/payouts", s.partnerPay)
-	mux.HandleFunc("GET /v1/partner/usd/payouts/{id}", s.partnerPayStatus)
-	mux.HandleFunc("GET /v1/partner/usd/statements", s.partnerStatement)
-	mux.HandleFunc("GET /v1/partner/usd/inbound", s.partnerInbound)
+	mux.HandleFunc("POST /v1/partner/{cur}/accounts", s.partnerOpen)
+	mux.HandleFunc("POST /v1/partner/{cur}/payouts", s.partnerPay)
+	mux.HandleFunc("GET /v1/partner/{cur}/payouts/{id}", s.partnerPayStatus)
+	mux.HandleFunc("GET /v1/partner/{cur}/statements", s.partnerStatement)
+	mux.HandleFunc("GET /v1/partner/{cur}/inbound", s.partnerInbound)
 	return mux
 }
 
@@ -217,17 +218,20 @@ func (s *server) prudential(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *server) partner(w http.ResponseWriter) (banklayer.ForeignAccountProvider, bool) {
-	p := s.bank.ForeignCurrency()
-	if len(p) == 0 {
-		writeErr(w, banklayer.ErrNotSupported)
-		return nil, false
+// partner is the provider for the currency in the path ("usd", "eur" or "gbp").
+func (s *server) partner(w http.ResponseWriter, r *http.Request) (banklayer.ForeignAccountProvider, bool) {
+	cur := strings.ToUpper(r.PathValue("cur"))
+	for _, p := range s.bank.ForeignCurrency() {
+		if p.Asset() == cur {
+			return p, true
+		}
 	}
-	return p[0], true
+	writeErr(w, banklayer.ErrNotSupported)
+	return nil, false
 }
 
 func (s *server) partnerOpen(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.partner(w)
+	p, ok := s.partner(w, r)
 	if !ok {
 		return
 	}
@@ -245,7 +249,7 @@ func (s *server) partnerOpen(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) partnerPay(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.partner(w)
+	p, ok := s.partner(w, r)
 	if !ok {
 		return
 	}
@@ -263,7 +267,7 @@ func (s *server) partnerPay(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) partnerPayStatus(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.partner(w)
+	p, ok := s.partner(w, r)
 	if !ok {
 		return
 	}
@@ -276,7 +280,7 @@ func (s *server) partnerPayStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) partnerStatement(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.partner(w)
+	p, ok := s.partner(w, r)
 	if !ok {
 		return
 	}
@@ -294,7 +298,7 @@ func (s *server) partnerStatement(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) partnerInbound(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.partner(w)
+	p, ok := s.partner(w, r)
 	if !ok {
 		return
 	}

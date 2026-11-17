@@ -52,6 +52,8 @@ type Services struct {
 	FX           fxv1connect.FXServiceClient
 	Payouts      payoutsv1connect.PayoutsServiceClient
 	Onboarding   onboardingv1connect.OnboardingServiceClient
+	CrossBorder  paymentsv1connect.CrossBorderServiceClient
+	References   paymentsv1connect.InboundReferenceServiceClient
 }
 
 // API serves the workspace routes.
@@ -76,6 +78,11 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/payout-batches", a.session(a.createBatch))
 	mux.HandleFunc("GET /v1/payout-batches/{batch}", a.session(a.getBatch))
 	mux.HandleFunc("POST /v1/payout-batches/{batch}/approve", a.session(a.approveBatch))
+	mux.HandleFunc("POST /v1/accounts", a.session(a.openAccount))
+	mux.HandleFunc("GET /v1/receiving-details", a.session(a.receivingDetails))
+	mux.HandleFunc("GET /v1/cross-border-credits", a.session(a.listCrossBorder))
+	mux.HandleFunc("POST /v1/cross-border-credits/{credit}/reason", a.session(a.classifyCrossBorder))
+	mux.HandleFunc("GET /v1/payment-reasons", a.session(a.listReasons))
 	mux.HandleFunc("POST /v1/applications/person", a.applicant(a.applyPerson))
 	mux.HandleFunc("POST /v1/applications/business", a.applicant(a.applyBusiness))
 	mux.HandleFunc("GET /v1/applications/{kind}", a.applicant(a.getApplication))

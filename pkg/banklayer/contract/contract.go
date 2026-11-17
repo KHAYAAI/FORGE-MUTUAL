@@ -262,38 +262,73 @@ func statementArithmetic(t *testing.T, h Harness) {
 	}
 }
 
+// Each foreign currency (the dollar, the euro and the pound) has exactly one partner, and every partner's books are
+// separate from the sponsor pool and from each other.
 func partnerSeparate(t *testing.T, h Harness) {
 	ctx := context.Background()
 	providers := h.Bank.ForeignCurrency()
-	if len(providers) != 1 || providers[0].Asset() != "USD" {
-		t.Fatalf("v1 must expose exactly one USD partner, got %d providers", len(providers))
+	seen := map[string]int{}
+	for _, p := range providers {
+		seen[p.Asset()]++
 	}
-	p := providers[0]
-	acc, err := p.OpenAccount(ctx, banklayer.OpenAccountRequest{Owner: newID("owner"), Asset: "USD"})
-	if err != nil || acc.ID == "" || acc.Asset != "USD" {
-		t.Fatalf("partner OpenAccount = %+v, %v", acc, err)
+	for _, cur := range []string{"USD", "EUR", "GBP"} {
+		if seen[cur] != 1 {
+			t.Fatalf("want exactly one %s partner, got %d (of %d providers)", cur, seen[cur], len(providers))
+		}
 	}
-	sponsorBefore, err := h.Bank.StatementSource().Statement(ctx, "USD", today())
-	if err != nil {
-		t.Fatalf("sponsor Statement: %v", err)
+	for _, p := range providers {
+		cur := p.Asset()
+		acc, err := p.OpenAccount(ctx, banklayer.OpenAccountRequest{Owner: newID("owner"), Asset: cur})
+		if err != nil || acc.ID == "" || acc.Asset != cur {
+			t.Fatalf("%s partner OpenAccount = %+v, %v", cur, acc, err)
+		}
+		sponsorBefore, err := h.Bank.StatementSource().Statement(ctx, cur, today())
+		if err != nil {
+			t.Fatalf("sponsor Statement: %v", err)
+		}
+		others := map[string]int64{}
+		for _, o := range providers {
+			if o.Asset() != cur {
+				st, err := o.Statement(ctx, today())
+				if err != nil {
+					t.Fatalf("%s partner Statement: %v", o.Asset(), err)
+				}
+				others[o.Asset()] = st.ClosingMinor
+			}
+		}
+		if err := h.Inbound(cur, 777, newID(cur+"-in"), true); err != nil {
+			t.Fatalf("inject %s partner credit: %v", cur, err)
+		}
+		partnerSt, err := p.Statement(ctx, today())
+		if err != nil {
+			t.Fatalf("%s partner Statement: %v", cur, err)
+		}
+		if partnerSt.ClosingMinor < 777 {
+			t.Fatalf("%s partner closing %d does not include the credit", cur, partnerSt.ClosingMinor)
+		}
+		sponsorAfter, err := h.Bank.StatementSource().Statement(ctx, cur, today())
+		if err != nil {
+			t.Fatalf("sponsor Statement: %v", err)
+		}
+		if sponsorAfter.ClosingMinor != sponsorBefore.ClosingMinor {
+			t.Fatalf("a %s partner credit moved the sponsor pool: %d -> %d", cur, sponsorBefore.ClosingMinor, sponsorAfter.ClosingMinor)
+		}
+		for o, before := range others {
+			st, _ := providers[indexOf(providers, o)].Statement(ctx, today())
+			if st.ClosingMinor != before {
+				t.Fatalf("a %s credit moved the %s partner: %d -> %d", cur, o, before, st.ClosingMinor)
+			}
+		}
 	}
-	if err := h.Inbound("USD", 777, newID("usd-in"), true); err != nil {
-		t.Fatalf("inject partner credit: %v", err)
+}
+
+func indexOf(ps []banklayer.ForeignAccountProvider, asset string) int {
+	for i, p := range ps {
+		if p.Asset() == asset {
+			return i
+		}
 	}
-	partnerSt, err := p.Statement(ctx, today())
-	if err != nil {
-		t.Fatalf("partner Statement: %v", err)
-	}
-	if partnerSt.ClosingMinor < 777 {
-		t.Fatalf("partner closing %d does not include the credit", partnerSt.ClosingMinor)
-	}
-	sponsorAfter, err := h.Bank.StatementSource().Statement(ctx, "USD", today())
-	if err != nil {
-		t.Fatalf("sponsor Statement: %v", err)
-	}
-	if sponsorAfter.ClosingMinor != sponsorBefore.ClosingMinor {
-		t.Fatalf("a partner credit moved the sponsor pool: %d -> %d", sponsorBefore.ClosingMinor, sponsorAfter.ClosingMinor)
-	}
+	return -1
 }
 
 func partnerPayout(t *testing.T, h Harness) {

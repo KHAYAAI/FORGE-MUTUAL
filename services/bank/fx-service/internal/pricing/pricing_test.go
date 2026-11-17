@@ -80,7 +80,8 @@ func TestInvalidInputsAreRefused(t *testing.T) {
 		{"zero rate", ZAR, USD, 100, 0, 10},
 		{"negative spread", ZAR, USD, 100, mid, -1},
 		{"spread at 100 percent", ZAR, USD, 100, mid, 10000},
-		{"unsupported pair", ZAR, "EUR", 100, mid, 10},
+		{"unsupported currency", ZAR, "JPY", 100, mid, 10},
+		{"a cross without the rand", EUR, USD, 100, mid, 10},
 		{"same asset", USD, USD, 100, mid, 10},
 	}
 	for _, c := range cases {
@@ -94,5 +95,22 @@ func TestInvalidInputsAreRefused(t *testing.T) {
 func TestAmountThatBuysNothingIsRefused(t *testing.T) {
 	if _, err := Price(ZAR, USD, 1, mid, 10); err == nil {
 		t.Fatal("a one-cent conversion that delivers zero USD must be refused")
+	}
+}
+
+// The euro and the pound price exactly as the dollar does: the same rounding, against the customer, both ways.
+func TestEveryForeignCurrencyPricesTheSameWay(t *testing.T) {
+	for _, cur := range []string{USD, EUR, GBP} {
+		buy, err := Price(ZAR, cur, 1_000_000, mid, 50)
+		if err != nil {
+			t.Fatalf("%s: %v", cur, err)
+		}
+		sell, err := Price(cur, ZAR, buy.BuyAmount, mid, 50)
+		if err != nil {
+			t.Fatalf("%s back: %v", cur, err)
+		}
+		if sell.BuyAmount >= 1_000_000 {
+			t.Fatalf("%s: a round trip returned %d of 1000000", cur, sell.BuyAmount)
+		}
 	}
 }

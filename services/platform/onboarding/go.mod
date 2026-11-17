@@ -7,6 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.13.0
 	github.com/khayaai/forge-mutual/pkg/api v0.0.0
 	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
+	github.com/khayaai/forge-mutual/pkg/licence v0.0.0
 	github.com/khayaai/forge-mutual/pkg/screening v0.0.0
 	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 	github.com/khayaai/forge-mutual/pkg/uuid v0.0.0
@@ -66,3 +67,5 @@ replace github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid
 replace github.com/khayaai/forge-mutual/pkg/screening => ../../../pkg/screening
 
 replace github.com/khayaai/forge-mutual/pkg/serve => ../../../pkg/serve
+
+replace github.com/khayaai/forge-mutual/pkg/licence => ../../../pkg/licence

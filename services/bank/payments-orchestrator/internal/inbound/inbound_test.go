@@ -89,7 +89,7 @@ func setup(t *testing.T) (*Worker, *fakeLedger, *sim.Bank, *pgxpool.Pool) {
 	if err := Open(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `truncate inbound_credit, inbound_reference`); err != nil {
+	if _, err := pool.Exec(ctx, `truncate inbound_credit, inbound_reference, cross_border_credit`); err != nil {
 		t.Fatal(err)
 	}
 	fl := newFake()

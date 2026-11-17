@@ -11,6 +11,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/partner/v1/partnerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/licence"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/bank/partner-bank-router/internal/service"
 	"github.com/khayaai/forge-mutual/services/bank/partner-bank-router/internal/store"
@@ -80,9 +81,13 @@ func run(log *slog.Logger) error {
 		return errors.New("the bank layer offers no foreign-currency partner")
 	}
 	log.Info("partners configured", "count", len(partners))
+	gate, err := licence.FromEnv(os.Getenv)
+	if err != nil {
+		return err
+	}
 
 	mux := http.NewServeMux()
-	path, handler := partnerv1connect.NewPartnerRouterServiceHandler(&service.Service{Pool: pool, Partners: partners},
+	path, handler := partnerv1connect.NewPartnerRouterServiceHandler(&service.Service{Pool: pool, Partners: partners, Licence: gate},
 		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(path, handler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })

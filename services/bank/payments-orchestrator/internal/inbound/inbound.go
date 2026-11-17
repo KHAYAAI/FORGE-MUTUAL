@@ -37,8 +37,9 @@ const (
 	namespace     = "3b1f0c2e-7d4a-5f6e-9b8c-2a1d0e9f8b7c"
 )
 
-// poolCode is the bank-side mirror that a credit debits: the sponsor pool for ZAR, the partner mirror for USD.
-var poolCode = map[string]uint16{"ZAR": 3003, "USD": 5001}
+// poolCode is the bank-side mirror that a credit debits: the sponsor pool for ZAR, the partner mirror for each foreign
+// currency.
+var poolCode = map[string]uint16{"ZAR": 3003, "USD": 5001, "EUR": 5001, "GBP": 5001}
 
 // Statuses.
 const (
@@ -197,6 +198,20 @@ func (w *Worker) markBooked(ctx context.Context, asset, movementID, status, targ
 		}
 		if status != StatusBooked {
 			return nil
+		}
+		// A foreign-currency credit is cross-border: it is reported with the reason for the payment, which the
+		// customer gives. The record is written with the booking, so no booked credit can lack one.
+		if asset != "ZAR" {
+			var ref string
+			if err := tx.QueryRow(ctx, `select reference from inbound_credit where asset = $1 and movement_id = $2`, asset, movementID).Scan(&ref); err != nil {
+				return fmt.Errorf("inbound: cross-border: %w", err)
+			}
+			if _, err := tx.Exec(ctx, `
+				insert into cross_border_credit (asset, movement_id, party_id, account_id, amount_minor, reference, booked_at)
+				values ($1, $2, $3, $4, $5, $6, $7) on conflict (asset, movement_id) do nothing`,
+				asset, movementID, partyID, target, amount, ref, at); err != nil {
+				return fmt.Errorf("inbound: cross-border: %w", err)
+			}
 		}
 		eventID, payload, err := events.Wrap(events.Params{
 			Type: TopicCreditBooked, Entity: w.Entity, Producer: "payments-orchestrator", Correlation: movementID,

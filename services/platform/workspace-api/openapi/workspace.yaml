@@ -39,6 +39,36 @@ paths:
                       $ref: "#/components/schemas/Account"
         "401":
           $ref: "#/components/responses/Error"
+    post:
+      operationId: openCurrencyAccount
+      summary: Open a further current account in a currency (ZAR, USD, EUR or GBP). One per currency; asking again returns it.
+      description: |
+        EUR and GBP are refused (409) in production until approved (pkg/licence).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [asset]
+              properties:
+                asset:
+                  type: string
+                  enum: [ZAR, USD, EUR, GBP]
+      responses:
+        "201":
+          description: The account, and the reference a payer quotes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenedAccount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
   /v1/accounts/{account}/activity:
     get:
       operationId: listActivity
@@ -270,6 +300,100 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/receiving-details:
+    get:
+      operationId: receivingDetails
+      summary: The reference for each of the party's accounts, which a payer quotes to pay into it.
+      responses:
+        "200":
+          description: The references.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [details]
+                properties:
+                  details:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReceivingDetail"
+  /v1/cross-border-credits:
+    get:
+      operationId: listCrossBorderCredits
+      summary: Foreign-currency payments the party received, each with the reason it was paid (for SARB reporting).
+      responses:
+        "200":
+          description: The credits, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [credits]
+                properties:
+                  credits:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CrossBorderCredit"
+  /v1/cross-border-credits/{credit}/reason:
+    post:
+      operationId: classifyCrossBorderCredit
+      summary: Give the reason for a payment received from abroad. Once given, it is not changed here.
+      parameters:
+        - name: credit
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason_code]
+              properties:
+                reason_code:
+                  type: string
+                note:
+                  type: string
+                  maxLength: 200
+      responses:
+        "200":
+          description: The credit, with its reason.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossBorderCredit"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payment-reasons:
+    get:
+      operationId: listPaymentReasons
+      summary: The reasons a customer may give for a payment received from abroad.
+      responses:
+        "200":
+          description: The reasons.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reasons]
+                properties:
+                  reasons:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, label]
+                      properties:
+                        code:
+                          type: string
+                        label:
+                          type: string
   /v1/applications/person:
     post:
       operationId: applyPerson
@@ -415,7 +539,7 @@ components:
           type: string
         asset:
           type: string
-          enum: [ZAR, USD]
+          enum: [ZAR, USD, EUR, GBP]
         available_minor:
           type: string
         holding_entity:
@@ -496,10 +620,10 @@ components:
       properties:
         sell_asset:
           type: string
-          enum: [ZAR, USD]
+          enum: [ZAR, USD, EUR, GBP]
         buy_asset:
           type: string
-          enum: [ZAR, USD]
+          enum: [ZAR, USD, EUR, GBP]
         sell_amount_minor:
           type: string
           pattern: "^[1-9][0-9]*$"
@@ -712,3 +836,53 @@ components:
           type: string
           format: uuid
           description: Present once the application is approved.
+    OpenedAccount:
+      type: object
+      required: [account_id, asset, reference, partner]
+      properties:
+        account_id:
+          type: string
+        asset:
+          type: string
+        reference:
+          type: string
+        partner:
+          type: string
+          description: The partner bank that holds a foreign account; empty for the rand.
+    ReceivingDetail:
+      type: object
+      required: [reference, asset, account_id]
+      properties:
+        reference:
+          type: string
+        asset:
+          type: string
+        account_id:
+          type: string
+    CrossBorderCredit:
+      type: object
+      required: [credit_id, account_id, asset, amount_minor, reference, booked_at, status, reason_code, reason_note, classified_by, classified_at]
+      properties:
+        credit_id:
+          type: string
+        account_id:
+          type: string
+        asset:
+          type: string
+        amount_minor:
+          type: string
+        reference:
+          type: string
+        booked_at:
+          type: string
+        status:
+          type: string
+          enum: [AWAITING_REASON, CLASSIFIED]
+        reason_code:
+          type: string
+        reason_note:
+          type: string
+        classified_by:
+          type: string
+        classified_at:
+          type: string

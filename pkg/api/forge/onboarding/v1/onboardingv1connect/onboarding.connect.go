@@ -53,6 +53,9 @@ const (
 	// OnboardingServiceDecideKYCReviewProcedure is the fully-qualified name of the OnboardingService's
 	// DecideKYCReview RPC.
 	OnboardingServiceDecideKYCReviewProcedure = "/forge.onboarding.v1.OnboardingService/DecideKYCReview"
+	// OnboardingServiceOpenCurrencyAccountProcedure is the fully-qualified name of the
+	// OnboardingService's OpenCurrencyAccount RPC.
+	OnboardingServiceOpenCurrencyAccountProcedure = "/forge.onboarding.v1.OnboardingService/OpenCurrencyAccount"
 )
 
 // OnboardingServiceClient is a client for the forge.onboarding.v1.OnboardingService service.
@@ -67,6 +70,9 @@ type OnboardingServiceClient interface {
 	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
 	// DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
 	DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error)
+	// Opens a further current account in a currency for an active customer: the rand, the dollar, the euro or the
+	// pound. One per currency per party; asking again returns the same account.
+	OpenCurrencyAccount(context.Context, *connect.Request[v1.OpenCurrencyAccountRequest]) (*connect.Response[v1.OpenCurrencyAccountResponse], error)
 }
 
 // NewOnboardingServiceClient constructs a client for the forge.onboarding.v1.OnboardingService
@@ -116,6 +122,12 @@ func NewOnboardingServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(onboardingServiceMethods.ByName("DecideKYCReview")),
 			connect.WithClientOptions(opts...),
 		),
+		openCurrencyAccount: connect.NewClient[v1.OpenCurrencyAccountRequest, v1.OpenCurrencyAccountResponse](
+			httpClient,
+			baseURL+OnboardingServiceOpenCurrencyAccountProcedure,
+			connect.WithSchema(onboardingServiceMethods.ByName("OpenCurrencyAccount")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -127,6 +139,7 @@ type onboardingServiceClient struct {
 	getOnboarding           *connect.Client[v1.GetOnboardingRequest, v1.GetOnboardingResponse]
 	listKYCReviews          *connect.Client[v1.ListKYCReviewsRequest, v1.ListKYCReviewsResponse]
 	decideKYCReview         *connect.Client[v1.DecideKYCReviewRequest, v1.DecideKYCReviewResponse]
+	openCurrencyAccount     *connect.Client[v1.OpenCurrencyAccountRequest, v1.OpenCurrencyAccountResponse]
 }
 
 // StartBusinessOnboarding calls forge.onboarding.v1.OnboardingService.StartBusinessOnboarding.
@@ -159,6 +172,11 @@ func (c *onboardingServiceClient) DecideKYCReview(ctx context.Context, req *conn
 	return c.decideKYCReview.CallUnary(ctx, req)
 }
 
+// OpenCurrencyAccount calls forge.onboarding.v1.OnboardingService.OpenCurrencyAccount.
+func (c *onboardingServiceClient) OpenCurrencyAccount(ctx context.Context, req *connect.Request[v1.OpenCurrencyAccountRequest]) (*connect.Response[v1.OpenCurrencyAccountResponse], error) {
+	return c.openCurrencyAccount.CallUnary(ctx, req)
+}
+
 // OnboardingServiceHandler is an implementation of the forge.onboarding.v1.OnboardingService
 // service.
 type OnboardingServiceHandler interface {
@@ -172,6 +190,9 @@ type OnboardingServiceHandler interface {
 	ListKYCReviews(context.Context, *connect.Request[v1.ListKYCReviewsRequest]) (*connect.Response[v1.ListKYCReviewsResponse], error)
 	// DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
 	DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error)
+	// Opens a further current account in a currency for an active customer: the rand, the dollar, the euro or the
+	// pound. One per currency per party; asking again returns the same account.
+	OpenCurrencyAccount(context.Context, *connect.Request[v1.OpenCurrencyAccountRequest]) (*connect.Response[v1.OpenCurrencyAccountResponse], error)
 }
 
 // NewOnboardingServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -217,6 +238,12 @@ func NewOnboardingServiceHandler(svc OnboardingServiceHandler, opts ...connect.H
 		connect.WithSchema(onboardingServiceMethods.ByName("DecideKYCReview")),
 		connect.WithHandlerOptions(opts...),
 	)
+	onboardingServiceOpenCurrencyAccountHandler := connect.NewUnaryHandler(
+		OnboardingServiceOpenCurrencyAccountProcedure,
+		svc.OpenCurrencyAccount,
+		connect.WithSchema(onboardingServiceMethods.ByName("OpenCurrencyAccount")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.onboarding.v1.OnboardingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OnboardingServiceStartBusinessOnboardingProcedure:
@@ -231,6 +258,8 @@ func NewOnboardingServiceHandler(svc OnboardingServiceHandler, opts ...connect.H
 			onboardingServiceListKYCReviewsHandler.ServeHTTP(w, r)
 		case OnboardingServiceDecideKYCReviewProcedure:
 			onboardingServiceDecideKYCReviewHandler.ServeHTTP(w, r)
+		case OnboardingServiceOpenCurrencyAccountProcedure:
+			onboardingServiceOpenCurrencyAccountHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -262,4 +291,8 @@ func (UnimplementedOnboardingServiceHandler) ListKYCReviews(context.Context, *co
 
 func (UnimplementedOnboardingServiceHandler) DecideKYCReview(context.Context, *connect.Request[v1.DecideKYCReviewRequest]) (*connect.Response[v1.DecideKYCReviewResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.DecideKYCReview is not implemented"))
+}
+
+func (UnimplementedOnboardingServiceHandler) OpenCurrencyAccount(context.Context, *connect.Request[v1.OpenCurrencyAccountRequest]) (*connect.Response[v1.OpenCurrencyAccountResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.onboarding.v1.OnboardingService.OpenCurrencyAccount is not implemented"))
 }

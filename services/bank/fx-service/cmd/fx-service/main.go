@@ -13,6 +13,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
+	"github.com/khayaai/forge-mutual/pkg/licence"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/pkg/systemaccounts"
 	"github.com/khayaai/forge-mutual/services/bank/fx-service/internal/rates"
@@ -57,9 +58,25 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	rate, err := rates.ParseScaled(os.Getenv("FX_RATE_ZAR_PER_USD"))
+	// The dollar rate is required; the euro and the pound are offered only when their rate is configured.
+	quoted := map[string]int64{}
+	for _, cur := range []string{"USD", "EUR", "GBP"} {
+		raw := os.Getenv("FX_RATE_ZAR_PER_" + cur)
+		if raw == "" {
+			if cur == "USD" {
+				return errors.New("FX_RATE_ZAR_PER_USD is required, as a decimal such as 18.25; the market-rate provider is not chosen yet (VERIFY)")
+			}
+			continue
+		}
+		r, err := rates.ParseScaled(raw)
+		if err != nil {
+			return fmt.Errorf("FX_RATE_ZAR_PER_%s: %w", cur, err)
+		}
+		quoted[cur] = r
+	}
+	gate, err := licence.FromEnv(os.Getenv)
 	if err != nil {
-		return errors.New("FX_RATE_ZAR_PER_USD is required, as a decimal such as 18.25; the market-rate provider is not chosen yet (VERIFY)")
+		return err
 	}
 	asOf, err := time.Parse(time.RFC3339, os.Getenv("FX_RATE_AS_OF"))
 	if err != nil {
@@ -126,7 +143,7 @@ func run(log *slog.Logger) error {
 	}()
 
 	svc := &service.Service{
-		Pool: pool, Rates: rates.Static{Rate: rate, AsOf: asOf}, MaxAge: maxAge, SpreadBps: spread,
+		Pool: pool, Rates: rates.Static{Rates: quoted, AsOf: asOf}, Licence: gate, MaxAge: maxAge, SpreadBps: spread,
 		Owners: owners, Saga: sg,
 	}
 	mux := http.NewServeMux()
@@ -153,7 +170,7 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	log.Info("fx-service listening", "addr", srv.Addr, "spread_bps", spread)
+	log.Info("fx-service listening", "addr", srv.Addr, "spread_bps", spread, "currencies", len(quoted), "eur", gate.Status()[licence.EURAccounts], "gbp", gate.Status()[licence.GBPAccounts])
 	return serve.Run(ctx, srv, log)
 }
 

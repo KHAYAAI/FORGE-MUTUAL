@@ -1108,6 +1108,136 @@ func (x *DecideKYCReviewResponse) GetReview() *KYCReview {
 	return nil
 }
 
+type OpenCurrencyAccountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PartyId       string                 `protobuf:"bytes,1,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Asset         string                 `protobuf:"bytes,2,opt,name=asset,proto3" json:"asset,omitempty"` // ZAR, USD, EUR or GBP
+	Actor         string                 `protobuf:"bytes,3,opt,name=actor,proto3" json:"actor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OpenCurrencyAccountRequest) Reset() {
+	*x = OpenCurrencyAccountRequest{}
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpenCurrencyAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpenCurrencyAccountRequest) ProtoMessage() {}
+
+func (x *OpenCurrencyAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpenCurrencyAccountRequest.ProtoReflect.Descriptor instead.
+func (*OpenCurrencyAccountRequest) Descriptor() ([]byte, []int) {
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *OpenCurrencyAccountRequest) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *OpenCurrencyAccountRequest) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *OpenCurrencyAccountRequest) GetActor() string {
+	if x != nil {
+		return x.Actor
+	}
+	return ""
+}
+
+type OpenCurrencyAccountResponse struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	AccountId string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Asset     string                 `protobuf:"bytes,2,opt,name=asset,proto3" json:"asset,omitempty"`
+	// How a payer pays into the account: the reference to quote, and for a foreign currency the partner bank that
+	// holds it. Bank account details beyond these come from the partner (VERIFY-PARTNER).
+	Reference     string `protobuf:"bytes,3,opt,name=reference,proto3" json:"reference,omitempty"`
+	Partner       string `protobuf:"bytes,4,opt,name=partner,proto3" json:"partner,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OpenCurrencyAccountResponse) Reset() {
+	*x = OpenCurrencyAccountResponse{}
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpenCurrencyAccountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpenCurrencyAccountResponse) ProtoMessage() {}
+
+func (x *OpenCurrencyAccountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_onboarding_v1_onboarding_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpenCurrencyAccountResponse.ProtoReflect.Descriptor instead.
+func (*OpenCurrencyAccountResponse) Descriptor() ([]byte, []int) {
+	return file_forge_onboarding_v1_onboarding_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *OpenCurrencyAccountResponse) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *OpenCurrencyAccountResponse) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *OpenCurrencyAccountResponse) GetReference() string {
+	if x != nil {
+		return x.Reference
+	}
+	return ""
+}
+
+func (x *OpenCurrencyAccountResponse) GetPartner() string {
+	if x != nil {
+		return x.Partner
+	}
+	return ""
+}
+
 var File_forge_onboarding_v1_onboarding_proto protoreflect.FileDescriptor
 
 const file_forge_onboarding_v1_onboarding_proto_rawDesc = "" +
@@ -1195,20 +1325,31 @@ const file_forge_onboarding_v1_onboarding_proto_rawDesc = "" +
 	"\breviewer\x18\x03 \x01(\tR\breviewer\x12\x12\n" +
 	"\x04note\x18\x04 \x01(\tR\x04note\"Q\n" +
 	"\x17DecideKYCReviewResponse\x126\n" +
-	"\x06review\x18\x01 \x01(\v2\x1e.forge.onboarding.v1.KYCReviewR\x06review*\xad\x01\n" +
+	"\x06review\x18\x01 \x01(\v2\x1e.forge.onboarding.v1.KYCReviewR\x06review\"c\n" +
+	"\x1aOpenCurrencyAccountRequest\x12\x19\n" +
+	"\bparty_id\x18\x01 \x01(\tR\apartyId\x12\x14\n" +
+	"\x05asset\x18\x02 \x01(\tR\x05asset\x12\x14\n" +
+	"\x05actor\x18\x03 \x01(\tR\x05actor\"\x8a\x01\n" +
+	"\x1bOpenCurrencyAccountResponse\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\x12\x14\n" +
+	"\x05asset\x18\x02 \x01(\tR\x05asset\x12\x1c\n" +
+	"\treference\x18\x03 \x01(\tR\treference\x12\x18\n" +
+	"\apartner\x18\x04 \x01(\tR\apartner*\xad\x01\n" +
 	"\x0fOnboardingState\x12 \n" +
 	"\x1cONBOARDING_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ONBOARDING_STATE_RUNNING\x10\x01\x12\x1e\n" +
 	"\x1aONBOARDING_STATE_COMPLETED\x10\x02\x12\x1d\n" +
 	"\x19ONBOARDING_STATE_DECLINED\x10\x03\x12\x1b\n" +
-	"\x17ONBOARDING_STATE_FAILED\x10\x042\xc9\x05\n" +
+	"\x17ONBOARDING_STATE_FAILED\x10\x042\xc3\x06\n" +
 	"\x11OnboardingService\x12\x84\x01\n" +
 	"\x17StartBusinessOnboarding\x123.forge.onboarding.v1.StartBusinessOnboardingRequest\x1a4.forge.onboarding.v1.StartBusinessOnboardingResponse\x12~\n" +
 	"\x15StartPersonOnboarding\x121.forge.onboarding.v1.StartPersonOnboardingRequest\x1a2.forge.onboarding.v1.StartPersonOnboardingResponse\x12l\n" +
 	"\x0fFindApplication\x12+.forge.onboarding.v1.FindApplicationRequest\x1a,.forge.onboarding.v1.FindApplicationResponse\x12f\n" +
 	"\rGetOnboarding\x12).forge.onboarding.v1.GetOnboardingRequest\x1a*.forge.onboarding.v1.GetOnboardingResponse\x12i\n" +
 	"\x0eListKYCReviews\x12*.forge.onboarding.v1.ListKYCReviewsRequest\x1a+.forge.onboarding.v1.ListKYCReviewsResponse\x12l\n" +
-	"\x0fDecideKYCReview\x12+.forge.onboarding.v1.DecideKYCReviewRequest\x1a,.forge.onboarding.v1.DecideKYCReviewResponseBJZHgithub.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1;onboardingv1b\x06proto3"
+	"\x0fDecideKYCReview\x12+.forge.onboarding.v1.DecideKYCReviewRequest\x1a,.forge.onboarding.v1.DecideKYCReviewResponse\x12x\n" +
+	"\x13OpenCurrencyAccount\x12/.forge.onboarding.v1.OpenCurrencyAccountRequest\x1a0.forge.onboarding.v1.OpenCurrencyAccountResponseBJZHgithub.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1;onboardingv1b\x06proto3"
 
 var (
 	file_forge_onboarding_v1_onboarding_proto_rawDescOnce sync.Once
@@ -1223,7 +1364,7 @@ func file_forge_onboarding_v1_onboarding_proto_rawDescGZIP() []byte {
 }
 
 var file_forge_onboarding_v1_onboarding_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forge_onboarding_v1_onboarding_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_forge_onboarding_v1_onboarding_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_forge_onboarding_v1_onboarding_proto_goTypes = []any{
 	(OnboardingState)(0),                    // 0: forge.onboarding.v1.OnboardingState
 	(*Director)(nil),                        // 1: forge.onboarding.v1.Director
@@ -1242,6 +1383,8 @@ var file_forge_onboarding_v1_onboarding_proto_goTypes = []any{
 	(*ListKYCReviewsResponse)(nil),          // 14: forge.onboarding.v1.ListKYCReviewsResponse
 	(*DecideKYCReviewRequest)(nil),          // 15: forge.onboarding.v1.DecideKYCReviewRequest
 	(*DecideKYCReviewResponse)(nil),         // 16: forge.onboarding.v1.DecideKYCReviewResponse
+	(*OpenCurrencyAccountRequest)(nil),      // 17: forge.onboarding.v1.OpenCurrencyAccountRequest
+	(*OpenCurrencyAccountResponse)(nil),     // 18: forge.onboarding.v1.OpenCurrencyAccountResponse
 }
 var file_forge_onboarding_v1_onboarding_proto_depIdxs = []int32{
 	1,  // 0: forge.onboarding.v1.StartBusinessOnboardingRequest.directors:type_name -> forge.onboarding.v1.Director
@@ -1257,14 +1400,16 @@ var file_forge_onboarding_v1_onboarding_proto_depIdxs = []int32{
 	8,  // 10: forge.onboarding.v1.OnboardingService.GetOnboarding:input_type -> forge.onboarding.v1.GetOnboardingRequest
 	13, // 11: forge.onboarding.v1.OnboardingService.ListKYCReviews:input_type -> forge.onboarding.v1.ListKYCReviewsRequest
 	15, // 12: forge.onboarding.v1.OnboardingService.DecideKYCReview:input_type -> forge.onboarding.v1.DecideKYCReviewRequest
-	7,  // 13: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:output_type -> forge.onboarding.v1.StartBusinessOnboardingResponse
-	4,  // 14: forge.onboarding.v1.OnboardingService.StartPersonOnboarding:output_type -> forge.onboarding.v1.StartPersonOnboardingResponse
-	6,  // 15: forge.onboarding.v1.OnboardingService.FindApplication:output_type -> forge.onboarding.v1.FindApplicationResponse
-	11, // 16: forge.onboarding.v1.OnboardingService.GetOnboarding:output_type -> forge.onboarding.v1.GetOnboardingResponse
-	14, // 17: forge.onboarding.v1.OnboardingService.ListKYCReviews:output_type -> forge.onboarding.v1.ListKYCReviewsResponse
-	16, // 18: forge.onboarding.v1.OnboardingService.DecideKYCReview:output_type -> forge.onboarding.v1.DecideKYCReviewResponse
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
+	17, // 13: forge.onboarding.v1.OnboardingService.OpenCurrencyAccount:input_type -> forge.onboarding.v1.OpenCurrencyAccountRequest
+	7,  // 14: forge.onboarding.v1.OnboardingService.StartBusinessOnboarding:output_type -> forge.onboarding.v1.StartBusinessOnboardingResponse
+	4,  // 15: forge.onboarding.v1.OnboardingService.StartPersonOnboarding:output_type -> forge.onboarding.v1.StartPersonOnboardingResponse
+	6,  // 16: forge.onboarding.v1.OnboardingService.FindApplication:output_type -> forge.onboarding.v1.FindApplicationResponse
+	11, // 17: forge.onboarding.v1.OnboardingService.GetOnboarding:output_type -> forge.onboarding.v1.GetOnboardingResponse
+	14, // 18: forge.onboarding.v1.OnboardingService.ListKYCReviews:output_type -> forge.onboarding.v1.ListKYCReviewsResponse
+	16, // 19: forge.onboarding.v1.OnboardingService.DecideKYCReview:output_type -> forge.onboarding.v1.DecideKYCReviewResponse
+	18, // 20: forge.onboarding.v1.OnboardingService.OpenCurrencyAccount:output_type -> forge.onboarding.v1.OpenCurrencyAccountResponse
+	14, // [14:21] is the sub-list for method output_type
+	7,  // [7:14] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -1281,7 +1426,7 @@ func file_forge_onboarding_v1_onboarding_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_onboarding_v1_onboarding_proto_rawDesc), len(file_forge_onboarding_v1_onboarding_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -34,8 +34,14 @@ var USD = Rail{
 	LiabilityCodes: []uint16{1001, 2001, 2002, 2005},
 }
 
-// Rails are the monitored relationships in v1.
-var Rails = []Rail{ZAR, USD}
+// EUR and GBP are the partner-bank mirrors for the euro and the pound, on ledgers 978 and 826.
+var (
+	EUR = Rail{Asset: "EUR", Ledger: 978, Source: "partner", PoolCode: 5001, LiabilityCodes: []uint16{1001, 2001, 2002, 2005}}
+	GBP = Rail{Asset: "GBP", Ledger: 826, Source: "partner", PoolCode: 5001, LiabilityCodes: []uint16{1001, 2001, 2002, 2005}}
+)
+
+// Rails are the monitored relationships.
+var Rails = []Rail{ZAR, USD, EUR, GBP}
 
 // ByAsset returns the rail for an asset.
 func ByAsset(asset string) (Rail, bool) {

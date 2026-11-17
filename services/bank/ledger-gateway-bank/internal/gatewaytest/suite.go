@@ -443,9 +443,9 @@ func validation(t *testing.T, newEnv Factory) {
 		t.Fatalf("missing key: want InvalidArgument, got %v", err)
 	}
 
-	eur := f.transferReq(f.nextKey("eur"), leg(f.operate, f.customer, "EUR", "100", 10))
+	eur := f.transferReq(f.nextKey("jpy"), leg(f.operate, f.customer, "JPY", "100", 10))
 	if res, _ := f.send(t, eur); res.Status != ledgerv1.Status_STATUS_REJECTED || res.RejectionCodes[0] != gateway.CodeAssetNotAllowed {
-		t.Fatalf("EUR: %v %v", res.Status, res.RejectionCodes)
+		t.Fatalf("JPY: %v %v", res.Status, res.RejectionCodes)
 	}
 
 	badCode := f.transferReq(f.nextKey("code"), leg(f.operate, f.customer, "ZAR", "100", 40))

@@ -68,7 +68,7 @@ func TestQuoteBookAndOwnership(t *testing.T) {
 
 	now := time.Now()
 	svc := &Service{
-		Pool: pool, Rates: rates.Static{Rate: 1_825_000_000, AsOf: now}, MaxAge: time.Hour, SpreadBps: 50,
+		Pool: pool, Rates: rates.Static{Rates: map[string]int64{"USD": 1_825_000_000, "EUR": 1_980_000_000}, AsOf: now}, MaxAge: time.Hour, SpreadBps: 50,
 		Owners: owners{"party-1": {zarAcc: "ZAR", usdAcc: "USD"}},
 		Saga:   &saga.Saga{Pool: pool, Ledger: client, Entity: "BANK", Accounts: accounts},
 	}
@@ -113,7 +113,7 @@ func TestStaleRateIsNotQuoted(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	svc := &Service{Pool: pool, Rates: rates.Static{Rate: 1_825_000_000, AsOf: time.Now().Add(-3 * time.Hour)}, MaxAge: time.Hour, SpreadBps: 50}
+	svc := &Service{Pool: pool, Rates: rates.Static{Rates: map[string]int64{"USD": 1_825_000_000}, AsOf: time.Now().Add(-3 * time.Hour)}, MaxAge: time.Hour, SpreadBps: 50}
 	_, err = svc.Quote(context.Background(), connect.NewRequest(&fxv1.QuoteRequest{PartyId: "p", SellAsset: "ZAR", BuyAsset: "USD", SellAmountMinor: "100"}))
 	if connect.CodeOf(err) != connect.CodeUnavailable {
 		t.Fatalf("a stale rate must not be quoted: %v", err)

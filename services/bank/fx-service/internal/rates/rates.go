@@ -13,19 +13,28 @@ import (
 // ErrStale is returned when the rate is older than the freshness limit.
 var ErrStale = errors.New("rates: the market rate is too old to quote on")
 
-// Source gives the current mid rate, ZAR per USD, scaled by 10^8.
+// ErrNoRate is returned for a currency the source has no rate for.
+var ErrNoRate = errors.New("rates: no rate for this currency")
+
+// Source gives the current mid rate, ZAR per unit of the foreign currency, scaled by 10^8.
 type Source interface {
-	Mid(ctx context.Context) (rate int64, asOf time.Time, err error)
+	Mid(ctx context.Context, foreign string) (rate int64, asOf time.Time, err error)
 }
 
-// Static is a fixed rate with a timestamp. It is for development and tests.
+// Static is a fixed rate per currency with a timestamp. It is for development and tests.
 type Static struct {
-	Rate int64
-	AsOf time.Time
+	Rates map[string]int64 // foreign currency -> ZAR per unit, scaled
+	AsOf  time.Time
 }
 
 // Mid implements Source.
-func (s Static) Mid(context.Context) (int64, time.Time, error) { return s.Rate, s.AsOf, nil }
+func (s Static) Mid(_ context.Context, foreign string) (int64, time.Time, error) {
+	r, ok := s.Rates[foreign]
+	if !ok || r <= 0 {
+		return 0, time.Time{}, ErrNoRate
+	}
+	return r, s.AsOf, nil
+}
 
 // Fresh checks that a rate is no older than maxAge at now.
 func Fresh(asOf, now time.Time, maxAge time.Duration) error {

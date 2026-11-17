@@ -102,3 +102,23 @@ func (g Gate) Status() map[Product]string {
 	}
 	return out
 }
+
+// ForCurrency is the product a foreign currency belongs to: the euro and the pound are gated; the rand and the dollar
+// (the v1 products) are not, and return "".
+func ForCurrency(asset string) Product {
+	switch asset {
+	case "EUR":
+		return EURAccounts
+	case "GBP":
+		return GBPAccounts
+	}
+	return ""
+}
+
+// AllowCurrency is Allow for a currency's product; a currency with no product is always allowed.
+func (g Gate) AllowCurrency(asset string) error {
+	if p := ForCurrency(asset); p != "" {
+		return g.Allow(p)
+	}
+	return nil
+}

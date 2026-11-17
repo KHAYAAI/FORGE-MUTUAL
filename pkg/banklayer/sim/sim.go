@@ -97,7 +97,7 @@ func (b *Bank) Rails() banklayer.Rail { return sponsorRail{b} }
 
 // ForeignCurrency implements banklayer.BankLayer. v1 has one partner, for USD.
 func (b *Bank) ForeignCurrency() []banklayer.ForeignAccountProvider {
-	return []banklayer.ForeignAccountProvider{partnerUSD{b}}
+	return []banklayer.ForeignAccountProvider{partnerFX{b, "USD"}, partnerFX{b, "EUR"}, partnerFX{b, "GBP"}}
 }
 
 // StatementSource implements banklayer.BankLayer.
@@ -255,45 +255,49 @@ func (r sponsorRail) Status(_ context.Context, id string) (banklayer.PayResult, 
 	return r.b.advance(id)
 }
 
-type partnerUSD struct{ b *Bank }
+// partnerFX is a foreign-currency partner bank for one currency: the dollar, the euro or the pound.
+type partnerFX struct {
+	b     *Bank
+	asset string
+}
 
-func (partnerUSD) Partner() string { return "sim-partner-usd" }
-func (partnerUSD) Asset() string   { return "USD" }
+func (p partnerFX) Partner() string { return "sim-partner-" + strings.ToLower(p.asset) }
+func (p partnerFX) Asset() string   { return p.asset }
 
-func (p partnerUSD) OpenAccount(_ context.Context, req banklayer.OpenAccountRequest) (banklayer.Account, error) {
+func (p partnerFX) OpenAccount(_ context.Context, req banklayer.OpenAccountRequest) (banklayer.Account, error) {
 	if req.Owner == "" {
 		return banklayer.Account{}, fmt.Errorf("%w: owner is required", banklayer.ErrInvalid)
 	}
-	req.Asset = "USD"
+	req.Asset = p.asset
 	p.b.mu.Lock()
 	defer p.b.mu.Unlock()
 	p.b.seq++
 	id := fmt.Sprintf("PB%08d", p.b.seq)
 	acc := &banklayer.Account{
-		ID: id, Owner: req.Owner, Asset: "USD", Reference: "FORGEUSD" + id, Status: "OPEN", OpenedAt: p.b.now(),
+		ID: id, Owner: req.Owner, Asset: p.asset, Reference: "FORGE" + p.asset + id, Status: "OPEN", OpenedAt: p.b.now(),
 	}
 	p.b.accounts[id] = acc
-	p.b.poolLocked("USD", true)
+	p.b.poolLocked(p.asset, true)
 	return *acc, nil
 }
 
-func (p partnerUSD) Payout(_ context.Context, req banklayer.PayRequest) (banklayer.PayResult, error) {
-	if req.Asset != "USD" {
-		return banklayer.PayResult{}, fmt.Errorf("%w: partner handles USD only", banklayer.ErrInvalid)
+func (p partnerFX) Payout(_ context.Context, req banklayer.PayRequest) (banklayer.PayResult, error) {
+	if req.Asset != p.asset {
+		return banklayer.PayResult{}, fmt.Errorf("%w: this partner handles %s only", banklayer.ErrInvalid, p.asset)
 	}
 	return p.b.pay(req, true)
 }
 
-func (p partnerUSD) PayoutStatus(_ context.Context, id string) (banklayer.PayResult, error) {
+func (p partnerFX) PayoutStatus(_ context.Context, id string) (banklayer.PayResult, error) {
 	return p.b.advance(id)
 }
 
-func (p partnerUSD) Statement(_ context.Context, date time.Time) (banklayer.Statement, error) {
-	return p.b.statement("USD", date, true), nil
+func (p partnerFX) Statement(_ context.Context, date time.Time) (banklayer.Statement, error) {
+	return p.b.statement(p.asset, date, true), nil
 }
 
-func (p partnerUSD) Inbound(_ context.Context, since time.Time) ([]banklayer.Movement, error) {
-	return p.b.inbound("USD", since, true), nil
+func (p partnerFX) Inbound(_ context.Context, since time.Time) ([]banklayer.Movement, error) {
+	return p.b.inbound(p.asset, since, true), nil
 }
 
 type sponsorStatements struct{ b *Bank }

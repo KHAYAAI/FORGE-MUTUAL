@@ -86,3 +86,5 @@ replace github.com/khayaai/forge-mutual/pkg/systemaccounts => ../../../pkg/syste
 replace github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events
 
 replace github.com/khayaai/forge-mutual/pkg/serve => ../../../pkg/serve
+
+replace github.com/khayaai/forge-mutual/pkg/licence => ../../../pkg/licence

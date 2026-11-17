@@ -9,6 +9,7 @@ require (
 	github.com/khayaai/forge-mutual/pkg/banklayer v0.0.0
 	github.com/khayaai/forge-mutual/pkg/banklayer/bootstrap v0.0.0
 	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
+	github.com/khayaai/forge-mutual/pkg/licence v0.0.0
 	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 )
 
@@ -54,3 +55,5 @@ replace (
 replace github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
 
 replace github.com/khayaai/forge-mutual/pkg/serve => ../../../pkg/serve
+
+replace github.com/khayaai/forge-mutual/pkg/licence => ../../../pkg/licence

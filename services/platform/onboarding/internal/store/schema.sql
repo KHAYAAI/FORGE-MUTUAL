@@ -33,3 +33,18 @@ create table if not exists kyc_session (
   created_at        timestamptz not null,
   primary key (onboarding_id, subject_party_id)
 );
+
+-- Further currency accounts opened for an active customer (OpenCurrencyAccount). One per party and currency. The row
+-- is written before anything outside is asked, and the partner account is opened under its lock, so a retry or a
+-- second request never opens a second account at the partner bank.
+create table if not exists currency_account (
+  party_id          text        not null,
+  asset             text        not null check (asset in ('ZAR', 'USD', 'EUR', 'GBP')),
+  account_id        text        not null default '',
+  partner           text        not null default '',
+  partner_account   text        not null default '',
+  reference         text        not null default '',
+  registered        boolean     not null default false,
+  created_at        timestamptz not null default now(),
+  primary key (party_id, asset)
+);

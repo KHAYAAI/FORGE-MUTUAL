@@ -12,7 +12,14 @@
     "GetInFlight"
   ],
   "svc-workspace": [
+    "ClassifyCrossBorderCredit",
     "CreatePayment",
-    "GetPayment"
+    "GetPayment",
+    "ListCrossBorderCredits",
+    "ListInboundReferences",
+    "ListPaymentReasons"
+  ],
+  "svc-onboarding": [
+    "RegisterInboundReference"
   ]
 }

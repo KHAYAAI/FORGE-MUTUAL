@@ -16,6 +16,9 @@ service OnboardingService {
   rpc ListKYCReviews(ListKYCReviewsRequest) returns (ListKYCReviewsResponse);
   // DecideKYCReview records a person's decision on a review and resumes the onboarding. The reviewer must give a note.
   rpc DecideKYCReview(DecideKYCReviewRequest) returns (DecideKYCReviewResponse);
+  // Opens a further current account in a currency for an active customer: the rand, the dollar, the euro or the
+  // pound. One per currency per party; asking again returns the same account.
+  rpc OpenCurrencyAccount(OpenCurrencyAccountRequest) returns (OpenCurrencyAccountResponse);
 }
 
 message Director {
@@ -130,4 +133,19 @@ message DecideKYCReviewRequest {
 
 message DecideKYCReviewResponse {
   KYCReview review = 1;
+}
+
+message OpenCurrencyAccountRequest {
+  string party_id = 1;
+  string asset = 2; // ZAR, USD, EUR or GBP
+  string actor = 3;
+}
+
+message OpenCurrencyAccountResponse {
+  string account_id = 1;
+  string asset = 2;
+  // How a payer pays into the account: the reference to quote, and for a foreign currency the partner bank that
+  // holds it. Bank account details beyond these come from the partner (VERIFY-PARTNER).
+  string reference = 3;
+  string partner = 4;
 }

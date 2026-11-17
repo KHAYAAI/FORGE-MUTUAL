@@ -175,6 +175,12 @@ func run(log *slog.Logger) error {
 		&inflight.Service{Pool: st.Pool(), Inbound: &inbound.Worker{Pool: st.Pool()}},
 		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 	mux.Handle(inflightPath, inflightHandler)
+	crossPath, crossHandler := paymentsv1connect.NewCrossBorderServiceHandler(&inbound.CrossBorder{Pool: st.Pool()},
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
+	mux.Handle(crossPath, crossHandler)
+	refPath, refHandler := paymentsv1connect.NewInboundReferenceServiceHandler(&inbound.References{Pool: st.Pool()},
+		connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
+	mux.Handle(refPath, refHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if err := st.Pool().Ping(r.Context()); err != nil {
@@ -376,11 +382,18 @@ func startInbound(ctx context.Context, log *slog.Logger, st *store.Store, ledger
 		return errors.New("INBOUND_INTERVAL must be a positive duration")
 	}
 	w := &inbound.Worker{Pool: st.Pool(), Ledger: ledger, Bank: bank, Entity: "BANK", Now: time.Now}
+	// The rand, and every foreign currency the bank layer has a partner for. Money that has arrived is always booked,
+	// to suspense if no account matches: whether Forge may offer a currency is decided where accounts are opened
+	// (pkg/licence), never by leaving received money unrecorded.
+	assets := []string{"ZAR"}
+	for _, p := range bank.ForeignCurrency() {
+		assets = append(assets, p.Asset())
+	}
 	go func() {
 		tick := time.NewTicker(every)
 		defer tick.Stop()
 		for {
-			for _, asset := range []string{"ZAR", "USD"} {
+			for _, asset := range assets {
 				n, err := w.Ingest(ctx, asset, 48*time.Hour)
 				if err != nil {
 					log.Error("inbound pass failed", "asset", asset, "err", err)
@@ -397,6 +410,6 @@ func startInbound(ctx context.Context, log *slog.Logger, st *store.Store, ledger
 			}
 		}
 	}()
-	log.Info("inbound credits enabled", "interval", every)
+	log.Info("inbound credits enabled", "interval", every, "assets", assets)
 	return nil
 }

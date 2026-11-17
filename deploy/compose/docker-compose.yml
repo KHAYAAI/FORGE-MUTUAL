@@ -241,6 +241,9 @@ services:
       CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
       POLICY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8084
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      # Further currency accounts: payments registers the payer's reference; the router opens foreign accounts.
+      PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
+      PARTNER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8099
     volumes:
       - ./config/callers:/stack/callers:ro
       - ./config/screening-list.txt:/stack/screening-list.txt:ro
@@ -374,6 +377,8 @@ services:
       FX_CALLERS_FILE: /stack/callers/fx.json
       FX_ADDR: ":8100"
       FX_RATE_ZAR_PER_USD: "18.25"
+      FX_RATE_ZAR_PER_EUR: "19.80"
+      FX_RATE_ZAR_PER_GBP: "23.10"
       FX_RATE_AS_OF: ${FX_RATE_AS_OF}
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096

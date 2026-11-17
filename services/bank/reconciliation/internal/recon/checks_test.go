@@ -132,7 +132,7 @@ func TestTotalsRefuseOverflow(t *testing.T) {
 }
 
 func TestByAssetRejectsUnknown(t *testing.T) {
-	if _, ok := ByAsset("EUR"); ok {
+	if _, ok := ByAsset("JPY"); ok {
 		t.Fatal("EUR is not a v1 rail")
 	}
 	if r, ok := ByAsset("ZAR"); !ok || r.Ledger != 710 {

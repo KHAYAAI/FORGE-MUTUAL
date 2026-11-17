@@ -8,6 +8,7 @@ require (
 	github.com/khayaai/forge-mutual/pkg/api v0.0.0
 	github.com/khayaai/forge-mutual/pkg/callerauth v0.0.0
 	github.com/khayaai/forge-mutual/pkg/events v0.0.0
+	github.com/khayaai/forge-mutual/pkg/licence v0.0.0
 	github.com/khayaai/forge-mutual/pkg/outbox v0.0.0
 	github.com/khayaai/forge-mutual/pkg/serve v0.0.0
 	github.com/khayaai/forge-mutual/pkg/systemaccounts v0.0.0
@@ -53,6 +54,7 @@ replace (
 	github.com/khayaai/forge-mutual/pkg/api => ../../../pkg/api
 	github.com/khayaai/forge-mutual/pkg/callerauth => ../../../pkg/callerauth
 	github.com/khayaai/forge-mutual/pkg/events => ../../../pkg/events
+	github.com/khayaai/forge-mutual/pkg/licence => ../../../pkg/licence
 	github.com/khayaai/forge-mutual/pkg/outbox => ../../../pkg/outbox
 	github.com/khayaai/forge-mutual/pkg/systemaccounts => ../../../pkg/systemaccounts
 	github.com/khayaai/forge-mutual/pkg/uuid => ../../../pkg/uuid

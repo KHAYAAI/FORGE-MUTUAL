@@ -3,7 +3,7 @@
 
 const MINOR_PER_MAJOR = 100n;
 
-/** Formats minor units as "R 1 234.56" (ZAR) or "US$ 1 234.56" (USD). Unknown input is shown as it arrived. */
+/** Formats minor units as "R 1 234.56" (ZAR), "US$ 1 234.56" (USD), "€ 1 234.56" (EUR) or "£ 1 234.56" (GBP). Unknown input is shown as it arrived. */
 export function formatMinor(minor: string, asset: string): string {
   if (!/^-?\d+$/.test(minor)) return minor;
   const n = BigInt(minor);
@@ -11,7 +11,7 @@ export function formatMinor(minor: string, asset: string): string {
   const abs = negative ? -n : n;
   const major = (abs / MINOR_PER_MAJOR).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   const cents = (abs % MINOR_PER_MAJOR).toString().padStart(2, "0");
-  const symbol = asset === "USD" ? "US$" : asset === "ZAR" ? "R" : asset;
+  const symbol = ({ ZAR: "R", USD: "US$", EUR: "€", GBP: "£" } as Record<string, string>)[asset] ?? asset;
   return `${negative ? "-" : ""}${symbol} ${major}.${cents}`;
 }
 

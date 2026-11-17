@@ -284,7 +284,7 @@ func TestUnstableBooksMakeTheRunInconclusive(t *testing.T) {
 
 func TestUnknownAssetIsRefused(t *testing.T) {
 	r := &Runner{}
-	if _, err := r.Run(context.Background(), "EUR"); err == nil {
+	if _, err := r.Run(context.Background(), "JPY"); err == nil {
 		t.Fatal("EUR is not monitored")
 	}
 }

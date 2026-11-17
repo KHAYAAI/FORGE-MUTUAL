@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/khayaai/forge-mutual/pkg/licence"
 	"time"
 
 	"connectrpc.com/connect"
@@ -37,6 +38,8 @@ type Service struct {
 	Owners    Ownership
 	Saga      *saga.Saga
 	Now       func() time.Time
+	// Licence keeps the euro and the pound off in production until they are approved. The dollar is the v1 product.
+	Licence licence.Gate
 }
 
 func (s *Service) now() time.Time {
@@ -56,7 +59,17 @@ func (s *Service) Quote(ctx context.Context, req *connect.Request[fxv1.QuoteRequ
 	if _, err := fmt.Sscan(m.SellAmountMinor, &sell); err != nil || sell <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("sell_amount_minor must be a positive integer"))
 	}
-	mid, asOf, err := s.Rates.Mid(ctx)
+	foreign := pricing.ForeignOf(m.SellAsset, m.BuyAsset)
+	if foreign == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, pricing.ErrInvalid)
+	}
+	if err := s.Licence.AllowCurrency(foreign); err != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	}
+	mid, asOf, err := s.Rates.Mid(ctx, foreign)
+	if errors.Is(err, rates.ErrNoRate) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
