@@ -42,6 +42,10 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
   unneeded grants were removed (reconciliation could create transfers and approve payments; every reader of the ledger
   could write to it). `make ci` fails on a grant the caller's code does not use (`tools/isolation`).
 - Production refusals, request IDs and security headers are unit-tested (`pkg/serve`, `pkg/callerauth`).
+- **No shipped code calls a known vulnerability** (`make vulncheck`, part of the gate): every Go module is scanned
+  against the Go vulnerability database and both apps against npm's. Getting there meant moving from Go 1.24.7 (out of
+  support, 41 reachable standard-library vulnerabilities) to Go 1.27.4, and upgrading pgx, klauspost/compress,
+  golang.org/x/net, OpenTelemetry and gRPC.
 - Both web apps are on Next.js 16.4.6. 16.4.1 was in the range of a published advisory (GHSA-mfr8-8qww-v76h, moderate;
   the apps do not use the affected feature). `npm audit --omit=dev` reports no known vulnerability in either app.
 - A KYC decision is recorded before the onboarding is told, and is redelivered until it is. Shown on the stack: with
@@ -90,7 +94,6 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 - Secrets are environment variables. No secret store is integrated.
 - Backups are verified to restore but are not scheduled, and there is no point-in-time recovery.
 - No load test and no external security review.
-- The development-only npm audit findings are not triaged.
 - Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
 
 **Suggested order**

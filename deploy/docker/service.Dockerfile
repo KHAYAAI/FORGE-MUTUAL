@@ -7,7 +7,7 @@
 #
 # CGO is off except where a module needs it (the TigerBeetle client links a native library): pass CGO_ENABLED=1.
 # syntax=docker/dockerfile:1
-FROM golang:1.24-bookworm AS build
+FROM golang:1.27.4-bookworm AS build
 ARG MODULE
 ARG CMD
 ARG CGO_ENABLED=0

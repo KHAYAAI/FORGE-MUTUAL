@@ -1,6 +1,6 @@
 # Build context is the repository root, because the module replaces pkg/money.
 # Not yet built in CI: the build environment for this work could not run Docker (see docs/QUESTIONS.md, VERIFY-IMG).
-FROM golang:1.24-bookworm AS build
+FROM golang:1.27.4-bookworm AS build
 WORKDIR /src
 COPY pkg/money pkg/money
 COPY services/bank/ledger-gateway-bank services/bank/ledger-gateway-bank

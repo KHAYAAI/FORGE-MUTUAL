@@ -1,41 +1,41 @@
-go 1.24.6
+go 1.27.4
 
 use (
 	./pkg/api
-	./pkg/callerauth
-	./pkg/serve
-	./pkg/outbox
-	./pkg/uuid
-	./pkg/screening
-	./pkg/oidc
-	./pkg/money
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
-	./pkg/systemaccounts
-	./pkg/events
+	./pkg/callerauth
 	./pkg/eventbus
-	./tools/isolation
-	./tools/banklayercheck
-	./tools/devidp
-	./tools/sim/sponsor
-	./services/shared/policy-service
-	./services/platform/party-service
-	./services/platform/consent-service
-	./services/platform/onboarding
-	./services/bank/rails-gateway
-	./services/bank/payments-orchestrator
-	./services/bank/reconciliation
-	./services/shared/audit-service
-	./services/bank/treasury-risk
+	./pkg/events
+	./pkg/money
+	./pkg/oidc
+	./pkg/outbox
+	./pkg/screening
+	./pkg/serve
+	./pkg/systemaccounts
+	./pkg/uuid
 	./services/bank/core-bridge
-	./services/bank/partner-bank-router
 	./services/bank/fx-service
+	./services/bank/ledger-gateway-bank
+	./services/bank/partner-bank-router
+	./services/bank/payments-orchestrator
 	./services/bank/payouts-service
-	./services/platform/workspace-api
-	./services/shared/backoffice-api
-	./services/shared/compliance-engine
+	./services/bank/rails-gateway
+	./services/bank/reconciliation
+	./services/bank/reg-reporting
+	./services/bank/treasury-risk
+	./services/platform/consent-service
 	./services/platform/consolidated-view
 	./services/platform/notifications
-	./services/bank/reg-reporting
-	./services/bank/ledger-gateway-bank
+	./services/platform/onboarding
+	./services/platform/party-service
+	./services/platform/workspace-api
+	./services/shared/audit-service
+	./services/shared/backoffice-api
+	./services/shared/compliance-engine
+	./services/shared/policy-service
+	./tools/banklayercheck
+	./tools/devidp
+	./tools/isolation
+	./tools/sim/sponsor
 )
