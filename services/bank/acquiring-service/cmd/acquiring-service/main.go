@@ -12,7 +12,7 @@
 //	ACQUIRING_MDR_BPS         merchant discount rate, default 275 (a placeholder, docs/THRESHOLDS.md)
 //	ACQUIRER                  "sim", the only acquirer built (VERIFY-ACQUIRER); refused in production
 //	ACQUIRER_WEBHOOK_SECRET   the simulator's webhook secret (or _FILE)
-//	PAY_BASE_URL              the web app's origin, for the simulator's checkout page
+//	PAY_BASE_URL              optional: the web app's origin for the simulator's checkout page (default: a relative path)
 //	FORGE_APPROVAL_ACQUIRING  the production approval (pkg/licence)
 package main
 
@@ -101,7 +101,7 @@ func run(log *slog.Logger) error {
 	svc := &acquiring.Service{
 		Pool: pool, Ledger: ledger, Licence: gate, Entity: "BANK", MDRBps: uint32(mdr), Log: log,
 		Owners:   owners{consolidatedv1connect.NewConsolidatedViewServiceClient(outbound, consolidatedURL, callerAs("svc-acquiring"))},
-		Acquirer: &acquiring.Simulator{PayBaseURL: getenv("PAY_BASE_URL", "http://127.0.0.1:3000"), Secret: []byte(secret)},
+		Acquirer: &acquiring.Simulator{PayBaseURL: os.Getenv("PAY_BASE_URL"), Secret: []byte(secret)},
 	}
 	if err := svc.EnsureSystemAccounts(ctx); err != nil {
 		return fmt.Errorf("acquiring system accounts: %w", err)

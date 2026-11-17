@@ -37,7 +37,7 @@ var ErrSignature = errors.New("acquiring: the webhook signature does not verify"
 // Simulator is the development acquirer. Its checkout is the web app's simulator page, and its webhooks are signed
 // with HMAC-SHA256 in X-Forge-Signature, the same check a real acquirer's must pass.
 type Simulator struct {
-	PayBaseURL string // the web app's origin, e.g. http://127.0.0.1:3000
+	PayBaseURL string // the web app's origin; empty means a path on whatever origin the payer is on
 	Secret     []byte
 	Refunds    []string // keys refunded, for tests
 }
