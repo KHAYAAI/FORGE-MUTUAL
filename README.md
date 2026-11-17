@@ -9,9 +9,82 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 
 ## Launch readiness
 
-**Not ready to launch.** The v1 software is built, tested, and runs end to end on a local stack. Launch is blocked by
-decisions that only people can make, by external systems this build could not run, and by the engineering gaps below.
-Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
+**Not ready to take real customers.** The software is built, tested and runs end to end on a local stack, including
+the customer front door: a person or a company signs in, applies, verifies and gets an account. What stands between
+this and a launch is mostly not code: a banking licence or sponsor bank, accounts with live providers, owner decisions,
+production infrastructure and an independent security review. Assessed 2026-11-17.
+
+### What is left before real customers
+
+Ticked items are done. Each open item says who must act: **Owner** (a decision or an account only a person can make),
+**External** (a third party) or **Engineering** (work in this repository).
+
+**1. Licence and regulators: the hard gate**
+
+- [ ] **Owner/External.** A licence or a sponsor bank. No customer money may be held until one of the two is in place.
+  ADR-0020 (legal form of the bank layer) is open.
+- [ ] **External.** Sponsor bank sandbox and wire formats (VERIFY-SPONSOR), partner and FIC formats (VERIFY-PARTNER,
+  VERIFY-FIC), and the goAML schema (VERIFY-GOAML; submission is refused until it is confirmed).
+- [ ] **Owner/External.** Regulatory review of the policy, screening and reporting rules.
+- [ ] **Owner.** Name an owner for each of the 16 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
+  (sector appetite).
+- [ ] **Owner.** Choose and license the sanctions list source (`docs/SANCTIONS_SOURCES.md`). Screening runs on a
+  one-name fixture today.
+
+**2. Identity: sign-in and KYC/KYB**
+
+- [x] Sign-in through OIDC, built and tested against a local identity provider.
+- [x] The Didit adapter, built from Didit's documentation; its webhook signature matches Didit's reference code.
+- [x] Both MCP servers are in `.mcp.json` (`workos-forge-mutual`, `didit`).
+- [ ] **Owner.** Sign in to the WorkOS and Didit MCP servers with the new Forge account (not A-CARD): run `/mcp` in
+  Claude Code. The Didit connection on the cloud sessions reaches only A-CARD and must not be used.
+- [ ] **Engineering, once connected.** Configure WorkOS AuthKit (redirect addresses, roles, a `forge_party` claim for
+  approved applicants). Build the Didit KYC and KYB workflows in its sandbox, register the webhook, and run an
+  onboarding end to end against Didit with simulated outcomes. Then repeat in Didit's live application.
+
+**3. Customer front door**
+
+- [x] Public application endpoints (`POST /v1/applications/person|business`, `GET /v1/applications/{kind}`), for
+  signed-in applicants only, rate-limited, with no decline reason shown (no tipping-off).
+- [x] The `OnboardPerson` workflow: personal account, KYC, screening, account opening.
+- [x] Apply, status and welcome pages, restyled; Playwright and accessibility tests.
+- [ ] **Engineering.** A personal application journey on the running stack, with nothing mocked.
+- [ ] **Engineering.** Update the onboarding SPEC and the workspace API description for the new endpoints.
+- [ ] **Engineering.** Restyle the signed-in customer pages (accounts, payments) to match the front door.
+- [ ] **Engineering.** Give an approved director a login, and create the Fineract client the design lists.
+- [ ] **Owner.** Terms and conditions, privacy notice and fee schedule, reviewed by a lawyer, linked from the forms.
+- [ ] **Owner.** Decide how soon an account reaches its owner. Today reconciliation names the owner every 15 minutes
+  by default.
+
+**4. Production infrastructure: none exists yet**
+
+- [ ] **Owner/Engineering.** A cloud account and region, and infrastructure as code (Kubernetes or equivalent). Nothing
+  in this repository provisions production.
+- [ ] **Engineering.** A production TigerBeetle cluster (six replicas on dedicated hosts), measured, with an upgrade
+  rehearsal.
+- [ ] **Engineering.** Production Temporal, Kafka (TLS and SASL, more than one broker) and Postgres (managed, with TLS).
+- [ ] **Engineering.** A secret store delivering the `*_FILE` secrets; a certificate authority issuing the service
+  certificates.
+- [ ] **Engineering.** Off-site, immutable storage for backups, the WAL archive, audit anchors and evidence packs
+  (VERIFY-WORM).
+- [ ] **Engineering.** A tracing backend, metrics, dashboards, alerts and an on-call rota.
+- [ ] **Engineering.** A health listener that needs no client certificate, for the orchestrator's probes.
+
+**5. Assurance before go-live**
+
+- [ ] **External.** An independent security review and penetration test.
+- [ ] **Engineering.** A load test through the whole payment path, on production hardware.
+- [ ] **Owner/Engineering.** An incident and recovery drill on production: a restore, the loss of a site.
+- [ ] **Owner.** A pilot with a small number of friendly customers before opening applications to the public.
+
+### Next steps, in order
+
+1. **Owner:** sign in to the WorkOS and Didit MCP servers with the Forge account.
+2. **Engineering:** configure WorkOS and Didit, and run the first live sandbox onboarding.
+3. **Engineering:** the stack journey for a personal application, the docs, and the customer pages' restyle.
+4. **Owner:** name the threshold owners, choose the sanctions source, and start the licence or sponsor conversation.
+5. **Engineering:** production infrastructure as code, then the production clusters, measured.
+6. **External:** sponsor sandbox, security review, then a pilot.
 
 **Verified**
 
@@ -107,34 +180,7 @@ Assessed 2026-11-03. The *Verified* list was rechecked on 2026-11-17.
 - Temporal runs as a single development server. No production cluster is set up.
 - core-bridge's posting path was checked once against a live Fineract. It is not on the stack.
 
-**Engineering gaps**
-
-- There is no customer application flow: no public onboarding endpoint and no apply page. An onboarding can only be
-  started by calling the onboarding service directly.
-- Only businesses can onboard. The `OnboardPerson` workflow in the design does not exist.
-- Onboarding does not create the Fineract client the design lists, and nothing gives an approved director a login.
-- An account reaches its owner only after reconciliation names the owner, every 15 minutes by default. Shorten it or
-  accept it: a product decision.
-- Under mutual TLS, a service's health checks need a certificate too, because they are on the same listener. A
-  separate health listener for an orchestrator's probes is not built. Postgres, Kafka, Temporal and TigerBeetle are
-  reached without TLS on the stack.
-- Secrets are read from mounted files, but no secret store is wired to deliver them, and the stack's database
-  passwords are still in its `DATABASE_URL` settings.
-- Backups and the WAL archive are local volumes on the stack. In production they go to off-site, immutable object
-  storage, which is not set up.
-- No external security review. The load test covers the ledger, on one machine; a load test through the whole
-  payment path, and one on production hardware, are not done.
-- Some per-service SPEC files predate the OIDC, monitoring-feed and KYC-review work.
-
-**Suggested order**
-
-1. Name the threshold owners, and decide the sanctions source.
-2. Create the WorkOS and Didit accounts and allow their hosts (`docs/PROVIDERS.md`), then run the first live checks.
-3. Build the customer application flow and the person onboarding on top of them.
-4. Provision a production TigerBeetle cluster and measure it (done so far: a development-mode cluster, see *Verified*).
-5. Obtain sponsor sandbox access and the wire formats.
-6. Decide the reconciliation latency.
-7. Security review and load test.
+**Engineering gaps**: see *What is left before real customers* above.
 
 ## Built and tested
 
@@ -220,8 +266,8 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 ## Not started (v1 scope)
 
 Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists, and the back office has its
-KYC review screen and live cases. Not yet built: the customer application flow (a public onboarding endpoint and an apply
-page), the `OnboardPerson` workflow, moving the payments orchestrator's rails from the rails-gateway simulator onto
+KYC review screen and live cases. The customer application flow and the `OnboardPerson`
+workflow were built on 2026-11-17. Not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto
 `BankLayer`, the customer USD account flow, and the core-bridge on the local stack (it needs a live Apache Fineract there).
 
 ## Production configuration
@@ -238,8 +284,8 @@ restores (`scripts/pg-backup.sh`, `scripts/pg-restore-check.sh`); and an axe acc
 apps, failing on serious and critical violations.
 
 Not done: under mutual TLS a health check needs a certificate,
-because there is no separate health listener; backups are not scheduled and there is no point-in-time recovery;
-no secret store is wired to deliver the secret files.
+because there is no separate health listener; no secret store is wired to deliver the secret files. Backups are
+scheduled and point-in-time recovery is proven on the stack (see *Verified*).
 
 ## Blocked
 
