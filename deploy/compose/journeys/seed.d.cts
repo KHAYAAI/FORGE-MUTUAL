@@ -28,6 +28,7 @@ export interface Review {
 }
 
 export function stackSecret(): string;
+export function send(url: string, opts?: { method?: string; headers?: Record<string, string>; body?: string }): Promise<{ status: number; ok: boolean; text: string; json: () => unknown }>;
 export function nationalId(): string;
 export function startCompany(label: string): Promise<Company>;
 export function findApplication(subject: string, kind: "person" | "business", timeoutMs?: number): Promise<OnboardingStatus>;

@@ -1,6 +1,6 @@
 # Threshold owners: mock roster and hiring advice
 
-> **MOCK. Every name below is invented.** This page shows the shape of the team that must own Forge's 16 placeholder
+> **MOCK. Every name below is invented.** This page shows the shape of the team that must own Forge's original 16 placeholder
 > thresholds (`docs/THRESHOLDS.md`). Replace each name with a real, appointed person. No threshold may go live on a
 > mock name.
 

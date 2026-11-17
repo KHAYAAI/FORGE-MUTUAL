@@ -26,7 +26,7 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 - [ ] **External.** Sponsor bank sandbox and wire formats (VERIFY-SPONSOR), partner and FIC formats (VERIFY-PARTNER,
   VERIFY-FIC), and the goAML schema (VERIFY-GOAML; submission is refused until it is confirmed).
 - [ ] **Owner/External.** Regulatory review of the policy, screening and reporting rules.
-- [ ] **Owner.** Name an owner for each of the 16 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
+- [ ] **Owner.** Name an owner for each of the 21 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
   (sector appetite).
 - [ ] **Owner.** Choose and license the sanctions list source (`docs/SANCTIONS_SOURCES.md`). Screening runs on a
   one-name fixture today.
@@ -58,6 +58,28 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 - [ ] **Owner.** Terms and conditions, privacy notice and fee schedule, reviewed by a lawyer, linked from the forms.
 - [ ] **Owner.** Decide how soon an account reaches its owner. Today reconciliation names the owner every 15 minutes
   by default.
+
+**3a. Products beyond v1: built, and off in production until approved**
+
+Each is a working service on the local stack, tested against Postgres, and refused in production by `pkg/licence`
+until `FORGE_APPROVAL_<PRODUCT>` names the decision that approved it (`docs/DECISIONS.md`). Their rates, fees, limits
+and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
+
+- [x] **Currencies:** USD, EUR and GBP accounts at the partner bank, one per currency, with the reference payers
+  quote; FX between the rand and each; payments received from abroad booked and recorded for SARB cross-border
+  reporting with the reason the customer gives (`services/bank/payments-orchestrator`, `onboarding` OpenCurrencyAccount).
+- [x] **Savings and notice deposits:** daily interest, paid monthly; 32- and 90-day notice (`services/bank/deposits-service`).
+- [x] **Credit:** overdrafts, working-capital loans and revenue-based financing, decided by a credit officer in the back
+  office (`services/bank/lending-service`).
+- [x] **Card payments:** payment links and point-of-sale requests, next-day settlement, refunds; card details never
+  reach Forge (`services/bank/acquiring-service`).
+- [ ] **Owner/External.** For currencies: an authorised-dealer arrangement and the SARB reporting format and channel
+  (VERIFY-FINSURV); nothing is submitted yet.
+- [ ] **Owner/External.** For savings: treasury and regulatory sign-off of the products and rates.
+- [ ] **Owner/External.** For credit: a credit policy and committee, NCA registration, a credit bureau, capital.
+  Not built: a bureau check, the NCA pre-agreement statement document, collections beyond retrying, write-offs.
+- [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
+  reconciliation of acquirer payouts.
 
 **4. Production infrastructure: none exists yet**
 
@@ -158,7 +180,7 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 
 **Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
 
-- Threshold owners: the 16 placeholder thresholds each need a named owner who confirms them. None is named.
+- Threshold owners: the 21 placeholder thresholds each need a named owner who confirms them. None is named.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
 - Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
   it. The apps sign in with development sign-in only.

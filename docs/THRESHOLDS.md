@@ -26,6 +26,15 @@ recorded here.
 | 15 | Payout: maximum amount per item | R1,000,000 (100,000,000 minor, `PAYOUTS_MAX_ITEM_MINOR`) | same | Head of Payments operations | _unassigned_ | Placeholder |
 | 16 | Payout: polls before an item stays open | 120 polls at 30 seconds (`PAYOUTS_MAX_POLLS`, `PAYOUTS_POLL_INTERVAL`) | same | Head of Payments operations | _unassigned_ | Placeholder |
 
+| 17 | Deposit rates: savings, 32-day and 90-day notice | 6.50%, 7.75%, 8.50% a year | `DEPOSITS_RATES`, `services/bank/deposits-service` | Head of Treasury | _unassigned_ | Placeholder |
+| 18 | Credit terms: overdraft and term-loan rates, revenue-based fee and share | 16.75%, 14.50%; 8% fee, 10% of receipts | `internal/lending/lending.go` `DefaultProducts` | Risk owner (credit) | _unassigned_ | Placeholder |
+| 19 | Credit limits per product | R5 000 to R500 000 (overdraft), R10 000 to R5 000 000 (loan), R10 000 to R2 000 000 (RBF) | same | Risk owner (credit) | _unassigned_ | Placeholder |
+| 20 | Affordability: multiple of monthly inflow | 1 (overdraft), 3 (term loan), 2 (revenue-based) | `internal/credit/credit.go` `Affordability` | Risk owner (credit) | _unassigned_ | Placeholder; NCA affordability rules apply to persons |
+| 21 | Card merchant discount rate | 2.75% | `ACQUIRING_MDR_BPS`, `services/bank/acquiring-service` | Head of Payments operations | _unassigned_ | Placeholder until an acquirer is chosen |
+
+Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
+(`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).
+
 **Not thresholds, but also owned:** the outbound reserve window of 7 days (the ledger's maximum pending timeout),
 which is set by the ledger's limits, and the inbound credit lookback of 48 hours.
 
