@@ -13,9 +13,9 @@ DB_TEST_VARS := LEDGER_TEST_DSN RECON_TEST_DSN PAYMENTS_TEST_PG INBOUND_TEST_DSN
 	DEPOSITS_TEST_DSN LENDING_TEST_DSN ACQUIRING_TEST_DSN \
 	TB_ADDRESSES TB_CLUSTER_ID
 
-.PHONY: ci ci-db require-test-dbs test-outbox test-fx test-deposits test-lending test-acquiring test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-regulatory test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster load-ledger proto up down
+.PHONY: access-review sbom ci ci-db require-test-dbs test-outbox test-fx test-deposits test-lending test-acquiring test-payouts test-consolidated test-core-bridge test-partner-router test-notifications test-eventbus test-workspace test-backoffice test-pkg test-oidc test-devidp test-web test-backoffice-web test lint vet fmt-check test-isolation test-banklayer test-recon test-audit test-treasury test-compliance test-reg-reporting test-regulatory test-ledger test-ledger-pg test-ledger-tb test-ledger-tb-cluster test-policy policy-manifest test-platform test-bank test-temporal test-stack test-stack-mtls vulncheck test-kafka-cluster load-ledger proto up down
 
-ci: require-test-dbs lint test test-isolation vulncheck
+ci: require-test-dbs lint test test-isolation test-regulatory vulncheck
 
 # Every Go module against the Go vulnerability database, and both web apps' production dependencies against npm's.
 # Fails if shipped code calls a known-vulnerable function. Needs govulncheck and network access to vuln.go.dev.
@@ -270,6 +270,19 @@ test-regulatory:
 	python3 -I scripts/check-asset-register.py
 	python3 -I scripts/check-monitoring.py
 	scripts/test-backup-freshness.sh
+	python3 -I scripts/check-secure-config.py
+	@# The access review must match what the code enforces; regenerate it with `make access-review` after a grant changes.
+	@python3 -I scripts/access-review.py /tmp/forge-access-review.md >/dev/null && \
+	  diff <(tail -n +2 docs/regulatory/access-review.md) <(tail -n +2 /tmp/forge-access-review.md) >/dev/null || \
+	  { echo "docs/regulatory/access-review.md is out of date: run make access-review"; exit 1; }
+
+# The access review, regenerated from the caller lists and the back-office routes.
+access-review:
+	python3 -I scripts/access-review.py docs/regulatory/access-review.md
+
+# A CycloneDX software bill of materials for everything shipped, written to sbom.cdx.json (not committed).
+sbom:
+	python3 -I scripts/sbom.py
 
 # BankLayer (ARCHITECTURE.md 5.2): the contract suite on the simulator and on the HTTP client, the config bootstrap,
 # the simulator, and the route check. Only pkg/banklayer may read the licence route.

@@ -10,3 +10,4 @@ deploy/compose/.env
 deploy/compose/.pki/
 deploy/compose/.secrets/
 deploy/compose/.traces/
+sbom.cdx.json
