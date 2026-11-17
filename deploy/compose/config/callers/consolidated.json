@@ -11,5 +11,9 @@
   ],
   "svc-deposits": [
     "GetBalances"
+  ],
+  "svc-lending": [
+    "GetActivity",
+    "GetBalances"
   ]
 }

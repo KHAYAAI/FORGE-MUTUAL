@@ -1,0 +1,14 @@
+{
+  "svc-workspace": [
+    "AcceptOffer",
+    "ApplyForCredit",
+    "Draw",
+    "ListFacilities",
+    "ListLoanProducts",
+    "Repay"
+  ],
+  "svc-backoffice-api": [
+    "DecideCreditApplication",
+    "ListCreditApplications"
+  ]
+}

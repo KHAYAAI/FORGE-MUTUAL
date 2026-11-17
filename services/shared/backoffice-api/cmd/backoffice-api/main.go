@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
@@ -63,6 +64,7 @@ func run(log *slog.Logger) error {
 			Payments:   paymentsv1connect.NewPaymentsServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			Recon:      reconv1connect.NewReconServiceClient(outbound, urls["RECON_URL"], caller()),
 			Onboarding: onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
+			Credit:     creditClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "backoffice-api")
@@ -114,4 +116,13 @@ func oidcConfig() oidc.Config {
 		JWKSURL:   os.Getenv("OIDC_JWKS_URL"),
 		AllowHTTP: os.Getenv("OIDC_ALLOW_HTTP") == "true",
 	}
+}
+
+// creditClient is the credit desk client, or nil when LENDING_URL is not set (lending is not offered).
+func creditClient(h connect.HTTPClient, opt connect.ClientOption) lendingv1connect.CreditDeskServiceClient {
+	u := os.Getenv("LENDING_URL")
+	if u == "" {
+		return nil
+	}
+	return lendingv1connect.NewCreditDeskServiceClient(h, u, opt)
 }

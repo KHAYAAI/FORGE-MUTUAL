@@ -2,7 +2,7 @@
 // Cookie names are distinct from the customer app's, because cookies are scoped to the host, not the port.
 export const SESSION_COOKIE = "forge_staff";
 
-export const ROLES = ["compliance", "operations"] as const;
+export const ROLES = ["compliance", "operations", "credit"] as const;
 export type Role = (typeof ROLES)[number];
 export type StaffSession = { name: string; roles: Role[] };
 

@@ -35,5 +35,10 @@
     "CreateAccounts",
     "CreateTransfers",
     "GetBalances"
+  ],
+  "svc-lending": [
+    "CreateAccounts",
+    "CreateTransfers",
+    "GetBalances"
   ]
 }

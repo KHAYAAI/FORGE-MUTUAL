@@ -352,6 +352,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/loan-products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Credit products, their terms, and whether each is available. */
+        get: operations["listLoanProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The party's credit applications and facilities. */
+        get: operations["listFacilities"];
+        put?: never;
+        /** Apply for credit. Assessed at once on the account's last 90 days; a credit officer decides. */
+        post: operations["applyForCredit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an approved offer on its quotation; the money is paid out. */
+        post: operations["acceptOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility}/draw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draw on an overdraft facility into the current account, up to the limit. */
+        post: operations["drawFacility"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility}/repay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Repay early. A term loan is settled early only in full, and future interest is waived. */
+        post: operations["repayFacility"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/applications/person": {
         parameters: {
             query?: never;
@@ -628,6 +714,46 @@ export interface components {
             from_account_id: string;
             to_account_id: string;
             amount_minor: string;
+        };
+        LoanProduct: {
+            product_id: string;
+            name: string;
+            rate_bps: number;
+            fee_bps: number;
+            sweep_bps: number;
+            min_minor: string;
+            max_minor: string;
+            max_term_months: number;
+            available: boolean;
+        };
+        Instalment: {
+            number: number;
+            due_on: string;
+            principal_minor: string;
+            interest_minor: string;
+            /** @enum {string} */
+            status: "DUE" | "PAID" | "ARREARS" | "WAIVED";
+        };
+        Facility: {
+            facility_id: string;
+            product_id: string;
+            /** @enum {string} */
+            status: "ASSESSED" | "APPROVED" | "DECLINED" | "ACTIVE" | "SETTLED" | "CANCELLED";
+            requested_minor: string;
+            approved_minor: string;
+            rate_bps: number;
+            term_months: number;
+            fee_bps: number;
+            sweep_bps: number;
+            outstanding_minor: string;
+            available_minor: string;
+            total_repayable_minor: string;
+            applied_at: string;
+            decided_at?: string;
+            current_account_id?: string;
+            purpose?: string;
+            days_past_due: number;
+            schedule: components["schemas"]["Instalment"][];
         };
     };
     responses: {
@@ -1227,6 +1353,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notice"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    listLoanProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The products. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        products: components["schemas"]["LoanProduct"][];
+                    };
+                };
+            };
+        };
+    };
+    listFacilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The facilities. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        facilities: components["schemas"]["Facility"][];
+                    };
+                };
+            };
+        };
+    };
+    applyForCredit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    product_id: string;
+                    amount_minor: string;
+                    term_months?: number;
+                    current_account_id: string;
+                    purpose?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The application, assessed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facility"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    acceptOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    accepts_terms: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The active facility. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facility"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    drawFacility: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                facility: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amount_minor: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The facility after the draw. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facility"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    repayFacility: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                facility: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amount_minor: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The facility after the repayment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facility"];
                 };
             };
             400: components["responses"]["Error"];

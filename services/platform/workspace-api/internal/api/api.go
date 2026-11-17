@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"net/http"
 	"strconv"
 	"strings"
@@ -56,6 +57,7 @@ type Services struct {
 	CrossBorder  paymentsv1connect.CrossBorderServiceClient
 	References   paymentsv1connect.InboundReferenceServiceClient
 	Deposits     depositsv1connect.DepositsServiceClient // nil: savings are not offered
+	Lending      lendingv1connect.LendingServiceClient   // nil: credit is not offered
 }
 
 // API serves the workspace routes.
@@ -91,6 +93,12 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/deposits", a.session(a.moveDeposit(false)))
 	mux.HandleFunc("POST /v1/withdrawals", a.session(a.moveDeposit(true)))
 	mux.HandleFunc("POST /v1/notices/{notice}/cancel", a.session(a.cancelNotice))
+	mux.HandleFunc("GET /v1/loan-products", a.session(a.listLoanProducts))
+	mux.HandleFunc("GET /v1/facilities", a.session(a.listFacilities))
+	mux.HandleFunc("POST /v1/facilities", a.session(a.applyForCredit))
+	mux.HandleFunc("POST /v1/facilities/{facility}/accept", a.session(a.acceptOffer))
+	mux.HandleFunc("POST /v1/facilities/{facility}/draw", a.session(a.moveCredit(false)))
+	mux.HandleFunc("POST /v1/facilities/{facility}/repay", a.session(a.moveCredit(true)))
 	mux.HandleFunc("POST /v1/applications/person", a.applicant(a.applyPerson))
 	mux.HandleFunc("POST /v1/applications/business", a.applicant(a.applyBusiness))
 	mux.HandleFunc("GET /v1/applications/{kind}", a.applicant(a.getApplication))

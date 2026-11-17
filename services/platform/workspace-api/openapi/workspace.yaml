@@ -547,6 +547,190 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/loan-products:
+    get:
+      operationId: listLoanProducts
+      summary: Credit products, their terms, and whether each is available.
+      responses:
+        "200":
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LoanProduct"
+  /v1/facilities:
+    get:
+      operationId: listFacilities
+      summary: The party's credit applications and facilities.
+      responses:
+        "200":
+          description: The facilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [facilities]
+                properties:
+                  facilities:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Facility"
+    post:
+      operationId: applyForCredit
+      summary: Apply for credit. Assessed at once on the account's last 90 days; a credit officer decides.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [product_id, amount_minor, current_account_id]
+              properties:
+                product_id:
+                  type: string
+                amount_minor:
+                  type: string
+                term_months:
+                  type: integer
+                current_account_id:
+                  type: string
+                purpose:
+                  type: string
+                  maxLength: 200
+      responses:
+        "201":
+          description: The application, assessed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/accept:
+    post:
+      operationId: acceptOffer
+      summary: Accept an approved offer on its quotation; the money is paid out.
+      parameters:
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [accepts_terms]
+              properties:
+                accepts_terms:
+                  type: boolean
+      responses:
+        "200":
+          description: The active facility.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/draw:
+    post:
+      operationId: drawFacility
+      summary: Draw on an overdraft facility into the current account, up to the limit.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The facility after the draw.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/repay:
+    post:
+      operationId: repayFacility
+      summary: Repay early. A term loan is settled early only in full, and future interest is waived.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The facility after the repayment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
   /v1/applications/person:
     post:
       operationId: applyPerson
@@ -1109,3 +1293,83 @@ components:
           type: string
         amount_minor:
           type: string
+    LoanProduct:
+      type: object
+      required: [product_id, name, rate_bps, fee_bps, sweep_bps, min_minor, max_minor, max_term_months, available]
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        rate_bps:
+          type: integer
+        fee_bps:
+          type: integer
+        sweep_bps:
+          type: integer
+        min_minor:
+          type: string
+        max_minor:
+          type: string
+        max_term_months:
+          type: integer
+        available:
+          type: boolean
+    Instalment:
+      type: object
+      required: [number, due_on, principal_minor, interest_minor, status]
+      properties:
+        number:
+          type: integer
+        due_on:
+          type: string
+        principal_minor:
+          type: string
+        interest_minor:
+          type: string
+        status:
+          type: string
+          enum: [DUE, PAID, ARREARS, WAIVED]
+    Facility:
+      type: object
+      required: [facility_id, product_id, status, requested_minor, approved_minor, rate_bps, term_months, fee_bps, sweep_bps, outstanding_minor, available_minor, total_repayable_minor, applied_at, schedule, days_past_due]
+      properties:
+        facility_id:
+          type: string
+        product_id:
+          type: string
+        status:
+          type: string
+          enum: [ASSESSED, APPROVED, DECLINED, ACTIVE, SETTLED, CANCELLED]
+        requested_minor:
+          type: string
+        approved_minor:
+          type: string
+        rate_bps:
+          type: integer
+        term_months:
+          type: integer
+        fee_bps:
+          type: integer
+        sweep_bps:
+          type: integer
+        outstanding_minor:
+          type: string
+        available_minor:
+          type: string
+        total_repayable_minor:
+          type: string
+        applied_at:
+          type: string
+        decided_at:
+          type: string
+        current_account_id:
+          type: string
+        purpose:
+          type: string
+        days_past_due:
+          type: integer
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/Instalment"

@@ -401,6 +401,23 @@ services:
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
     volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
+  lending:
+    <<: *go
+    image: forge/lending-service:dev
+    network_mode: host
+    environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-lending.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-lending.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/lending?sslmode=disable
+      LENDING_CALLERS_FILE: /stack/callers/lending.json
+      LENDING_ADDR: ":8120"
+      LENDING_WORK_INTERVAL: 1m
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+
   rails:
     <<: *go
     image: forge/rails-gateway:dev
@@ -569,6 +586,7 @@ services:
       BACKOFFICE_CLIENTS: ${STACK_TLS:+svc-backoffice-web,svc-stack-journeys}
       CASES_URL: ${STACK_SCHEME:-http}://127.0.0.1:8400
       ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
+      LENDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8120
       PAYMENTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8085
       RECON_URL: ${STACK_SCHEME:-http}://127.0.0.1:8093
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
@@ -593,6 +611,7 @@ services:
       PAYOUTS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8200
       ONBOARDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8083
       DEPOSITS_URL: ${STACK_SCHEME:-http}://127.0.0.1:8110
+      LENDING_URL: ${STACK_SCHEME:-http}://127.0.0.1:8120
     volumes: ["./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   # The identity provider for the OIDC path (tests and a local OIDC sign-in). Not started by default.

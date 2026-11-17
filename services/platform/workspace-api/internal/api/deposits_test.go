@@ -11,6 +11,8 @@ import (
 
 	depositsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
+	lendingv1 "github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 )
 
 type fakeDeposits struct {
@@ -55,5 +57,33 @@ func TestSavingsNotOfferedWithoutTheService(t *testing.T) {
 	h := (&API{Auth: fakeAuth{}}).Handler()
 	if w := asCustomer(t, h, "GET", "/v1/deposit-accounts", nil); w.Code != http.StatusNotFound {
 		t.Fatalf("no deposits service: %d", w.Code)
+	}
+}
+
+type fakeLending struct {
+	lendingv1connect.LendingServiceClient
+	applied *lendingv1.ApplyForCreditRequest
+}
+
+func (f *fakeLending) ApplyForCredit(_ context.Context, r *connect.Request[lendingv1.ApplyForCreditRequest]) (*connect.Response[lendingv1.ApplyForCreditResponse], error) {
+	f.applied = r.Msg
+	return connect.NewResponse(&lendingv1.ApplyForCreditResponse{Facility: &lendingv1.Facility{FacilityId: "f1", DecisionNote: "staff only"}}), nil
+}
+
+// An application carries the session party and the key, and the staff note never reaches the customer.
+func TestCreditApplicationsUseTheSessionAndHideTheNote(t *testing.T) {
+	f := &fakeLending{}
+	h := (&API{Auth: fakeAuth{}, Services: Services{Lending: f}}).Handler()
+	req := httptest.NewRequest("POST", "/v1/facilities", bytes.NewBufferString(`{"product_id":"overdraft","amount_minor":"500000","current_account_id":"c"}`))
+	req.Header.Set("X-Test-Party", "party-session")
+	req.Header.Set("X-Test-Actor", "Thandi")
+	req.Header.Set("Idempotency-Key", "a-1")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated || f.applied.PartyId != "party-session" || f.applied.IdempotencyKey != "a-1" {
+		t.Fatalf("apply: %d %s, sent %+v", w.Code, w.Body, f.applied)
+	}
+	if bytes.Contains(w.Body.Bytes(), []byte("staff only")) {
+		t.Fatal("the decision note reached the customer")
 	}
 }

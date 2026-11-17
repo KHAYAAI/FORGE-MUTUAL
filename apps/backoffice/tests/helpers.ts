@@ -29,7 +29,7 @@ export function caseFixture(overrides: Partial<Case> = {}): Case {
 }
 
 /** Signs in through the real sign-in page, which sets the staff session cookie. */
-export async function signIn(page: Page, name: string, roles: ("compliance" | "operations")[]) {
+export async function signIn(page: Page, name: string, roles: ("compliance" | "operations" | "credit")[]) {
   await page.goto("/sign-in");
   await page.getByLabel("Your name").fill(name);
   for (const role of roles) {

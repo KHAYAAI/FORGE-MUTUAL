@@ -67,7 +67,7 @@ func (o OIDC) Session(r *http.Request) (api.Session, error) {
 	roles := map[string]bool{}
 	for _, role := range c.Roles {
 		switch role {
-		case api.RoleCompliance, api.RoleOperations:
+		case api.RoleCompliance, api.RoleOperations, api.RoleCredit:
 			roles[role] = true
 		}
 	}
@@ -116,7 +116,7 @@ func (DevStaff) Session(r *http.Request) (api.Session, error) {
 		role = strings.TrimSpace(role)
 		switch role {
 		case "":
-		case api.RoleCompliance, api.RoleOperations:
+		case api.RoleCompliance, api.RoleOperations, api.RoleCredit:
 			roles[role] = true
 		default:
 			return api.Session{}, errBadRole

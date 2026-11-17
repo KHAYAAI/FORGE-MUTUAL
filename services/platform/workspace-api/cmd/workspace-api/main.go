@@ -9,6 +9,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payouts/v1/payoutsv1connect"
@@ -69,6 +70,7 @@ func run(log *slog.Logger) error {
 			CrossBorder:  paymentsv1connect.NewCrossBorderServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			References:   paymentsv1connect.NewInboundReferenceServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			Deposits:     depositsClient(outbound, caller()),
+			Lending:      lendingClient(outbound, caller()),
 		},
 	}
 	stopTracing, err := serve.InitTracing(ctx, "workspace-api")
@@ -129,4 +131,13 @@ func depositsClient(h connect.HTTPClient, opt connect.ClientOption) depositsv1co
 		return nil
 	}
 	return depositsv1connect.NewDepositsServiceClient(h, u, opt)
+}
+
+// lendingClient is the lending-service client, or nil when LENDING_URL is not set (credit is not offered).
+func lendingClient(h connect.HTTPClient, opt connect.ClientOption) lendingv1connect.LendingServiceClient {
+	u := os.Getenv("LENDING_URL")
+	if u == "" {
+		return nil
+	}
+	return lendingv1connect.NewLendingServiceClient(h, u, opt)
 }

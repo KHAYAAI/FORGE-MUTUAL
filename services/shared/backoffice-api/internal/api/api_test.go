@@ -386,3 +386,26 @@ func TestKYCReviewListDefaultsToOpen(t *testing.T) {
 		t.Fatalf("status %d, request %+v", rec.Code, r.onboarding.listed)
 	}
 }
+
+// Only a credit officer reaches the credit desk, and without a lending service it says lending is not offered.
+func TestTheCreditDeskNeedsTheCreditRole(t *testing.T) {
+	h := (&API{Auth: roleAuth{}}).Handler()
+	for _, c := range []struct {
+		roles string
+		want  int
+	}{{"compliance", http.StatusForbidden}, {"credit", http.StatusNotFound}} {
+		req := httptest.NewRequest("GET", "/v1/credit/applications", nil)
+		req.Header.Set("X-Test-Roles", c.roles)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		if w.Code != c.want {
+			t.Fatalf("roles %q: %d, want %d", c.roles, w.Code, c.want)
+		}
+	}
+}
+
+type roleAuth struct{}
+
+func (roleAuth) Session(r *http.Request) (Session, error) {
+	return Session{Actor: "Sipho", Roles: map[string]bool{r.Header.Get("X-Test-Roles"): true}}, nil
+}

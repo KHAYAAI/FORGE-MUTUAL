@@ -6,6 +6,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ import (
 const (
 	RoleCompliance = "compliance" // closes compliance cases, as a checker
 	RoleOperations = "operations" // decides payment approvals, resolves repairs, investigates reconciliation breaks
+	RoleCredit     = "credit"     // decides credit applications, as a credit officer
 )
 
 // Session is the signed-in staff member.
@@ -45,6 +47,7 @@ type Services struct {
 	Payments   paymentsv1connect.PaymentsServiceClient
 	Recon      reconv1connect.ReconServiceClient
 	Onboarding onboardingv1connect.OnboardingServiceClient
+	Credit     lendingv1connect.CreditDeskServiceClient // nil: lending is not offered
 }
 
 // API serves the back-office routes.
@@ -68,6 +71,8 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/recon/breaks/{break}/investigate", a.staff(needRole(RoleOperations, a.investigate)))
 	mux.HandleFunc("GET /v1/kyc/reviews", a.staff(a.listKYCReviews))
 	mux.HandleFunc("POST /v1/kyc/reviews/{review}/decision", a.staff(needRole(RoleCompliance, a.decideKYCReview)))
+	mux.HandleFunc("GET /v1/credit/applications", a.staff(needRole(RoleCredit, a.listCreditApplications)))
+	mux.HandleFunc("POST /v1/credit/applications/{facility}/decision", a.staff(needRole(RoleCredit, a.decideCredit)))
 	return mux
 }
 
