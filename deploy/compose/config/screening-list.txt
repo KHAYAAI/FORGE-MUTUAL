@@ -1,0 +1,3 @@
+# Local screening fixture: names only, one per line. It is not a sanctions list, and it is not used for any real
+# customer. The production list comes from the licensed provider (the sanctions licence is an open decision).
+Local Test Sanctioned Entity

@@ -1,0 +1,6 @@
+{
+  "svc-payments": [
+    "Initiate",
+    "Status"
+  ]
+}

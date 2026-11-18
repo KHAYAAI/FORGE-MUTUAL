@@ -1,0 +1,173 @@
+// Ledger gateway API (ARCHITECTURE.md section 7.7, specified in
+// services/bank/ledger-gateway-bank/SPEC.md).
+syntax = "proto3";
+
+package forge.ledger.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1;ledgerv1";
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_OK = 1;
+  STATUS_REPLAYED = 2;
+  STATUS_REJECTED = 3;
+}
+
+message Money {
+  string asset = 1;        // "ZAR" or "USD"
+  string amount_minor = 2; // decimal string of a positive integer
+}
+
+message TransferLeg {
+  string debit_account_id = 1;
+  string credit_account_id = 2;
+  Money amount = 3;
+  uint32 code = 4;
+}
+
+message AccountSpec {
+  string owner_party_id = 1; // UUID; empty for system accounts
+  string asset = 2;
+  uint32 code = 3;
+  string product_id = 4;
+  bool debits_must_not_exceed_credits = 5;
+  bool insured = 6;
+}
+
+message CreateAccountsRequest {
+  string idempotency_key = 1;
+  string business_txn_id = 2;
+  string entity_code = 3;
+  repeated AccountSpec accounts = 4;
+  string actor = 5;
+  string reason = 6;
+}
+
+message CreateAccountsResponse {
+  Status status = 1;
+  repeated string account_ids = 2;
+  repeated string rejection_codes = 3;
+}
+
+message CreateTransfersRequest {
+  string idempotency_key = 1;
+  string business_txn_id = 2;
+  string entity_code = 3;
+  repeated TransferLeg legs = 4;   // submitted as one linked chain
+  bool pending = 5;
+  uint32 pending_timeout_seconds = 6;
+  string actor = 7;
+  string reason = 8;
+}
+
+message PostPendingRequest {
+  string idempotency_key = 1;
+  string business_txn_id = 2;
+  string entity_code = 3;
+  repeated string pending_transfer_ids = 4; // posted as one linked chain
+  string actor = 5;
+  string reason = 6;
+}
+
+message VoidPendingRequest {
+  string idempotency_key = 1;
+  string business_txn_id = 2;
+  string entity_code = 3;
+  repeated string pending_transfer_ids = 4;
+  string actor = 5;
+  string reason = 6;
+}
+
+message CreateTransfersResponse {
+  Status status = 1;
+  repeated string transfer_ids = 2;
+  repeated string rejection_codes = 3;
+}
+
+message PostPendingResponse {
+  Status status = 1;
+  repeated string transfer_ids = 2;
+  repeated string rejection_codes = 3;
+}
+
+message VoidPendingResponse {
+  Status status = 1;
+  repeated string transfer_ids = 2;
+  repeated string rejection_codes = 3;
+}
+
+message GetBalancesRequest {
+  string entity_code = 1;
+  repeated string account_ids = 2;
+}
+
+message AccountBalance {
+  string account_id = 1;
+  string asset = 2;
+  string debits_pending = 3;
+  string debits_posted = 4;
+  string credits_pending = 5;
+  string credits_posted = 6;
+  string available_minor = 7; // credits_posted - debits_posted - debits_pending, signed
+}
+
+message GetBalancesResponse {
+  repeated AccountBalance balances = 1;
+}
+
+message LookupTransfersRequest {
+  string entity_code = 1;
+  repeated string transfer_ids = 2;
+}
+
+message TransferRecord {
+  string transfer_id = 1;
+  string debit_account_id = 2;
+  string credit_account_id = 3;
+  string asset = 4;
+  string amount_minor = 5;
+  uint32 code = 6;
+  bool pending = 7;
+  string pending_id = 8;
+}
+
+message LookupTransfersResponse {
+  repeated TransferRecord transfers = 1;
+}
+
+// ListAccounts pages through the account directory of one entity, optionally filtered by ledger and code.
+// It returns business identity only; balances come from GetBalances. Reconciliation uses it to sum customer
+// balances. Closed accounts are included, because their balances still count.
+message ListAccountsRequest {
+  string entity_code = 1;
+  uint32 ledger = 2;
+  uint32 code = 3;               // 0 means any code
+  string after_account_id = 4;   // exclusive cursor; empty for the first page
+  uint32 limit = 5;              // 1 to 1000
+}
+
+message DirectoryAccount {
+  string account_id = 1;
+  string entity_code = 2;
+  string asset = 3;
+  uint32 ledger = 4;
+  uint32 code = 5;
+  string owner_party_id = 6;
+  string product_id = 7;
+  bool insured = 8;
+}
+
+message ListAccountsResponse {
+  repeated DirectoryAccount accounts = 1;
+  string next_after_account_id = 2; // empty when there are no more pages
+}
+
+service LedgerService {
+  rpc CreateAccounts(CreateAccountsRequest) returns (CreateAccountsResponse);
+  rpc CreateTransfers(CreateTransfersRequest) returns (CreateTransfersResponse);
+  rpc PostPending(PostPendingRequest) returns (PostPendingResponse);
+  rpc VoidPending(VoidPendingRequest) returns (VoidPendingResponse);
+  rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
+  rpc LookupTransfers(LookupTransfersRequest) returns (LookupTransfersResponse);
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+}

@@ -1,0 +1,22 @@
+{
+  "svc-compliance": [
+    "ListParties",
+    "SetStatus"
+  ],
+  "svc-fx": [
+    "GetParty"
+  ],
+  "svc-onboarding": [
+    "AddRelationship",
+    "CreateParty",
+    "GetParty",
+    "SetStatus",
+    "SetTier"
+  ],
+  "svc-payments": [
+    "GetParty"
+  ],
+  "svc-workspace": [
+    "GetParty"
+  ]
+}

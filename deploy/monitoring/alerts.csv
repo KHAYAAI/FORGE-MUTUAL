@@ -1,0 +1,14 @@
+id,what_it_catches,signal,signal_status,severity,page,register_ids
+recon-break-open,A reconciliation break is open; every payment is held,"Reconciliation break events from the outbox, and the policy service's break_active input",exists,critical,yes,BR-03;JS2-11
+audit-chain-invalid,The audit log's hash chain or a head anchor fails verification,forge-audit verify run on a schedule,needs-wiring,critical,yes,JS2-05;JS2-11
+backup-stale,No recent base backup,scripts/backup-freshness-check.sh run on a schedule,needs-wiring,high,yes,JS2-12
+wal-archive-stale,"WAL archiving has stopped, so point-in-time recovery is shrinking",scripts/backup-freshness-check.sh run on a schedule,needs-wiring,high,yes,JS2-12
+offsite-copy-stale,The last verified offsite copy is old or missing,Receipt file written by scripts/offsite-sync.sh; its age,missing,high,yes,JS2-12
+outbox-stuck,Events sit unpublished in an outbox for too long (Kafka down or without quorum),Age of the oldest unpublished row in each service's outbox table,needs-wiring,high,yes,JS2-11
+treasury-alert-raised,"Concentration, net outflow, liquidity or suspense alert raised",Treasury-risk alert events (one raised and one cleared per transition),exists,high,yes,BR-04;LIC-12
+service-cert-expiring,A service certificate will expire within 7 days,Certificate expiry from the production certificate authority (cert-manager),missing,high,yes,JS2-09
+auth-refusal-spike,Many token refusals or MFA refusals in a short time,Counts of refused tokens in service logs (ErrMFARequired included),missing,medium,no,JS2-04;JS2-11
+policy-bundle-refused,A policy bundle fails signature verification at load,Policy-service load errors,needs-wiring,critical,yes,JS2-11
+trace-pipeline-down,"Services cannot export spans, so a trace gap hides activity",OpenTelemetry collector health and exporter errors,missing,medium,no,JS2-11
+incident-clock-due-soon,A material incident's 24-hour or 14-day deadline is within 6 hours or has passed,internal/incident Obligations (status due_soon or overdue),needs-wiring,critical,yes,JN-02
+dependency-vulnerability,A reachable vulnerability is found in a Go module or npm package,"make vulncheck and npm audit in the build, and on a daily schedule",exists,medium,no,JS2-07;JS2-17

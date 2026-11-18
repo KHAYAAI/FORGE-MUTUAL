@@ -1,0 +1,20 @@
+# The local stack's OpenTelemetry collector: receives spans over OTLP/HTTP from every service and writes them, one
+# JSON batch per line, to /traces/traces.jsonl (deploy/compose/.traces/ on the host). Production sends them on to a
+# tracing backend instead; only the exporter changes.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+processors:
+  batch:
+    timeout: 1s
+exporters:
+  file:
+    path: /traces/traces.jsonl
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file]

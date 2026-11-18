@@ -1,0 +1,6 @@
+id,found_on,source,title,severity,affected,owner,due,status,closed_on,evidence
+SF-001,2026-11-18,Self-assessment,No independent penetration test of internet-facing systems has been done,High,"apps/web, apps/backoffice, workspace-api, backoffice-api",CISO (R12 VACANT),2027-06-30,Open,,docs/regulatory/policies/threat-intelligence-and-security-testing-policy.md
+SF-002,2026-11-18,Self-assessment,No production disaster recovery site; total site loss not tested,High,All Tier 1 services,CTO (R10 VACANT),2027-06-30,Open,,docs/regulatory/policies/business-impact-analysis.md
+SF-003,2026-11-18,Self-assessment,No off-site immutable storage for backups and audit anchors (VERIFY-WORM),Medium,Backups; audit-service anchors,CTO (R10 VACANT),2027-06-30,Open,,docs/runbooks
+SF-004,2026-11-18,Self-assessment,Not a member of an information-sharing group; no threat-intelligence feed,Medium,Organisation,CISO (R12 VACANT),2027-03-31,Open,,docs/regulatory/policies/threat-intelligence-and-security-testing-policy.md
+SF-005,2026-11-18,CI gate (govulncheck),Dependency vulnerability scanning on every change,Info,All Go modules,CTO (R10 VACANT),2026-11-18,Closed,2026-11-18,Makefile

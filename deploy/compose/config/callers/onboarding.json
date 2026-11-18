@@ -1,0 +1,17 @@
+{
+  "svc-backoffice-api": [
+    "DecideKYCReview",
+    "ListKYCReviews"
+  ],
+  "svc-stack-journeys": [
+    "FindApplication",
+    "GetOnboarding",
+    "StartBusinessOnboarding"
+  ],
+  "svc-workspace": [
+    "FindApplication",
+    "OpenCurrencyAccount",
+    "StartBusinessOnboarding",
+    "StartPersonOnboarding"
+  ]
+}

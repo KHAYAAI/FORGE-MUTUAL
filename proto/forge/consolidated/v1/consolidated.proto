@@ -1,0 +1,64 @@
+// Consolidated view (ARCHITECTURE.md 6.1 and 7.9): read models of balances and activity, built from ledger events and
+// checked against the ledger. Amounts are integer minor units carried as decimal strings.
+syntax = "proto3";
+
+package forge.consolidated.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1;consolidatedv1";
+
+service ConsolidatedViewService {
+  rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
+  rpc GetActivity(GetActivityRequest) returns (GetActivityResponse);
+  rpc GetReconStatus(GetReconStatusRequest) returns (GetReconStatusResponse);
+}
+
+message GetBalancesRequest {
+  string party_id = 1;
+}
+
+// Every balance names its holding entity and whether it is insured (invariant 10). The figure is the projection's
+// posted balance; holds still pending at the ledger are not yet reflected until the next reconciliation.
+message AccountView {
+  string account_id = 1;
+  string asset = 2;
+  string available_minor = 3;
+  string holding_entity = 4;
+  bool insured = 5;
+  string product_id = 6;
+  string as_of = 7;
+  string source = 8; // EVENT or LEDGER: where the figure last came from
+}
+
+message GetBalancesResponse {
+  repeated AccountView accounts = 1;
+}
+
+message GetActivityRequest {
+  string party_id = 1; // the owner; the account must belong to this party
+  string account_id = 2;
+  uint64 after_seq = 3;
+  uint32 limit = 4;    // 1 to 500
+}
+
+message ActivityEntry {
+  uint64 seq = 1;
+  string transfer_id = 2;
+  string direction = 3; // IN or OUT
+  string amount_minor = 4;
+  string asset = 5;
+  uint32 code = 6;
+  string at = 7;
+}
+
+message GetActivityResponse {
+  repeated ActivityEntry entries = 1;
+  uint64 next_after_seq = 2;
+}
+
+message GetReconStatusRequest {}
+
+message GetReconStatusResponse {
+  string last_run_at = 1;
+  uint32 accounts_checked = 2;
+  uint32 drifted = 3;
+}

@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+/* The Forge palette, shared with the front door: near-black ink, cool neutral greys and a periwinkle accent. The
+   pages use Tailwind's stone and sky names; these give them Forge's values. */
+@theme {
+  --color-stone-50: #fafafa;
+  --color-stone-100: #f5f5f5;
+  --color-stone-200: #ebebef;
+  --color-stone-300: #dcdce2;
+  --color-stone-400: #a9a9b2;
+  --color-stone-500: #5c5c66;
+  --color-stone-600: #4a4a52;
+  --color-stone-700: #3a3a42;
+  --color-stone-800: #2a2a2e;
+  --color-stone-900: #1e1e1e;
+  --color-stone-950: #111111;
+  --color-sky-50: #eef0ff;
+  --color-sky-200: #c9cbff;
+  --color-sky-700: #4a50d6;
+  --color-sky-900: #2b2f8f;
+}

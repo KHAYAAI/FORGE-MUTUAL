@@ -1,0 +1,182 @@
+// Lending (lending-service): overdraft facilities, working-capital term loans and revenue-based financing. An
+// application is assessed on the customer's own account history, decided by a credit officer who is not the
+// applicant, accepted by the customer on a quotation that states the total cost of credit, and only then paid out.
+// Each product is gated by pkg/licence (overdraft, term_loans, revenue_based): production refuses them until the
+// credit policy, NCA registration and capital are in place.
+syntax = "proto3";
+
+package forge.lending.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1;lendingv1";
+
+service LendingService {
+  rpc ListLoanProducts(ListLoanProductsRequest) returns (ListLoanProductsResponse);
+  // Applies for credit. The service assesses it at once on the account's last 90 days of money in.
+  rpc ApplyForCredit(ApplyForCreditRequest) returns (ApplyForCreditResponse);
+  rpc ListFacilities(ListFacilitiesRequest) returns (ListFacilitiesResponse);
+  // Accepts an approved offer; the money is paid out. Only the party's own offer, once.
+  rpc AcceptOffer(AcceptOfferRequest) returns (AcceptOfferResponse);
+  // Draws on an overdraft facility, into the current account, up to the limit.
+  rpc Draw(DrawRequest) returns (DrawResponse);
+  // Repays early: an overdraft's drawn balance, or a loan's outstanding principal.
+  rpc Repay(RepayRequest) returns (RepayResponse);
+  // A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
+  rpc GetStatement(GetStatementRequest) returns (GetStatementResponse);
+}
+
+// Staff side: the credit queue. Called by backoffice-api for a person with the credit role.
+service CreditDeskService {
+  rpc ListCreditApplications(ListCreditApplicationsRequest) returns (ListCreditApplicationsResponse);
+  rpc DecideCreditApplication(DecideCreditApplicationRequest) returns (DecideCreditApplicationResponse);
+}
+
+message LoanProduct {
+  string product_id = 1;  // overdraft, term-loan, revenue-based
+  string name = 2;
+  uint32 rate_bps = 3;    // annual interest (overdraft, term loan)
+  uint32 fee_bps = 4;     // fixed fee on the advance (revenue-based)
+  uint32 sweep_bps = 5;   // share of each payment in that repays it (revenue-based)
+  string min_minor = 6;
+  string max_minor = 7;
+  uint32 max_term_months = 8;
+  bool available = 9;
+}
+
+message ListLoanProductsRequest {}
+message ListLoanProductsResponse { repeated LoanProduct products = 1; }
+
+message Assessment {
+  string inflow_90d_minor = 1;       // money received into the current account in the last 90 days
+  string monthly_inflow_minor = 2;   // a third of that
+  string suggested_max_minor = 3;    // what the placeholder affordability rule allows (docs/THRESHOLDS.md)
+  repeated string notes = 4;
+}
+
+message Instalment {
+  uint32 number = 1;
+  string due_on = 2;
+  string principal_minor = 3;
+  string interest_minor = 4;
+  string status = 5;   // DUE, PAID, ARREARS
+}
+
+message Facility {
+  string facility_id = 1;
+  string product_id = 2;
+  string status = 3;   // ASSESSED, APPROVED, DECLINED, ACTIVE, SETTLED, CANCELLED
+  string requested_minor = 4;
+  string approved_minor = 5;
+  uint32 rate_bps = 6;
+  uint32 term_months = 7;
+  uint32 fee_bps = 8;
+  uint32 sweep_bps = 9;
+  string outstanding_minor = 10;   // what is owed now (principal or drawn balance, plus any fee still due)
+  string available_minor = 11;     // overdraft: what may still be drawn
+  string total_repayable_minor = 12; // the quotation: everything the customer will pay, if the offer is accepted
+  string applied_at = 13;
+  string decided_at = 14;
+  string decision_note = 15;       // shown to staff only
+  string current_account_id = 16;
+  Assessment assessment = 17;
+  repeated Instalment schedule = 18;
+  string party_id = 19;            // staff views only
+  string purpose = 20;
+  uint32 days_past_due = 21;
+  DefaultNotice default_notice = 22; // set while a default notice is outstanding
+}
+
+// A default notice (NCA s.129): the customer is told they are in arrears and of their options before any enforcement.
+message DefaultNotice {
+  string notice_id = 1;
+  string issued_at = 2;
+  string respond_by = 3;     // the customer has until then to respond (PROPOSED 10 business days; verify)
+  string arrears_minor = 4;
+  uint32 days_past_due = 5;
+  string text = 6;
+}
+
+message StatementEntry {
+  string at = 1;
+  string kind = 2;           // DISBURSED, DRAWN, REPAID, INSTALMENT_COLLECTED, INSTALMENT_MISSED, INTEREST_CHARGED, SWEPT, DEFAULT_NOTICE
+  string principal_minor = 3;
+  string interest_minor = 4; // interest or fee
+  string description = 5;
+}
+
+message GetStatementRequest {
+  string party_id = 1;
+  string facility_id = 2;
+  string period = 3;         // YYYY-MM
+}
+
+message GetStatementResponse {
+  string facility_id = 1;
+  string product_id = 2;
+  string period = 3;
+  repeated StatementEntry entries = 4;
+  string outstanding_now_minor = 5;
+  uint32 rate_bps = 6;
+  string generated_at = 7;
+}
+
+message ApplyForCreditRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string product_id = 3;
+  string amount_minor = 4;
+  uint32 term_months = 5;          // term loan only
+  string current_account_id = 6;   // the rand account the money goes to and is repaid from
+  string purpose = 7;
+  string actor = 8;
+}
+
+message ApplyForCreditResponse { Facility facility = 1; }
+
+message ListFacilitiesRequest { string party_id = 1; }
+message ListFacilitiesResponse { repeated Facility facilities = 1; }
+
+message AcceptOfferRequest {
+  string party_id = 1;
+  string facility_id = 2;
+  string actor = 3;
+  bool accepts_terms = 4;          // the customer has read the quotation and the terms
+}
+
+message AcceptOfferResponse { Facility facility = 1; }
+
+message DrawRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string facility_id = 3;
+  string amount_minor = 4;
+  string actor = 5;
+}
+
+message DrawResponse { Facility facility = 1; }
+
+message RepayRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string facility_id = 3;
+  string amount_minor = 4;
+  string actor = 5;
+}
+
+message RepayResponse { Facility facility = 1; }
+
+message ListCreditApplicationsRequest {
+  string status = 1;   // empty: ASSESSED (waiting for a decision)
+}
+
+message ListCreditApplicationsResponse { repeated Facility facilities = 1; }
+
+message DecideCreditApplicationRequest {
+  string facility_id = 1;
+  bool approve = 2;
+  string approved_minor = 3;   // may be less than requested
+  uint32 rate_bps = 4;         // 0: the product's rate
+  string note = 5;             // why; required
+  string officer = 6;          // the credit officer deciding; never the applicant
+}
+
+message DecideCreditApplicationResponse { Facility facility = 1; }
