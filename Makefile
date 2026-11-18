@@ -269,6 +269,7 @@ test-regulatory:
 	python3 -I scripts/check-regulatory-register.py
 	python3 -I scripts/check-asset-register.py
 	python3 -I scripts/check-data-classes.py
+	python3 -I scripts/build-governance.py --check
 	python3 -I scripts/check-monitoring.py
 	scripts/test-backup-freshness.sh
 	python3 -I scripts/check-secure-config.py
@@ -315,3 +316,7 @@ test-kafka-cluster:
 	scripts/kafka-cluster.sh up
 	eval "$$(scripts/kafka-cluster.sh env)"; ( cd pkg/outbox && $(GO) test -count=1 -v -timeout 600s -run TestCluster ./ ); \
 	  status=$$?; scripts/kafka-cluster.sh down; exit $$status
+
+.PHONY: governance
+governance:
+	python3 -I scripts/build-governance.py

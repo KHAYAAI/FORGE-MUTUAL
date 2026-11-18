@@ -1,0 +1,53 @@
+area,file,title,owner,approver,review,rows,status
+Governance,board-charter.md,Board charter,"Company Secretary (R17, VACANT)",Board,Yearly,LIC-06;BR-02;MR-03;MR-02;LIC-07,Draft 0.1
+Governance,committee-terms-of-reference.md,Terms of reference for board and management committees,"Company Secretary (R17, VACANT)",Board,Yearly,BR-02;BR-05;LIC-13;JS1-03,Draft 0.1
+Governance,conflicts-of-interest-policy.md,Conflicts of interest and related-party policy,"Company Secretary (R17, VACANT)",Board,Yearly,LIC-06;BR-02,Draft 0.1
+Governance,code-of-conduct.md,Code of conduct and ethics,"Head of People (R20, VACANT)","Board, on Social and Ethics Committee recommendation",Yearly,LIC-06,Draft 0.1
+Governance,whistleblowing-policy.md,Whistleblowing policy,"Chief Compliance Officer (R04, VACANT)",Audit Committee,Yearly,BR-02,Draft 0.1
+Governance,remuneration-policy.md,Remuneration policy,"Head of People (R20, VACANT)","Board, on Remuneration Committee recommendation",Yearly,BR-02,Draft 0.1
+Governance,shareholder-and-significant-ownership-policy.md,"Shareholders, significant ownership and founders","Company Secretary (R17, VACANT)",Board,Yearly,LIC-05;LIC-07;LIC-02,Draft 0.1
+Governance,fit-and-proper-procedure.md,Fit-and-proper procedure,"Company Secretary (R17, VACANT)","Board, on Nominations Committee recommendation",Yearly,LIC-05;LIC-06,Draft
+Governance,staff-screening.md,"Staff, contractor and provider screening (Joint Standard 1 of 2023; FICA s.42A)","Head of People (R20, VACANT)",Executive committee,Yearly,FIC-10;JS1-06,Draft
+Governance,training-plan.md,Cyber awareness and training plan,"Head of People (R20, VACANT)",Executive committee,Yearly,JS2-10,Draft
+Governance,licence-application-plan.md,Licence application plan,Founder and CEO: Tebogo Mvelase (R01),Board (once constituted),Monthly until submitted,LIC-01;LIC-02;LIC-05;LIC-06;LIC-07;LIC-10;LIC-11;LIC-12;LIC-13;LIC-14;LIC-16;LIC-17,Draft 0.1
+Governance,business-plan-outline.md,Business plan outline (application pack),Founder and CEO: Tebogo Mvelase (R01),Board,Yearly,LIC-14,Draft
+Governance,naming-and-marketing-policy.md,"Naming, marketing and public statements policy","Chief Compliance Officer (R04, VACANT)",Executive committee,Yearly,LIC-17,Draft 0.1
+Risk and capital,risk-management-framework.md,Risk management framework,"Chief Risk Officer (R02, VACANT)","Board, on Risk and Capital Management Committee recommendation",Yearly,BR-02;MR-01;LIC-13,Draft 0.1
+Risk and capital,risk-appetite-statement.md,Risk appetite statement,"Chief Risk Officer (R02, VACANT)",Board,"Yearly, and on any material change",BR-02;MR-01;LIC-13;LIC-12,Draft 0.1
+Risk and capital,risk-register.md,"Risk register (initial, complete list)","Chief Risk Officer (R02, VACANT)",Risk and Capital Management Committee,Yearly,,Draft
+Risk and capital,capital-management-policy.md,Capital management policy and ICAAP,"Chief Financial Officer (R03, VACANT)",Board,Yearly,LIC-02;LIC-13;BR-02;BR-07,Draft 0.1
+Risk and capital,credit-risk-policy.md,Credit risk policy,"Head of Credit (R15, VACANT)","Board, on Risk Committee recommendation",Yearly,LIC-13;BR-02;NCA-01;NCA-05,Draft 0.1
+Risk and capital,market-and-interest-rate-risk-policy.md,Market and interest rate risk policy,"Head of Treasury (R13, VACANT)","Board, on ALCO and Risk Committee recommendation",Yearly,LIC-13;MR-01;EXC-02,Draft 0.1
+Risk and capital,operational-risk-policy.md,Operational risk policy,"Chief Risk Officer (R02, VACANT)","Board, on Risk Committee recommendation",Yearly,LIC-13;BR-02;MR-01,Draft 0.1
+Risk and capital,concentration-policy.md,Deposit concentration and liquidity limits policy,"Head of Treasury (R13, VACANT)","Board, on ALCO recommendation",Yearly,BR-04,Draft
+Risk and capital,liquidity-and-contingency-funding-plan.md,Liquidity risk framework and contingency funding plan (Banks Act regulations),"Head of Treasury (R13, VACANT)","Board, on ALCO recommendation",Yearly,BR-04;LIC-04,Draft
+Risk and capital,recovery-plan.md,"Business continuity, disaster recovery and recovery plan","Chief Risk Officer (R02, VACANT)",Board,Yearly,BR-04;JS2-12;JS2-13,Draft
+Risk and capital,new-product-approval-policy.md,New product approval policy,"Head of Product (R18, VACANT)",Board,Yearly,BR-02;LIC-13,Draft 0.1
+Finance and reporting,internal-control-over-financial-reporting.md,Internal control over financial reporting,"Chief Financial Officer (R03, VACANT)",Audit Committee,Yearly,MR-02;RET-01;BR-07,Draft 0.1
+Finance and reporting,regulatory-reporting-policy.md,Regulatory returns policy,"Chief Financial Officer (R03, VACANT)",Audit Committee,Yearly,BR-07;MR-05;MR-06;RET-01;LIC-11,Draft 0.1
+"Compliance, financial crime and conduct",compliance-charter.md,Compliance charter,"Chief Compliance Officer (R04, VACANT)","Board, on Audit Committee recommendation",Yearly,BR-02;FIC-10;LIC-16,Draft 0.1
+"Compliance, financial crime and conduct",rmcp.md,Risk Management and Compliance Programme (FICA s.42),"Money Laundering Reporting Officer (R06, VACANT)",Board,Yearly,FIC-01;FIC-10,Draft
+"Compliance, financial crime and conduct",cash-threshold-reporting-procedure.md,Cash threshold reporting procedure,"Money Laundering Reporting Officer (R06, VACANT)",Financial Crime Committee,Yearly,FIC-07,Draft 0.1
+"Compliance, financial crime and conduct",complaints-and-fair-treatment-policy.md,Complaints and treating customers fairly policy,"Head of Customer Service and Complaints (R19, VACANT)","Board, on Social and Ethics Committee recommendation",Yearly,BR-02,Draft 0.1
+Assurance,internal-audit-charter.md,Internal audit charter,"Head of Internal Audit (R11, VACANT)",Audit Committee,Yearly,BR-05;LIC-14,Draft 0.1
+"Technology, cyber and resilience",it-risk-management-framework.md,IT governance and risk management framework,"Head of IT Risk (R14, VACANT)","Board, on IT and Cyber Committee recommendation",Yearly,JS1-03;JS1-12;GAP-01;LIC-10,Draft 0.1
+"Technology, cyber and resilience",it-strategy.md,IT strategy (Joint Standard 1 of 2023),"Chief Technology Officer (R10, VACANT)","Board, on IT and Cyber Committee recommendation",Yearly,JS1-01,Draft
+"Technology, cyber and resilience",it-service-management.md,"IT service management: change, release, incident, problem and capacity (Joint Standard 1 of 2023)","Chief Technology Officer (R10, VACANT)",Executive committee,Yearly,JS1-07,Draft
+"Technology, cyber and resilience",it-project-framework.md,IT programme and project framework (Joint Standard 1 of 2023),"Chief Technology Officer (R10, VACANT)",Executive committee,Yearly,JS1-10,Draft
+"Technology, cyber and resilience",cyber-strategy.md,Cyber and information security strategy and framework,"Chief Information Security Officer (R12, VACANT)","Board, on IT and Cyber Committee recommendation",Yearly,JS2-01;JS2-17,Draft
+"Technology, cyber and resilience",access-control-policy.md,Access control and privileged access policy,"Chief Information Security Officer (R12, VACANT)",IT and Cyber Committee,Yearly,JS2-03;JS2-04;JS2-05,Draft
+"Technology, cyber and resilience",key-management-policy.md,Cryptographic key management policy,"Chief Information Security Officer (R12, VACANT)",IT and Cyber Committee,Yearly,JS2-09,Draft
+"Technology, cyber and resilience",secure-development-policy.md,Secure development and open-source policy,"Chief Technology Officer (R10, VACANT)",IT and Cyber Committee,Yearly,JS2-07;JS2-17,Draft
+"Technology, cyber and resilience",secure-configuration-standard.md,Secure configuration standard (Joint Standard 2 of 2024: configuration and patching),"Chief Information Security Officer (R12, VACANT)",Change Advisory Board,Yearly,JS2-07;JS2-17,Draft
+"Technology, cyber and resilience",threat-intelligence-and-security-testing-policy.md,Threat intelligence and security testing policy,"Chief Information Security Officer (R12, VACANT)",IT and Cyber Committee,Yearly,JS2-15;JS2-16;G4-01;G4-02,Draft 0.1
+"Technology, cyber and resilience",incident-response-plan.md,Incident response plan,"Chief Information Security Officer (R12, VACANT)",IT and Cyber Committee,Yearly,JN-01;JN-02;JN-03;JS2-14;JS2-18,Draft
+"Technology, cyber and resilience",regulatory-incident-notification-procedure.md,Regulatory incident notification procedure,"Chief Information Security Officer (R12, VACANT)",Executive committee,Yearly,JS2-18;JN-04;POP-06,Draft 0.1
+"Technology, cyber and resilience",business-continuity-and-disaster-recovery-policy.md,Business continuity and disaster recovery policy,"Business Continuity Manager (R28, VACANT)","Board, on IT and Cyber Committee recommendation",Yearly,G4-02;JS1-12;OUT-05,Draft 0.1
+Data and privacy,data-strategy.md,Data strategy and classification policy,"Head of Data and Data Protection (R23, VACANT)",Board,Yearly,JS2-02;JS2-06,Draft
+Data and privacy,data-retention-schedule.md,"Data retention schedule (POPIA s.14; FICA s.22, s.23)","Head of Data and Data Protection (R23, VACANT)",Data Governance Council,Yearly,FIC-05;POP-03,Draft
+Data and privacy,privacy-notice.md,Privacy notice (POPIA s.18): customer-facing draft,Information Officer: Tebogo Mvelase (R27),Executive committee,Yearly,POP-01;POP-08,Draft
+Data and privacy,popia-compliance-framework.md,POPIA compliance framework and PAIA manual outline,Information Officer: Tebogo Mvelase (R27); Deputy VACANT,Board,Yearly,POP-01;POP-02;POP-08,Draft 0.1
+Third parties,outsourcing-policy.md,Outsourcing and third-party policy,"Chief Operating Officer (R08, VACANT)",Board,Yearly,D3-01;D3-06;OUT-01;OUT-05,Draft
+Third parties,cloud-and-offshoring-policy.md,Cloud computing and offshoring of data policy,"Chief Technology Officer (R10, VACANT)","Board, on IT and Cyber Committee recommendation",Yearly,D3-02;D3-03;D3-05;D3-07;OUT-01;POP-08,Draft 0.1
+Third parties,provider-due-diligence-procedure.md,Provider due diligence procedure,"Chief Operating Officer (R08, VACANT)",Executive committee,Yearly,D3-03;OUT-03;OUT-06;JN-04;D3-07,Draft 0.1
+Third parties,exit-plans.md,Exit plans for providers (Directive 3 of 2018; Guidance Note 5 of 2014),"Chief Operating Officer (R08, VACANT)",Executive committee,Yearly,D3-06,Draft
