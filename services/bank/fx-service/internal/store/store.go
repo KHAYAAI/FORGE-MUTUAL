@@ -78,7 +78,28 @@ func SaveQuote(ctx context.Context, tx pgx.Tx, q Quote) error {
 
 // LockQuote books a quote and creates its deal in one transaction. It refuses a quote that is expired, already booked,
 // or not the party's. The rate and amounts are the ones issued: the lock is what makes a later market move irrelevant.
-func LockQuote(ctx context.Context, pool *pgxpool.Pool, partyID, quoteID, dealID, sellAcc, buyAcc string, now time.Time) (Quote, error) {
+// ErrAllowance is returned when a conversion would take an individual over their annual foreign allowance.
+var ErrAllowance = errors.New("store: the conversion is more than is left of the annual foreign allowance")
+
+// Allowance limits how much rand an individual may convert to foreign currency in a calendar year. Nil means no limit
+// (a company, or no allowance configured).
+type Allowance struct {
+	LimitMinor int64
+}
+
+// AllowanceUsed is the rand an individual has converted to foreign currency in the calendar year of now, counting
+// every deal that was not voided or reversed: a conversion that failed gives its allowance back.
+func AllowanceUsed(ctx context.Context, q interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}, partyID string, now time.Time) (int64, error) {
+	start := time.Date(now.UTC().Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+	var used int64
+	err := q.QueryRow(ctx, `select coalesce(sum(sell_amount), 0) from fx_deal where party_id = $1 and sell_asset = 'ZAR'
+		and state not in ('VOIDED', 'REVERSED') and created_at >= $2 and created_at < $3`, partyID, start, start.AddDate(1, 0, 0)).Scan(&used)
+	return used, err
+}
+
+func LockQuote(ctx context.Context, pool *pgxpool.Pool, partyID, quoteID, dealID, sellAcc, buyAcc string, now time.Time, allowance *Allowance) (Quote, error) {
 	var q Quote
 	err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		err := tx.QueryRow(ctx, `
@@ -94,14 +115,27 @@ func LockQuote(ctx context.Context, pool *pgxpool.Pool, partyID, quoteID, dealID
 		if q.Status != "ISSUED" || !now.Before(q.ExpiresAt) {
 			return ErrNotBookable
 		}
+		if allowance != nil && q.SellAsset == "ZAR" {
+			// One booking at a time per party, so two cannot both spend the last of the allowance.
+			if _, err := tx.Exec(ctx, `select pg_advisory_xact_lock(hashtext('fx-allowance:' || $1))`, partyID); err != nil {
+				return err
+			}
+			used, err := AllowanceUsed(ctx, tx, partyID, now)
+			if err != nil {
+				return err
+			}
+			if used+q.SellAmount > allowance.LimitMinor {
+				return ErrAllowance
+			}
+		}
 		if _, err := tx.Exec(ctx, `update fx_quote set status = 'BOOKED' where quote_id = $1`, quoteID); err != nil {
 			return err
 		}
 		_, err = tx.Exec(ctx, `
 			insert into fx_deal (deal_id, quote_id, party_id, sell_asset, buy_asset, sell_amount, buy_amount, spread_minor,
-			                     sell_account, buy_account, state, updated_at)
-			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())`,
-			dealID, quoteID, partyID, q.SellAsset, q.BuyAsset, q.SellAmount, q.BuyAmount, q.SpreadMinor, sellAcc, buyAcc, StateBooked)
+			                     sell_account, buy_account, state, updated_at, created_at)
+			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), $12)`,
+			dealID, quoteID, partyID, q.SellAsset, q.BuyAsset, q.SellAmount, q.BuyAmount, q.SpreadMinor, sellAcc, buyAcc, StateBooked, now)
 		return err
 	})
 	return q, err

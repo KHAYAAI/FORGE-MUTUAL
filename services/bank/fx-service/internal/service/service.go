@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	partyv1 "github.com/khayaai/forge-mutual/pkg/api/forge/party/v1"
 	"github.com/khayaai/forge-mutual/pkg/licence"
 	"time"
 
@@ -40,6 +41,31 @@ type Service struct {
 	Now       func() time.Time
 	// Licence keeps the euro and the pound off in production until they are approved. The dollar is the v1 product.
 	Licence licence.Gate
+	// Parties tells individuals from companies, for the annual foreign allowance (exchange control). With no Parties,
+	// no allowance is applied.
+	Parties Parties
+	// PersonAllowanceMinor is an individual's annual foreign allowance in rand minor units (threshold 28, a placeholder).
+	PersonAllowanceMinor int64
+}
+
+// Parties reads a party's type.
+type Parties interface {
+	GetParty(context.Context, *connect.Request[partyv1.GetPartyRequest]) (*connect.Response[partyv1.GetPartyResponse], error)
+}
+
+// allowanceFor is the allowance that applies to a party: individuals have one, companies do not.
+func (s *Service) allowanceFor(ctx context.Context, party string) (*store.Allowance, error) {
+	if s.Parties == nil || s.PersonAllowanceMinor <= 0 {
+		return nil, nil
+	}
+	p, err := s.Parties.GetParty(ctx, connect.NewRequest(&partyv1.GetPartyRequest{PartyId: party}))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+	if p.Msg.Party.GetType() != partyv1.PartyType_PARTY_TYPE_PERSON {
+		return nil, nil
+	}
+	return &store.Allowance{LimitMinor: s.PersonAllowanceMinor}, nil
 }
 
 func (s *Service) now() time.Time {
@@ -125,7 +151,11 @@ func (s *Service) Book(ctx context.Context, req *connect.Request[fxv1.BookReques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if _, err := store.LockQuote(ctx, s.Pool, m.PartyId, m.QuoteId, dealID, m.SellAccountId, m.BuyAccountId, s.now()); err != nil {
+	allowance, err := s.allowanceFor(ctx, m.PartyId)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.LockQuote(ctx, s.Pool, m.PartyId, m.QuoteId, dealID, m.SellAccountId, m.BuyAccountId, s.now(), allowance); err != nil {
 		return nil, bookingError(err)
 	}
 	state, err := s.Saga.Run(ctx, dealID)
@@ -175,6 +205,8 @@ func bookingError(err error) error {
 		return connect.NewError(connect.CodeNotFound, errors.New("quote not found"))
 	case errors.Is(err, store.ErrNotBookable):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, store.ErrAllowance):
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("this is more than is left of your annual foreign allowance; contact us to arrange tax clearance for a larger amount"))
 	}
 	return connect.NewError(connect.CodeInternal, err)
 }

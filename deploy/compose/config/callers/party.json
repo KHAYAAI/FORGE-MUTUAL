@@ -3,6 +3,9 @@
     "ListParties",
     "SetStatus"
   ],
+  "svc-fx": [
+    "GetParty"
+  ],
   "svc-onboarding": [
     "AddRelationship",
     "CreateParty",

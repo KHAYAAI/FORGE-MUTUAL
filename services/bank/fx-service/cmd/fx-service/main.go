@@ -12,6 +12,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/licence"
 	"github.com/khayaai/forge-mutual/pkg/serve"
@@ -78,6 +79,18 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	// Individuals' annual foreign allowance (exchange control; threshold 28, a placeholder). Needs PARTY_URL to tell
+	// individuals from companies; production requires it.
+	allowance, err := int64FromEnv("FX_PERSON_ANNUAL_ALLOWANCE_MINOR", 100_000_000)
+	if err != nil {
+		return err
+	}
+	var parties service.Parties
+	if u := os.Getenv("PARTY_URL"); u != "" {
+		parties = partyv1connect.NewPartyServiceClient(outbound, u, callerAs("svc-fx"))
+	} else if callerauth.IsProduction() {
+		return errors.New("PARTY_URL is required in production: individuals' foreign allowance must be applied")
+	}
 	asOf, err := time.Parse(time.RFC3339, os.Getenv("FX_RATE_AS_OF"))
 	if err != nil {
 		return errors.New("FX_RATE_AS_OF is required, RFC 3339, the time the rate was observed")
@@ -143,7 +156,7 @@ func run(log *slog.Logger) error {
 	}()
 
 	svc := &service.Service{
-		Pool: pool, Rates: rates.Static{Rates: quoted, AsOf: asOf}, Licence: gate, MaxAge: maxAge, SpreadBps: spread,
+		Pool: pool, Rates: rates.Static{Rates: quoted, AsOf: asOf}, Licence: gate, Parties: parties, PersonAllowanceMinor: allowance, MaxAge: maxAge, SpreadBps: spread,
 		Owners: owners, Saga: sg,
 	}
 	mux := http.NewServeMux()

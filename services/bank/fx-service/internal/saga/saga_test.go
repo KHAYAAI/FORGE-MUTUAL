@@ -109,7 +109,7 @@ func (r *rig) book(party string, sellAsset, buyAsset string, sellAmount int64, s
 	if err != nil {
 		r.t.Fatal(err)
 	}
-	if _, err := store.LockQuote(context.Background(), r.pool, party, quoteID, dealID, sellAcc, buyAcc, r.now); err != nil {
+	if _, err := store.LockQuote(context.Background(), r.pool, party, quoteID, dealID, sellAcc, buyAcc, r.now, nil); err != nil {
 		r.t.Fatal(err)
 	}
 	return dealID
@@ -312,16 +312,16 @@ func TestExpiredAndDoubleBookingsAreRefused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-exp", "a", "b", r.now.Add(2*time.Minute)); err != store.ErrNotBookable {
+	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-exp", "a", "b", r.now.Add(2*time.Minute), nil); err != store.ErrNotBookable {
 		t.Fatalf("an expired quote: %v, want ErrNotBookable", err)
 	}
-	if _, err := store.LockQuote(ctx, r.pool, "someone-else", "q-exp", "d-other", "a", "b", r.now); err != store.ErrNotFound {
+	if _, err := store.LockQuote(ctx, r.pool, "someone-else", "q-exp", "d-other", "a", "b", r.now, nil); err != store.ErrNotFound {
 		t.Fatalf("another party's quote: %v, want ErrNotFound", err)
 	}
-	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-1", "a", "b", r.now); err != nil {
+	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-1", "a", "b", r.now, nil); err != nil {
 		t.Fatalf("first booking: %v", err)
 	}
-	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-2", "a", "b", r.now); err != store.ErrNotBookable {
+	if _, err := store.LockQuote(ctx, r.pool, "p", "q-exp", "d-2", "a", "b", r.now, nil); err != store.ErrNotBookable {
 		t.Fatalf("second booking of the same quote: %v, want ErrNotBookable", err)
 	}
 }

@@ -39,6 +39,7 @@ recorded here.
 
 | 26 | Deposit insurance cover per depositor | R100 000 | `internal/prudential/scv.go` `CoverLimit` | CFO | _unassigned_ | Placeholder: confirm the CODI limit and which deposits qualify |
 | 27 | Default notice timing | issued at 20 days overdue; 14 days to respond | `internal/lending/notices.go` | Risk owner (credit) and legal | _unassigned_ | Placeholder: verify against NCA s.129 and its timelines |
+| 28 | Individual annual foreign allowance | R1 000 000 a calendar year (`FX_PERSON_ANNUAL_ALLOWANCE_MINOR`) | `services/bank/fx-service/internal/store` | MLRO and Head of Treasury | _unassigned_ | Placeholder: verify the single discretionary allowance and the tax-clearance route with an authorised dealer |
 
 Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).

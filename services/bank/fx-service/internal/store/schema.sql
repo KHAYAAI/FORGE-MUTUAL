@@ -31,3 +31,7 @@ create table if not exists fx_deal (
   updated_at    timestamptz not null default now()
 );
 create index if not exists fx_deal_open on fx_deal (updated_at) where state not in ('COMPLETED', 'VOIDED', 'REVERSED');
+
+-- When a deal was booked: an individual's foreign allowance is counted per calendar year of booking.
+alter table fx_deal add column if not exists created_at timestamptz not null default now();
+create index if not exists fx_deal_party_year on fx_deal (party_id, created_at);

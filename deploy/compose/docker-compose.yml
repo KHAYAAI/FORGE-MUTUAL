@@ -382,6 +382,7 @@ services:
       FX_RATE_AS_OF: ${FX_RATE_AS_OF}
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
     volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   deposits:
