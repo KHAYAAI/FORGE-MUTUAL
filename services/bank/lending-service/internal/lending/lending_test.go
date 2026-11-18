@@ -71,7 +71,7 @@ func setup(t *testing.T) *world {
 	if err := Open(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `truncate op, od_charge, od_accrual, instalment, facility`); err != nil {
+	if _, err := pool.Exec(ctx, `truncate op, od_charge, od_accrual, instalment, facility_event, default_notice, facility`); err != nil {
 		t.Fatal(err)
 	}
 	fake, client := ledgerfake.New(t)

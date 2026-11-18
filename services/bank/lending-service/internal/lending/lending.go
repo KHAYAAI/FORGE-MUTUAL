@@ -15,6 +15,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
@@ -331,6 +332,9 @@ func (s *Service) facilities(ctx context.Context, where string, args ...any) ([]
 		}
 		f.Schedule = sched
 		f.TotalRepayableMinor = fmt.Sprint(s.totalRepayable(f, r.approved, sched))
+		if f.DefaultNotice, err = s.openNotice(ctx, f.FacilityId); err != nil {
+			return nil, err
+		}
 		out = append(out, f)
 	}
 	return out, nil
@@ -506,6 +510,15 @@ func (s *Service) transfer(ctx context.Context, key, actor, reason string, legs 
 	return connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("the ledger refused: %v", res.Msg.RejectionCodes))
 }
 
+// event records a money movement for statements. Its key is the movement's ledger key, so a retry records it once.
+func (s *Service) event(ctx context.Context, q interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}, key, facility, kind string, principal, interest int64, desc string) error {
+	_, err := q.Exec(ctx, `insert into facility_event (event_key, facility_id, at, kind, principal_minor, interest_minor, description)
+		values ($1, $2, $3, $4, $5, $6, $7) on conflict (event_key) do nothing`, key, facility, s.now(), kind, principal, interest, desc)
+	return err
+}
+
 func leg(from, to string, amount int64, code uint32) *ledgerv1.TransferLeg {
 	return &ledgerv1.TransferLeg{DebitAccountId: from, CreditAccountId: to, Code: code,
 		Amount: &ledgerv1.Money{Asset: "ZAR", AmountMinor: strconv.FormatInt(amount, 10)}}
@@ -583,6 +596,9 @@ func (s *Service) AcceptOffer(ctx context.Context, req *connect.Request[lendingv
 		}
 		if product != "overdraft" {
 			if err := s.transfer(ctx, "disburse:"+m.FacilityId, m.Actor, "disburse "+product, leg(loan, current, approved, codeDisbursement)); err != nil {
+				return err
+			}
+			if err := s.event(ctx, tx, "disburse:"+m.FacilityId, m.FacilityId, "DISBURSED", approved, 0, "paid into the current account"); err != nil {
 				return err
 			}
 		}
@@ -675,7 +691,10 @@ func (s *Service) Draw(ctx context.Context, req *connect.Request[lendingv1.DrawR
 		if -bal+amount > a.approved {
 			return refused("the draw is more than the facility has left")
 		}
-		return s.transfer(ctx, key, m.Actor, "overdraft draw", leg(a.loan, a.current, amount, codeDisbursement))
+		if err := s.transfer(ctx, key, m.Actor, "overdraft draw", leg(a.loan, a.current, amount, codeDisbursement)); err != nil {
+			return err
+		}
+		return s.event(ctx, tx, key, m.FacilityId, "DRAWN", amount, 0, "drawn into the current account")
 	})
 	if err != nil {
 		return nil, wrap(err)
@@ -730,6 +749,9 @@ func (s *Service) Repay(ctx context.Context, req *connect.Request[lendingv1.Repa
 			legs = append(legs, leg(a.current, s.Income, fp, codeInterestCharge))
 		}
 		if err := s.transfer(ctx, key, m.Actor, "repayment", legs...); err != nil {
+			return err
+		}
+		if err := s.event(ctx, tx, key, m.FacilityId, "REPAID", pp, fp, "early repayment"); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `update facility set fee_owed_minor = fee_owed_minor - $2 where facility_id = $1`, m.FacilityId, fp); err != nil {

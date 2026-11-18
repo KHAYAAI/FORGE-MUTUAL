@@ -3,6 +3,7 @@
     "AcceptOffer",
     "ApplyForCredit",
     "Draw",
+    "GetStatement",
     "ListFacilities",
     "ListLoanProducts",
     "Repay"

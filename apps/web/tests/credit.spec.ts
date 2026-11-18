@@ -51,3 +51,23 @@ test("a customer applies, sees the full cost, and accepts the offer", async ({ p
   await expect(page.getByText("Accepted. The facility is active.")).toBeVisible();
   await expect(card.getByText("Next payment R 10 790.00 on 2026-12-17")).toBeVisible();
 });
+
+test("a customer in default sees the notice and their options, and can open a statement", async ({ page }) => {
+  await page.route("**/api/v1/accounts", (route) => reply(route, 200, { accounts: [zarAccount] }));
+  await page.route("**/api/v1/loan-products", (route) => reply(route, 200, { products }));
+  await page.route("**/api/v1/facilities", (route) =>
+    reply(route, 200, {
+      facilities: [{
+        ...base, status: "ACTIVE", outstanding_minor: "10000000", days_past_due: 21,
+        default_notice: { notice_id: "n1", issued_at: "2026-12-06T06:00:00Z", respond_by: "2026-12-20", arrears_minor: "1079000", days_past_due: 21,
+          text: "You are behind on your repayments. Before we take any further step, you may refer this agreement to a debt counsellor." },
+      }],
+    }),
+  );
+  await signIn(page);
+  await page.goto("/credit");
+  const card = page.getByRole("listitem", { name: "Working-capital loan" });
+  await expect(card.getByRole("alert")).toContainText("R 10 790.00 is 21 days overdue. Please respond by 2026-12-20.");
+  await expect(card.getByText("refer this agreement to a debt counsellor")).toBeVisible();
+  await expect(card.getByRole("link", { name: "This month's statement" })).toHaveAttribute("href", /\/api\/v1\/facilities\/fac-1\/statement\?period=\d{4}-\d{2}/);
+});

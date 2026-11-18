@@ -387,6 +387,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The facility's statement for a calendar month (NCA s.108). */
+        get: operations["facilityStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/{facility}/accept": {
         parameters: {
             query?: never;
@@ -873,6 +890,15 @@ export interface components {
             current_account_id?: string;
             purpose?: string;
             days_past_due: number;
+            /** @description An outstanding default notice (NCA s.129), if any. */
+            default_notice?: {
+                notice_id: string;
+                issued_at: string;
+                respond_by: string;
+                arrears_minor: string;
+                days_past_due: number;
+                text: string;
+            };
             schedule: components["schemas"]["Instalment"][];
         };
         PaymentLink: {
@@ -1595,6 +1621,43 @@ export interface operations {
             404: components["responses"]["Error"];
             409: components["responses"]["Error"];
             503: components["responses"]["Error"];
+        };
+    };
+    facilityStatement: {
+        parameters: {
+            query: {
+                period: string;
+            };
+            header?: never;
+            path: {
+                facility: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The statement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        facility_id: string;
+                        period: string;
+                        outstanding_now_minor: string;
+                        entries: {
+                            at: string;
+                            kind: string;
+                            principal_minor: string;
+                            interest_minor: string;
+                            description: string;
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     acceptOffer: {

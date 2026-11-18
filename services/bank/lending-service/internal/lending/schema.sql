@@ -64,3 +64,28 @@ create table if not exists op (
   idempotency_key text primary key,
   request_hash    text not null
 );
+
+-- What happened to each facility, for statements (NCA s.108). One row per money movement, keyed by its ledger key,
+-- so a retried movement is recorded once.
+create table if not exists facility_event (
+  event_key       text        primary key,
+  facility_id     text        not null references facility (facility_id),
+  at              timestamptz not null,
+  kind            text        not null,
+  principal_minor bigint      not null default 0,
+  interest_minor  bigint      not null default 0,
+  description     text        not null default ''
+);
+create index if not exists facility_event_by_facility on facility_event (facility_id, at);
+
+-- Default notices (NCA s.129). At most one outstanding per facility; cleared when the arrears are paid.
+create table if not exists default_notice (
+  notice_id     text        primary key,
+  facility_id   text        not null references facility (facility_id),
+  issued_at     timestamptz not null,
+  respond_by    timestamptz not null,
+  arrears_minor bigint      not null,
+  days_past_due int         not null,
+  cleared_at    timestamptz
+);
+create unique index if not exists default_notice_open on default_notice (facility_id) where cleared_at is null;

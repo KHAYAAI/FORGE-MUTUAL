@@ -38,6 +38,7 @@ recorded here.
 | 25 | Capital and gross income used by the report | configured (`TREASURY_CAPITAL_MINOR`, `TREASURY_GROSS_INCOME_MINOR`) | treasury-risk | CFO | _unassigned_ | Zero until capital is raised |
 
 | 26 | Deposit insurance cover per depositor | R100 000 | `internal/prudential/scv.go` `CoverLimit` | CFO | _unassigned_ | Placeholder: confirm the CODI limit and which deposits qualify |
+| 27 | Default notice timing | issued at 20 days overdue; 14 days to respond | `internal/lending/notices.go` | Risk owner (credit) and legal | _unassigned_ | Placeholder: verify against NCA s.129 and its timelines |
 
 Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).

@@ -382,6 +382,7 @@ type Facility struct {
 	PartyId             string                 `protobuf:"bytes,19,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"` // staff views only
 	Purpose             string                 `protobuf:"bytes,20,opt,name=purpose,proto3" json:"purpose,omitempty"`
 	DaysPastDue         uint32                 `protobuf:"varint,21,opt,name=days_past_due,json=daysPastDue,proto3" json:"days_past_due,omitempty"`
+	DefaultNotice       *DefaultNotice         `protobuf:"bytes,22,opt,name=default_notice,json=defaultNotice,proto3" json:"default_notice,omitempty"` // set while a default notice is outstanding
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -563,6 +564,326 @@ func (x *Facility) GetDaysPastDue() uint32 {
 	return 0
 }
 
+func (x *Facility) GetDefaultNotice() *DefaultNotice {
+	if x != nil {
+		return x.DefaultNotice
+	}
+	return nil
+}
+
+// A default notice (NCA s.129): the customer is told they are in arrears and of their options before any enforcement.
+type DefaultNotice struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NoticeId      string                 `protobuf:"bytes,1,opt,name=notice_id,json=noticeId,proto3" json:"notice_id,omitempty"`
+	IssuedAt      string                 `protobuf:"bytes,2,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
+	RespondBy     string                 `protobuf:"bytes,3,opt,name=respond_by,json=respondBy,proto3" json:"respond_by,omitempty"` // the customer has until then to respond (PROPOSED 10 business days; verify)
+	ArrearsMinor  string                 `protobuf:"bytes,4,opt,name=arrears_minor,json=arrearsMinor,proto3" json:"arrears_minor,omitempty"`
+	DaysPastDue   uint32                 `protobuf:"varint,5,opt,name=days_past_due,json=daysPastDue,proto3" json:"days_past_due,omitempty"`
+	Text          string                 `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DefaultNotice) Reset() {
+	*x = DefaultNotice{}
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DefaultNotice) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DefaultNotice) ProtoMessage() {}
+
+func (x *DefaultNotice) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DefaultNotice.ProtoReflect.Descriptor instead.
+func (*DefaultNotice) Descriptor() ([]byte, []int) {
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DefaultNotice) GetNoticeId() string {
+	if x != nil {
+		return x.NoticeId
+	}
+	return ""
+}
+
+func (x *DefaultNotice) GetIssuedAt() string {
+	if x != nil {
+		return x.IssuedAt
+	}
+	return ""
+}
+
+func (x *DefaultNotice) GetRespondBy() string {
+	if x != nil {
+		return x.RespondBy
+	}
+	return ""
+}
+
+func (x *DefaultNotice) GetArrearsMinor() string {
+	if x != nil {
+		return x.ArrearsMinor
+	}
+	return ""
+}
+
+func (x *DefaultNotice) GetDaysPastDue() uint32 {
+	if x != nil {
+		return x.DaysPastDue
+	}
+	return 0
+}
+
+func (x *DefaultNotice) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+type StatementEntry struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	At             string                 `protobuf:"bytes,1,opt,name=at,proto3" json:"at,omitempty"`
+	Kind           string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // DISBURSED, DRAWN, REPAID, INSTALMENT_COLLECTED, INSTALMENT_MISSED, INTEREST_CHARGED, SWEPT, DEFAULT_NOTICE
+	PrincipalMinor string                 `protobuf:"bytes,3,opt,name=principal_minor,json=principalMinor,proto3" json:"principal_minor,omitempty"`
+	InterestMinor  string                 `protobuf:"bytes,4,opt,name=interest_minor,json=interestMinor,proto3" json:"interest_minor,omitempty"` // interest or fee
+	Description    string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *StatementEntry) Reset() {
+	*x = StatementEntry{}
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatementEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatementEntry) ProtoMessage() {}
+
+func (x *StatementEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatementEntry.ProtoReflect.Descriptor instead.
+func (*StatementEntry) Descriptor() ([]byte, []int) {
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *StatementEntry) GetAt() string {
+	if x != nil {
+		return x.At
+	}
+	return ""
+}
+
+func (x *StatementEntry) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *StatementEntry) GetPrincipalMinor() string {
+	if x != nil {
+		return x.PrincipalMinor
+	}
+	return ""
+}
+
+func (x *StatementEntry) GetInterestMinor() string {
+	if x != nil {
+		return x.InterestMinor
+	}
+	return ""
+}
+
+func (x *StatementEntry) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type GetStatementRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PartyId       string                 `protobuf:"bytes,1,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	FacilityId    string                 `protobuf:"bytes,2,opt,name=facility_id,json=facilityId,proto3" json:"facility_id,omitempty"`
+	Period        string                 `protobuf:"bytes,3,opt,name=period,proto3" json:"period,omitempty"` // YYYY-MM
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStatementRequest) Reset() {
+	*x = GetStatementRequest{}
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStatementRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStatementRequest) ProtoMessage() {}
+
+func (x *GetStatementRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStatementRequest.ProtoReflect.Descriptor instead.
+func (*GetStatementRequest) Descriptor() ([]byte, []int) {
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetStatementRequest) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *GetStatementRequest) GetFacilityId() string {
+	if x != nil {
+		return x.FacilityId
+	}
+	return ""
+}
+
+func (x *GetStatementRequest) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
+type GetStatementResponse struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	FacilityId          string                 `protobuf:"bytes,1,opt,name=facility_id,json=facilityId,proto3" json:"facility_id,omitempty"`
+	ProductId           string                 `protobuf:"bytes,2,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	Period              string                 `protobuf:"bytes,3,opt,name=period,proto3" json:"period,omitempty"`
+	Entries             []*StatementEntry      `protobuf:"bytes,4,rep,name=entries,proto3" json:"entries,omitempty"`
+	OutstandingNowMinor string                 `protobuf:"bytes,5,opt,name=outstanding_now_minor,json=outstandingNowMinor,proto3" json:"outstanding_now_minor,omitempty"`
+	RateBps             uint32                 `protobuf:"varint,6,opt,name=rate_bps,json=rateBps,proto3" json:"rate_bps,omitempty"`
+	GeneratedAt         string                 `protobuf:"bytes,7,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *GetStatementResponse) Reset() {
+	*x = GetStatementResponse{}
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStatementResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStatementResponse) ProtoMessage() {}
+
+func (x *GetStatementResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStatementResponse.ProtoReflect.Descriptor instead.
+func (*GetStatementResponse) Descriptor() ([]byte, []int) {
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetStatementResponse) GetFacilityId() string {
+	if x != nil {
+		return x.FacilityId
+	}
+	return ""
+}
+
+func (x *GetStatementResponse) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+func (x *GetStatementResponse) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
+func (x *GetStatementResponse) GetEntries() []*StatementEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+func (x *GetStatementResponse) GetOutstandingNowMinor() string {
+	if x != nil {
+		return x.OutstandingNowMinor
+	}
+	return ""
+}
+
+func (x *GetStatementResponse) GetRateBps() uint32 {
+	if x != nil {
+		return x.RateBps
+	}
+	return 0
+}
+
+func (x *GetStatementResponse) GetGeneratedAt() string {
+	if x != nil {
+		return x.GeneratedAt
+	}
+	return ""
+}
+
 type ApplyForCreditRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	IdempotencyKey   string                 `protobuf:"bytes,1,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
@@ -579,7 +900,7 @@ type ApplyForCreditRequest struct {
 
 func (x *ApplyForCreditRequest) Reset() {
 	*x = ApplyForCreditRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[6]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -591,7 +912,7 @@ func (x *ApplyForCreditRequest) String() string {
 func (*ApplyForCreditRequest) ProtoMessage() {}
 
 func (x *ApplyForCreditRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[6]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -604,7 +925,7 @@ func (x *ApplyForCreditRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyForCreditRequest.ProtoReflect.Descriptor instead.
 func (*ApplyForCreditRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{6}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ApplyForCreditRequest) GetIdempotencyKey() string {
@@ -672,7 +993,7 @@ type ApplyForCreditResponse struct {
 
 func (x *ApplyForCreditResponse) Reset() {
 	*x = ApplyForCreditResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[7]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -684,7 +1005,7 @@ func (x *ApplyForCreditResponse) String() string {
 func (*ApplyForCreditResponse) ProtoMessage() {}
 
 func (x *ApplyForCreditResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[7]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -697,7 +1018,7 @@ func (x *ApplyForCreditResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyForCreditResponse.ProtoReflect.Descriptor instead.
 func (*ApplyForCreditResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{7}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ApplyForCreditResponse) GetFacility() *Facility {
@@ -716,7 +1037,7 @@ type ListFacilitiesRequest struct {
 
 func (x *ListFacilitiesRequest) Reset() {
 	*x = ListFacilitiesRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[8]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -728,7 +1049,7 @@ func (x *ListFacilitiesRequest) String() string {
 func (*ListFacilitiesRequest) ProtoMessage() {}
 
 func (x *ListFacilitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[8]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +1062,7 @@ func (x *ListFacilitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFacilitiesRequest.ProtoReflect.Descriptor instead.
 func (*ListFacilitiesRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{8}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListFacilitiesRequest) GetPartyId() string {
@@ -760,7 +1081,7 @@ type ListFacilitiesResponse struct {
 
 func (x *ListFacilitiesResponse) Reset() {
 	*x = ListFacilitiesResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[9]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -772,7 +1093,7 @@ func (x *ListFacilitiesResponse) String() string {
 func (*ListFacilitiesResponse) ProtoMessage() {}
 
 func (x *ListFacilitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[9]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -785,7 +1106,7 @@ func (x *ListFacilitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFacilitiesResponse.ProtoReflect.Descriptor instead.
 func (*ListFacilitiesResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{9}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListFacilitiesResponse) GetFacilities() []*Facility {
@@ -807,7 +1128,7 @@ type AcceptOfferRequest struct {
 
 func (x *AcceptOfferRequest) Reset() {
 	*x = AcceptOfferRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[10]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -819,7 +1140,7 @@ func (x *AcceptOfferRequest) String() string {
 func (*AcceptOfferRequest) ProtoMessage() {}
 
 func (x *AcceptOfferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[10]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -832,7 +1153,7 @@ func (x *AcceptOfferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptOfferRequest.ProtoReflect.Descriptor instead.
 func (*AcceptOfferRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{10}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AcceptOfferRequest) GetPartyId() string {
@@ -872,7 +1193,7 @@ type AcceptOfferResponse struct {
 
 func (x *AcceptOfferResponse) Reset() {
 	*x = AcceptOfferResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[11]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -884,7 +1205,7 @@ func (x *AcceptOfferResponse) String() string {
 func (*AcceptOfferResponse) ProtoMessage() {}
 
 func (x *AcceptOfferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[11]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -897,7 +1218,7 @@ func (x *AcceptOfferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptOfferResponse.ProtoReflect.Descriptor instead.
 func (*AcceptOfferResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{11}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *AcceptOfferResponse) GetFacility() *Facility {
@@ -920,7 +1241,7 @@ type DrawRequest struct {
 
 func (x *DrawRequest) Reset() {
 	*x = DrawRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[12]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -932,7 +1253,7 @@ func (x *DrawRequest) String() string {
 func (*DrawRequest) ProtoMessage() {}
 
 func (x *DrawRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[12]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -945,7 +1266,7 @@ func (x *DrawRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DrawRequest.ProtoReflect.Descriptor instead.
 func (*DrawRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{12}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DrawRequest) GetIdempotencyKey() string {
@@ -992,7 +1313,7 @@ type DrawResponse struct {
 
 func (x *DrawResponse) Reset() {
 	*x = DrawResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[13]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1004,7 +1325,7 @@ func (x *DrawResponse) String() string {
 func (*DrawResponse) ProtoMessage() {}
 
 func (x *DrawResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[13]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1017,7 +1338,7 @@ func (x *DrawResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DrawResponse.ProtoReflect.Descriptor instead.
 func (*DrawResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{13}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DrawResponse) GetFacility() *Facility {
@@ -1040,7 +1361,7 @@ type RepayRequest struct {
 
 func (x *RepayRequest) Reset() {
 	*x = RepayRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[14]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1052,7 +1373,7 @@ func (x *RepayRequest) String() string {
 func (*RepayRequest) ProtoMessage() {}
 
 func (x *RepayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[14]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1065,7 +1386,7 @@ func (x *RepayRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepayRequest.ProtoReflect.Descriptor instead.
 func (*RepayRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{14}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RepayRequest) GetIdempotencyKey() string {
@@ -1112,7 +1433,7 @@ type RepayResponse struct {
 
 func (x *RepayResponse) Reset() {
 	*x = RepayResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[15]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1124,7 +1445,7 @@ func (x *RepayResponse) String() string {
 func (*RepayResponse) ProtoMessage() {}
 
 func (x *RepayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[15]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1137,7 +1458,7 @@ func (x *RepayResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepayResponse.ProtoReflect.Descriptor instead.
 func (*RepayResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{15}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RepayResponse) GetFacility() *Facility {
@@ -1156,7 +1477,7 @@ type ListCreditApplicationsRequest struct {
 
 func (x *ListCreditApplicationsRequest) Reset() {
 	*x = ListCreditApplicationsRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[16]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1168,7 +1489,7 @@ func (x *ListCreditApplicationsRequest) String() string {
 func (*ListCreditApplicationsRequest) ProtoMessage() {}
 
 func (x *ListCreditApplicationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[16]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1181,7 +1502,7 @@ func (x *ListCreditApplicationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCreditApplicationsRequest.ProtoReflect.Descriptor instead.
 func (*ListCreditApplicationsRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{16}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListCreditApplicationsRequest) GetStatus() string {
@@ -1200,7 +1521,7 @@ type ListCreditApplicationsResponse struct {
 
 func (x *ListCreditApplicationsResponse) Reset() {
 	*x = ListCreditApplicationsResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[17]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1212,7 +1533,7 @@ func (x *ListCreditApplicationsResponse) String() string {
 func (*ListCreditApplicationsResponse) ProtoMessage() {}
 
 func (x *ListCreditApplicationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[17]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1225,7 +1546,7 @@ func (x *ListCreditApplicationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCreditApplicationsResponse.ProtoReflect.Descriptor instead.
 func (*ListCreditApplicationsResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{17}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListCreditApplicationsResponse) GetFacilities() []*Facility {
@@ -1249,7 +1570,7 @@ type DecideCreditApplicationRequest struct {
 
 func (x *DecideCreditApplicationRequest) Reset() {
 	*x = DecideCreditApplicationRequest{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[18]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1261,7 +1582,7 @@ func (x *DecideCreditApplicationRequest) String() string {
 func (*DecideCreditApplicationRequest) ProtoMessage() {}
 
 func (x *DecideCreditApplicationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[18]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1274,7 +1595,7 @@ func (x *DecideCreditApplicationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideCreditApplicationRequest.ProtoReflect.Descriptor instead.
 func (*DecideCreditApplicationRequest) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{18}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DecideCreditApplicationRequest) GetFacilityId() string {
@@ -1328,7 +1649,7 @@ type DecideCreditApplicationResponse struct {
 
 func (x *DecideCreditApplicationResponse) Reset() {
 	*x = DecideCreditApplicationResponse{}
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[19]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1340,7 +1661,7 @@ func (x *DecideCreditApplicationResponse) String() string {
 func (*DecideCreditApplicationResponse) ProtoMessage() {}
 
 func (x *DecideCreditApplicationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forge_lending_v1_lending_proto_msgTypes[19]
+	mi := &file_forge_lending_v1_lending_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1353,7 +1674,7 @@ func (x *DecideCreditApplicationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideCreditApplicationResponse.ProtoReflect.Descriptor instead.
 func (*DecideCreditApplicationResponse) Descriptor() ([]byte, []int) {
-	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{19}
+	return file_forge_lending_v1_lending_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *DecideCreditApplicationResponse) GetFacility() *Facility {
@@ -1394,7 +1715,7 @@ const file_forge_lending_v1_lending_proto_rawDesc = "" +
 	"\x06due_on\x18\x02 \x01(\tR\x05dueOn\x12'\n" +
 	"\x0fprincipal_minor\x18\x03 \x01(\tR\x0eprincipalMinor\x12%\n" +
 	"\x0einterest_minor\x18\x04 \x01(\tR\rinterestMinor\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\"\x90\x06\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\"\xd8\x06\n" +
 	"\bFacility\x12\x1f\n" +
 	"\vfacility_id\x18\x01 \x01(\tR\n" +
 	"facilityId\x12\x1d\n" +
@@ -1424,7 +1745,37 @@ const file_forge_lending_v1_lending_proto_rawDesc = "" +
 	"\bschedule\x18\x12 \x03(\v2\x1c.forge.lending.v1.InstalmentR\bschedule\x12\x19\n" +
 	"\bparty_id\x18\x13 \x01(\tR\apartyId\x12\x18\n" +
 	"\apurpose\x18\x14 \x01(\tR\apurpose\x12\"\n" +
-	"\rdays_past_due\x18\x15 \x01(\rR\vdaysPastDue\"\x9c\x02\n" +
+	"\rdays_past_due\x18\x15 \x01(\rR\vdaysPastDue\x12F\n" +
+	"\x0edefault_notice\x18\x16 \x01(\v2\x1f.forge.lending.v1.DefaultNoticeR\rdefaultNotice\"\xc5\x01\n" +
+	"\rDefaultNotice\x12\x1b\n" +
+	"\tnotice_id\x18\x01 \x01(\tR\bnoticeId\x12\x1b\n" +
+	"\tissued_at\x18\x02 \x01(\tR\bissuedAt\x12\x1d\n" +
+	"\n" +
+	"respond_by\x18\x03 \x01(\tR\trespondBy\x12#\n" +
+	"\rarrears_minor\x18\x04 \x01(\tR\farrearsMinor\x12\"\n" +
+	"\rdays_past_due\x18\x05 \x01(\rR\vdaysPastDue\x12\x12\n" +
+	"\x04text\x18\x06 \x01(\tR\x04text\"\xa6\x01\n" +
+	"\x0eStatementEntry\x12\x0e\n" +
+	"\x02at\x18\x01 \x01(\tR\x02at\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12'\n" +
+	"\x0fprincipal_minor\x18\x03 \x01(\tR\x0eprincipalMinor\x12%\n" +
+	"\x0einterest_minor\x18\x04 \x01(\tR\rinterestMinor\x12 \n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\"i\n" +
+	"\x13GetStatementRequest\x12\x19\n" +
+	"\bparty_id\x18\x01 \x01(\tR\apartyId\x12\x1f\n" +
+	"\vfacility_id\x18\x02 \x01(\tR\n" +
+	"facilityId\x12\x16\n" +
+	"\x06period\x18\x03 \x01(\tR\x06period\"\x9c\x02\n" +
+	"\x14GetStatementResponse\x12\x1f\n" +
+	"\vfacility_id\x18\x01 \x01(\tR\n" +
+	"facilityId\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x02 \x01(\tR\tproductId\x12\x16\n" +
+	"\x06period\x18\x03 \x01(\tR\x06period\x12:\n" +
+	"\aentries\x18\x04 \x03(\v2 .forge.lending.v1.StatementEntryR\aentries\x122\n" +
+	"\x15outstanding_now_minor\x18\x05 \x01(\tR\x13outstandingNowMinor\x12\x19\n" +
+	"\brate_bps\x18\x06 \x01(\rR\arateBps\x12!\n" +
+	"\fgenerated_at\x18\a \x01(\tR\vgeneratedAt\"\x9c\x02\n" +
 	"\x15ApplyForCreditRequest\x12'\n" +
 	"\x0fidempotency_key\x18\x01 \x01(\tR\x0eidempotencyKey\x12\x19\n" +
 	"\bparty_id\x18\x02 \x01(\tR\apartyId\x12\x1d\n" +
@@ -1485,14 +1836,15 @@ const file_forge_lending_v1_lending_proto_rawDesc = "" +
 	"\x04note\x18\x05 \x01(\tR\x04note\x12\x18\n" +
 	"\aofficer\x18\x06 \x01(\tR\aofficer\"Y\n" +
 	"\x1fDecideCreditApplicationResponse\x126\n" +
-	"\bfacility\x18\x01 \x01(\v2\x1a.forge.lending.v1.FacilityR\bfacility2\xb2\x04\n" +
+	"\bfacility\x18\x01 \x01(\v2\x1a.forge.lending.v1.FacilityR\bfacility2\x91\x05\n" +
 	"\x0eLendingService\x12i\n" +
 	"\x10ListLoanProducts\x12).forge.lending.v1.ListLoanProductsRequest\x1a*.forge.lending.v1.ListLoanProductsResponse\x12c\n" +
 	"\x0eApplyForCredit\x12'.forge.lending.v1.ApplyForCreditRequest\x1a(.forge.lending.v1.ApplyForCreditResponse\x12c\n" +
 	"\x0eListFacilities\x12'.forge.lending.v1.ListFacilitiesRequest\x1a(.forge.lending.v1.ListFacilitiesResponse\x12Z\n" +
 	"\vAcceptOffer\x12$.forge.lending.v1.AcceptOfferRequest\x1a%.forge.lending.v1.AcceptOfferResponse\x12E\n" +
 	"\x04Draw\x12\x1d.forge.lending.v1.DrawRequest\x1a\x1e.forge.lending.v1.DrawResponse\x12H\n" +
-	"\x05Repay\x12\x1e.forge.lending.v1.RepayRequest\x1a\x1f.forge.lending.v1.RepayResponse2\x90\x02\n" +
+	"\x05Repay\x12\x1e.forge.lending.v1.RepayRequest\x1a\x1f.forge.lending.v1.RepayResponse\x12]\n" +
+	"\fGetStatement\x12%.forge.lending.v1.GetStatementRequest\x1a&.forge.lending.v1.GetStatementResponse2\x90\x02\n" +
 	"\x11CreditDeskService\x12{\n" +
 	"\x16ListCreditApplications\x12/.forge.lending.v1.ListCreditApplicationsRequest\x1a0.forge.lending.v1.ListCreditApplicationsResponse\x12~\n" +
 	"\x17DecideCreditApplication\x120.forge.lending.v1.DecideCreditApplicationRequest\x1a1.forge.lending.v1.DecideCreditApplicationResponseBDZBgithub.com/khayaai/forge-mutual/pkg/api/forge/lending/v1;lendingv1b\x06proto3"
@@ -1509,7 +1861,7 @@ func file_forge_lending_v1_lending_proto_rawDescGZIP() []byte {
 	return file_forge_lending_v1_lending_proto_rawDescData
 }
 
-var file_forge_lending_v1_lending_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_forge_lending_v1_lending_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_forge_lending_v1_lending_proto_goTypes = []any{
 	(*LoanProduct)(nil),                     // 0: forge.lending.v1.LoanProduct
 	(*ListLoanProductsRequest)(nil),         // 1: forge.lending.v1.ListLoanProductsRequest
@@ -1517,53 +1869,61 @@ var file_forge_lending_v1_lending_proto_goTypes = []any{
 	(*Assessment)(nil),                      // 3: forge.lending.v1.Assessment
 	(*Instalment)(nil),                      // 4: forge.lending.v1.Instalment
 	(*Facility)(nil),                        // 5: forge.lending.v1.Facility
-	(*ApplyForCreditRequest)(nil),           // 6: forge.lending.v1.ApplyForCreditRequest
-	(*ApplyForCreditResponse)(nil),          // 7: forge.lending.v1.ApplyForCreditResponse
-	(*ListFacilitiesRequest)(nil),           // 8: forge.lending.v1.ListFacilitiesRequest
-	(*ListFacilitiesResponse)(nil),          // 9: forge.lending.v1.ListFacilitiesResponse
-	(*AcceptOfferRequest)(nil),              // 10: forge.lending.v1.AcceptOfferRequest
-	(*AcceptOfferResponse)(nil),             // 11: forge.lending.v1.AcceptOfferResponse
-	(*DrawRequest)(nil),                     // 12: forge.lending.v1.DrawRequest
-	(*DrawResponse)(nil),                    // 13: forge.lending.v1.DrawResponse
-	(*RepayRequest)(nil),                    // 14: forge.lending.v1.RepayRequest
-	(*RepayResponse)(nil),                   // 15: forge.lending.v1.RepayResponse
-	(*ListCreditApplicationsRequest)(nil),   // 16: forge.lending.v1.ListCreditApplicationsRequest
-	(*ListCreditApplicationsResponse)(nil),  // 17: forge.lending.v1.ListCreditApplicationsResponse
-	(*DecideCreditApplicationRequest)(nil),  // 18: forge.lending.v1.DecideCreditApplicationRequest
-	(*DecideCreditApplicationResponse)(nil), // 19: forge.lending.v1.DecideCreditApplicationResponse
+	(*DefaultNotice)(nil),                   // 6: forge.lending.v1.DefaultNotice
+	(*StatementEntry)(nil),                  // 7: forge.lending.v1.StatementEntry
+	(*GetStatementRequest)(nil),             // 8: forge.lending.v1.GetStatementRequest
+	(*GetStatementResponse)(nil),            // 9: forge.lending.v1.GetStatementResponse
+	(*ApplyForCreditRequest)(nil),           // 10: forge.lending.v1.ApplyForCreditRequest
+	(*ApplyForCreditResponse)(nil),          // 11: forge.lending.v1.ApplyForCreditResponse
+	(*ListFacilitiesRequest)(nil),           // 12: forge.lending.v1.ListFacilitiesRequest
+	(*ListFacilitiesResponse)(nil),          // 13: forge.lending.v1.ListFacilitiesResponse
+	(*AcceptOfferRequest)(nil),              // 14: forge.lending.v1.AcceptOfferRequest
+	(*AcceptOfferResponse)(nil),             // 15: forge.lending.v1.AcceptOfferResponse
+	(*DrawRequest)(nil),                     // 16: forge.lending.v1.DrawRequest
+	(*DrawResponse)(nil),                    // 17: forge.lending.v1.DrawResponse
+	(*RepayRequest)(nil),                    // 18: forge.lending.v1.RepayRequest
+	(*RepayResponse)(nil),                   // 19: forge.lending.v1.RepayResponse
+	(*ListCreditApplicationsRequest)(nil),   // 20: forge.lending.v1.ListCreditApplicationsRequest
+	(*ListCreditApplicationsResponse)(nil),  // 21: forge.lending.v1.ListCreditApplicationsResponse
+	(*DecideCreditApplicationRequest)(nil),  // 22: forge.lending.v1.DecideCreditApplicationRequest
+	(*DecideCreditApplicationResponse)(nil), // 23: forge.lending.v1.DecideCreditApplicationResponse
 }
 var file_forge_lending_v1_lending_proto_depIdxs = []int32{
 	0,  // 0: forge.lending.v1.ListLoanProductsResponse.products:type_name -> forge.lending.v1.LoanProduct
 	3,  // 1: forge.lending.v1.Facility.assessment:type_name -> forge.lending.v1.Assessment
 	4,  // 2: forge.lending.v1.Facility.schedule:type_name -> forge.lending.v1.Instalment
-	5,  // 3: forge.lending.v1.ApplyForCreditResponse.facility:type_name -> forge.lending.v1.Facility
-	5,  // 4: forge.lending.v1.ListFacilitiesResponse.facilities:type_name -> forge.lending.v1.Facility
-	5,  // 5: forge.lending.v1.AcceptOfferResponse.facility:type_name -> forge.lending.v1.Facility
-	5,  // 6: forge.lending.v1.DrawResponse.facility:type_name -> forge.lending.v1.Facility
-	5,  // 7: forge.lending.v1.RepayResponse.facility:type_name -> forge.lending.v1.Facility
-	5,  // 8: forge.lending.v1.ListCreditApplicationsResponse.facilities:type_name -> forge.lending.v1.Facility
-	5,  // 9: forge.lending.v1.DecideCreditApplicationResponse.facility:type_name -> forge.lending.v1.Facility
-	1,  // 10: forge.lending.v1.LendingService.ListLoanProducts:input_type -> forge.lending.v1.ListLoanProductsRequest
-	6,  // 11: forge.lending.v1.LendingService.ApplyForCredit:input_type -> forge.lending.v1.ApplyForCreditRequest
-	8,  // 12: forge.lending.v1.LendingService.ListFacilities:input_type -> forge.lending.v1.ListFacilitiesRequest
-	10, // 13: forge.lending.v1.LendingService.AcceptOffer:input_type -> forge.lending.v1.AcceptOfferRequest
-	12, // 14: forge.lending.v1.LendingService.Draw:input_type -> forge.lending.v1.DrawRequest
-	14, // 15: forge.lending.v1.LendingService.Repay:input_type -> forge.lending.v1.RepayRequest
-	16, // 16: forge.lending.v1.CreditDeskService.ListCreditApplications:input_type -> forge.lending.v1.ListCreditApplicationsRequest
-	18, // 17: forge.lending.v1.CreditDeskService.DecideCreditApplication:input_type -> forge.lending.v1.DecideCreditApplicationRequest
-	2,  // 18: forge.lending.v1.LendingService.ListLoanProducts:output_type -> forge.lending.v1.ListLoanProductsResponse
-	7,  // 19: forge.lending.v1.LendingService.ApplyForCredit:output_type -> forge.lending.v1.ApplyForCreditResponse
-	9,  // 20: forge.lending.v1.LendingService.ListFacilities:output_type -> forge.lending.v1.ListFacilitiesResponse
-	11, // 21: forge.lending.v1.LendingService.AcceptOffer:output_type -> forge.lending.v1.AcceptOfferResponse
-	13, // 22: forge.lending.v1.LendingService.Draw:output_type -> forge.lending.v1.DrawResponse
-	15, // 23: forge.lending.v1.LendingService.Repay:output_type -> forge.lending.v1.RepayResponse
-	17, // 24: forge.lending.v1.CreditDeskService.ListCreditApplications:output_type -> forge.lending.v1.ListCreditApplicationsResponse
-	19, // 25: forge.lending.v1.CreditDeskService.DecideCreditApplication:output_type -> forge.lending.v1.DecideCreditApplicationResponse
-	18, // [18:26] is the sub-list for method output_type
-	10, // [10:18] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	6,  // 3: forge.lending.v1.Facility.default_notice:type_name -> forge.lending.v1.DefaultNotice
+	7,  // 4: forge.lending.v1.GetStatementResponse.entries:type_name -> forge.lending.v1.StatementEntry
+	5,  // 5: forge.lending.v1.ApplyForCreditResponse.facility:type_name -> forge.lending.v1.Facility
+	5,  // 6: forge.lending.v1.ListFacilitiesResponse.facilities:type_name -> forge.lending.v1.Facility
+	5,  // 7: forge.lending.v1.AcceptOfferResponse.facility:type_name -> forge.lending.v1.Facility
+	5,  // 8: forge.lending.v1.DrawResponse.facility:type_name -> forge.lending.v1.Facility
+	5,  // 9: forge.lending.v1.RepayResponse.facility:type_name -> forge.lending.v1.Facility
+	5,  // 10: forge.lending.v1.ListCreditApplicationsResponse.facilities:type_name -> forge.lending.v1.Facility
+	5,  // 11: forge.lending.v1.DecideCreditApplicationResponse.facility:type_name -> forge.lending.v1.Facility
+	1,  // 12: forge.lending.v1.LendingService.ListLoanProducts:input_type -> forge.lending.v1.ListLoanProductsRequest
+	10, // 13: forge.lending.v1.LendingService.ApplyForCredit:input_type -> forge.lending.v1.ApplyForCreditRequest
+	12, // 14: forge.lending.v1.LendingService.ListFacilities:input_type -> forge.lending.v1.ListFacilitiesRequest
+	14, // 15: forge.lending.v1.LendingService.AcceptOffer:input_type -> forge.lending.v1.AcceptOfferRequest
+	16, // 16: forge.lending.v1.LendingService.Draw:input_type -> forge.lending.v1.DrawRequest
+	18, // 17: forge.lending.v1.LendingService.Repay:input_type -> forge.lending.v1.RepayRequest
+	8,  // 18: forge.lending.v1.LendingService.GetStatement:input_type -> forge.lending.v1.GetStatementRequest
+	20, // 19: forge.lending.v1.CreditDeskService.ListCreditApplications:input_type -> forge.lending.v1.ListCreditApplicationsRequest
+	22, // 20: forge.lending.v1.CreditDeskService.DecideCreditApplication:input_type -> forge.lending.v1.DecideCreditApplicationRequest
+	2,  // 21: forge.lending.v1.LendingService.ListLoanProducts:output_type -> forge.lending.v1.ListLoanProductsResponse
+	11, // 22: forge.lending.v1.LendingService.ApplyForCredit:output_type -> forge.lending.v1.ApplyForCreditResponse
+	13, // 23: forge.lending.v1.LendingService.ListFacilities:output_type -> forge.lending.v1.ListFacilitiesResponse
+	15, // 24: forge.lending.v1.LendingService.AcceptOffer:output_type -> forge.lending.v1.AcceptOfferResponse
+	17, // 25: forge.lending.v1.LendingService.Draw:output_type -> forge.lending.v1.DrawResponse
+	19, // 26: forge.lending.v1.LendingService.Repay:output_type -> forge.lending.v1.RepayResponse
+	9,  // 27: forge.lending.v1.LendingService.GetStatement:output_type -> forge.lending.v1.GetStatementResponse
+	21, // 28: forge.lending.v1.CreditDeskService.ListCreditApplications:output_type -> forge.lending.v1.ListCreditApplicationsResponse
+	23, // 29: forge.lending.v1.CreditDeskService.DecideCreditApplication:output_type -> forge.lending.v1.DecideCreditApplicationResponse
+	21, // [21:30] is the sub-list for method output_type
+	12, // [12:21] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_forge_lending_v1_lending_proto_init() }
@@ -1577,7 +1937,7 @@ func file_forge_lending_v1_lending_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_lending_v1_lending_proto_rawDesc), len(file_forge_lending_v1_lending_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

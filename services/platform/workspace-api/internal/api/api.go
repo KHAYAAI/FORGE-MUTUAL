@@ -138,6 +138,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/loan-products", a.session(a.listLoanProducts))
 	mux.HandleFunc("GET /v1/facilities", a.session(a.listFacilities))
 	mux.HandleFunc("POST /v1/facilities", a.session(a.applyForCredit))
+	mux.HandleFunc("GET /v1/facilities/{facility}/statement", a.session(a.facilityStatement))
 	mux.HandleFunc("POST /v1/facilities/{facility}/accept", a.session(a.acceptOffer))
 	mux.HandleFunc("POST /v1/facilities/{facility}/draw", a.session(a.moveCredit(false)))
 	mux.HandleFunc("POST /v1/facilities/{facility}/repay", a.session(a.moveCredit(true)))

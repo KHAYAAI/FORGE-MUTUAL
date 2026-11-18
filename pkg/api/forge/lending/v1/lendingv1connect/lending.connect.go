@@ -57,6 +57,9 @@ const (
 	LendingServiceDrawProcedure = "/forge.lending.v1.LendingService/Draw"
 	// LendingServiceRepayProcedure is the fully-qualified name of the LendingService's Repay RPC.
 	LendingServiceRepayProcedure = "/forge.lending.v1.LendingService/Repay"
+	// LendingServiceGetStatementProcedure is the fully-qualified name of the LendingService's
+	// GetStatement RPC.
+	LendingServiceGetStatementProcedure = "/forge.lending.v1.LendingService/GetStatement"
 	// CreditDeskServiceListCreditApplicationsProcedure is the fully-qualified name of the
 	// CreditDeskService's ListCreditApplications RPC.
 	CreditDeskServiceListCreditApplicationsProcedure = "/forge.lending.v1.CreditDeskService/ListCreditApplications"
@@ -77,6 +80,8 @@ type LendingServiceClient interface {
 	Draw(context.Context, *connect.Request[v1.DrawRequest]) (*connect.Response[v1.DrawResponse], error)
 	// Repays early: an overdraft's drawn balance, or a loan's outstanding principal.
 	Repay(context.Context, *connect.Request[v1.RepayRequest]) (*connect.Response[v1.RepayResponse], error)
+	// A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
+	GetStatement(context.Context, *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error)
 }
 
 // NewLendingServiceClient constructs a client for the forge.lending.v1.LendingService service. By
@@ -126,6 +131,12 @@ func NewLendingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(lendingServiceMethods.ByName("Repay")),
 			connect.WithClientOptions(opts...),
 		),
+		getStatement: connect.NewClient[v1.GetStatementRequest, v1.GetStatementResponse](
+			httpClient,
+			baseURL+LendingServiceGetStatementProcedure,
+			connect.WithSchema(lendingServiceMethods.ByName("GetStatement")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -137,6 +148,7 @@ type lendingServiceClient struct {
 	acceptOffer      *connect.Client[v1.AcceptOfferRequest, v1.AcceptOfferResponse]
 	draw             *connect.Client[v1.DrawRequest, v1.DrawResponse]
 	repay            *connect.Client[v1.RepayRequest, v1.RepayResponse]
+	getStatement     *connect.Client[v1.GetStatementRequest, v1.GetStatementResponse]
 }
 
 // ListLoanProducts calls forge.lending.v1.LendingService.ListLoanProducts.
@@ -169,6 +181,11 @@ func (c *lendingServiceClient) Repay(ctx context.Context, req *connect.Request[v
 	return c.repay.CallUnary(ctx, req)
 }
 
+// GetStatement calls forge.lending.v1.LendingService.GetStatement.
+func (c *lendingServiceClient) GetStatement(ctx context.Context, req *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error) {
+	return c.getStatement.CallUnary(ctx, req)
+}
+
 // LendingServiceHandler is an implementation of the forge.lending.v1.LendingService service.
 type LendingServiceHandler interface {
 	ListLoanProducts(context.Context, *connect.Request[v1.ListLoanProductsRequest]) (*connect.Response[v1.ListLoanProductsResponse], error)
@@ -181,6 +198,8 @@ type LendingServiceHandler interface {
 	Draw(context.Context, *connect.Request[v1.DrawRequest]) (*connect.Response[v1.DrawResponse], error)
 	// Repays early: an overdraft's drawn balance, or a loan's outstanding principal.
 	Repay(context.Context, *connect.Request[v1.RepayRequest]) (*connect.Response[v1.RepayResponse], error)
+	// A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
+	GetStatement(context.Context, *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error)
 }
 
 // NewLendingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -226,6 +245,12 @@ func NewLendingServiceHandler(svc LendingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(lendingServiceMethods.ByName("Repay")),
 		connect.WithHandlerOptions(opts...),
 	)
+	lendingServiceGetStatementHandler := connect.NewUnaryHandler(
+		LendingServiceGetStatementProcedure,
+		svc.GetStatement,
+		connect.WithSchema(lendingServiceMethods.ByName("GetStatement")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.lending.v1.LendingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LendingServiceListLoanProductsProcedure:
@@ -240,6 +265,8 @@ func NewLendingServiceHandler(svc LendingServiceHandler, opts ...connect.Handler
 			lendingServiceDrawHandler.ServeHTTP(w, r)
 		case LendingServiceRepayProcedure:
 			lendingServiceRepayHandler.ServeHTTP(w, r)
+		case LendingServiceGetStatementProcedure:
+			lendingServiceGetStatementHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -271,6 +298,10 @@ func (UnimplementedLendingServiceHandler) Draw(context.Context, *connect.Request
 
 func (UnimplementedLendingServiceHandler) Repay(context.Context, *connect.Request[v1.RepayRequest]) (*connect.Response[v1.RepayResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.LendingService.Repay is not implemented"))
+}
+
+func (UnimplementedLendingServiceHandler) GetStatement(context.Context, *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.LendingService.GetStatement is not implemented"))
 }
 
 // CreditDeskServiceClient is a client for the forge.lending.v1.CreditDeskService service.

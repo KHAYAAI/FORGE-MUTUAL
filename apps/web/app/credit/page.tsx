@@ -166,7 +166,16 @@ function FacilityCard({ f, name, onAccept, onMove }: {
         {formatMinor(f.status === "ACTIVE" || f.status === "SETTLED" ? f.outstanding_minor : f.approved_minor !== "0" ? f.approved_minor : f.requested_minor, "ZAR")}
       </p>
       <p className="text-sm text-stone-500">{f.status === "ACTIVE" ? "owed" : f.status === "APPROVED" ? "offered" : "asked for"}</p>
-      {f.days_past_due ? (
+      {f.default_notice ? (
+        <div className="mt-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+          <p className="font-medium">
+            Default notice: {formatMinor(f.default_notice.arrears_minor, "ZAR")} is {f.default_notice.days_past_due} days overdue. Please respond by{" "}
+            {f.default_notice.respond_by}.
+          </p>
+          <p className="mt-1">{f.default_notice.text}</p>
+        </div>
+      ) : null}
+      {f.days_past_due && !f.default_notice ? (
         <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
           A payment is {f.days_past_due} days overdue. Add money to your current account and we will collect it.
         </p>
@@ -180,6 +189,13 @@ function FacilityCard({ f, name, onAccept, onMove }: {
             Accept the offer
           </button>
         </div>
+      ) : null}
+      {f.status === "ACTIVE" || f.status === "SETTLED" ? (
+        <p className="mt-3 text-sm">
+          <a className="underline" href={`/api/v1/facilities/${f.facility_id}/statement?period=${new Date().toISOString().slice(0, 7)}`}>
+            This month&apos;s statement
+          </a>
+        </p>
       ) : null}
       {f.status === "ACTIVE" ? (
         <div className="mt-4 space-y-3 text-sm">

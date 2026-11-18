@@ -20,6 +20,8 @@ service LendingService {
   rpc Draw(DrawRequest) returns (DrawResponse);
   // Repays early: an overdraft's drawn balance, or a loan's outstanding principal.
   rpc Repay(RepayRequest) returns (RepayResponse);
+  // A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
+  rpc GetStatement(GetStatementRequest) returns (GetStatementResponse);
 }
 
 // Staff side: the credit queue. Called by backoffice-api for a person with the credit role.
@@ -80,6 +82,41 @@ message Facility {
   string party_id = 19;            // staff views only
   string purpose = 20;
   uint32 days_past_due = 21;
+  DefaultNotice default_notice = 22; // set while a default notice is outstanding
+}
+
+// A default notice (NCA s.129): the customer is told they are in arrears and of their options before any enforcement.
+message DefaultNotice {
+  string notice_id = 1;
+  string issued_at = 2;
+  string respond_by = 3;     // the customer has until then to respond (PROPOSED 10 business days; verify)
+  string arrears_minor = 4;
+  uint32 days_past_due = 5;
+  string text = 6;
+}
+
+message StatementEntry {
+  string at = 1;
+  string kind = 2;           // DISBURSED, DRAWN, REPAID, INSTALMENT_COLLECTED, INSTALMENT_MISSED, INTEREST_CHARGED, SWEPT, DEFAULT_NOTICE
+  string principal_minor = 3;
+  string interest_minor = 4; // interest or fee
+  string description = 5;
+}
+
+message GetStatementRequest {
+  string party_id = 1;
+  string facility_id = 2;
+  string period = 3;         // YYYY-MM
+}
+
+message GetStatementResponse {
+  string facility_id = 1;
+  string product_id = 2;
+  string period = 3;
+  repeated StatementEntry entries = 4;
+  string outstanding_now_minor = 5;
+  uint32 rate_bps = 6;
+  string generated_at = 7;
 }
 
 message ApplyForCreditRequest {

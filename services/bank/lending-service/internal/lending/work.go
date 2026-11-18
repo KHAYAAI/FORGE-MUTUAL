@@ -65,6 +65,13 @@ func (s *Service) Collect(ctx context.Context, today time.Time) (paid, arrears i
 		if _, err := s.Pool.Exec(ctx, `update instalment set status = $3 where facility_id = $1 and number = $2`, d.facility, d.number, status); err != nil {
 			return paid, arrears, err
 		}
+		kind, key := "INSTALMENT_COLLECTED", fmt.Sprintf("instalment:%s:%d", d.facility, d.number)
+		if status == "ARREARS" {
+			kind, key = "INSTALMENT_MISSED", fmt.Sprintf("missed:%s:%d", d.facility, d.number)
+		}
+		if err := s.event(ctx, s.Pool, key, d.facility, kind, d.principal, d.interest, fmt.Sprintf("instalment %d", d.number)); err != nil {
+			return paid, arrears, err
+		}
 		if status == "PAID" {
 			paid++
 		} else {
@@ -159,6 +166,9 @@ func (s *Service) ChargeOverdrafts(ctx context.Context, period string) error {
 			if err := s.transfer(ctx, "od-interest:"+c.id+":"+period, "lending-service", "overdraft interest "+period, leg(c.loan, s.Income, c.amount, codeInterestCharge)); err != nil {
 				return err
 			}
+			if err := s.event(ctx, s.Pool, "od-interest:"+c.id+":"+period, c.id, "INTEREST_CHARGED", 0, c.amount, "overdraft interest for "+period); err != nil {
+				return err
+			}
 		}
 		if _, err := s.Pool.Exec(ctx, `update od_charge set status = 'CHARGED' where facility_id = $1 and period = $2`, c.id, period); err != nil {
 			return err
@@ -220,6 +230,9 @@ func (s *Service) Sweep(ctx context.Context) (int, error) {
 						return swept, err
 					}
 					swept++
+					if err := s.event(ctx, s.Pool, fmt.Sprintf("sweep:%s:%d", r.id, e.Seq), r.id, "SWEPT", pp, fp, "share of a payment received"); err != nil {
+						return swept, err
+					}
 				}
 				r.feeOwed -= fp
 				if _, err := s.Pool.Exec(ctx, `update facility set fee_owed_minor = $2, sweep_after_seq = $3 where facility_id = $1`, r.id, r.feeOwed, int64(e.Seq)); err != nil {
@@ -256,6 +269,9 @@ func (s *Service) RunDaily(ctx context.Context) error {
 	}
 	if _, _, err := s.Collect(ctx, now); err != nil {
 		return fmt.Errorf("instalments: %w", err)
+	}
+	if _, err := s.IssueNotices(ctx); err != nil {
+		return fmt.Errorf("default notices: %w", err)
 	}
 	if _, err := s.Sweep(ctx); err != nil {
 		return fmt.Errorf("sweep: %w", err)

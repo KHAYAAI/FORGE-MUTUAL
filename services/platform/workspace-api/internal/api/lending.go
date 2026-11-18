@@ -141,3 +141,17 @@ func (a *API) moveCredit(repay bool) func(http.ResponseWriter, *http.Request, Se
 		writeProto(w, http.StatusOK, f)
 	}
 }
+
+// facilityStatement is the statement of one of the party's facilities for a month (NCA s.108).
+func (a *API) facilityStatement(w http.ResponseWriter, r *http.Request, s Session) {
+	if !a.lendingOffered(w) {
+		return
+	}
+	res, err := a.Services.Lending.GetStatement(r.Context(), connect.NewRequest(&lendingv1.GetStatementRequest{
+		PartyId: s.Party, FacilityId: r.PathValue("facility"), Period: r.URL.Query().Get("period")}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeProto(w, http.StatusOK, res.Msg)
+}

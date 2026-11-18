@@ -621,6 +621,57 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/statement:
+    get:
+      operationId: facilityStatement
+      summary: The facility's statement for a calendar month (NCA s.108).
+      parameters:
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{4}-[0-9]{2}$"
+      responses:
+        "200":
+          description: The statement.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [facility_id, period, entries, outstanding_now_minor]
+                properties:
+                  facility_id:
+                    type: string
+                  period:
+                    type: string
+                  outstanding_now_minor:
+                    type: string
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      required: [at, kind, principal_minor, interest_minor, description]
+                      properties:
+                        at:
+                          type: string
+                        kind:
+                          type: string
+                        principal_minor:
+                          type: string
+                        interest_minor:
+                          type: string
+                        description:
+                          type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /v1/facilities/{facility}/accept:
     post:
       operationId: acceptOffer
@@ -1613,6 +1664,23 @@ components:
           type: string
         days_past_due:
           type: integer
+        default_notice:
+          type: object
+          description: An outstanding default notice (NCA s.129), if any.
+          required: [notice_id, issued_at, respond_by, arrears_minor, days_past_due, text]
+          properties:
+            notice_id:
+              type: string
+            issued_at:
+              type: string
+            respond_by:
+              type: string
+            arrears_minor:
+              type: string
+            days_past_due:
+              type: integer
+            text:
+              type: string
         schedule:
           type: array
           items:
