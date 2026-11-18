@@ -11,6 +11,7 @@ import (
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
+	partyv1 "github.com/khayaai/forge-mutual/pkg/api/forge/party/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"net/http"
 	"strconv"
@@ -56,6 +57,25 @@ func authError(w http.ResponseWriter, err error, unauthenticated string) {
 		return
 	}
 	writeJSON(w, http.StatusUnauthorized, errBody("unauthenticated", unauthenticated))
+}
+
+// mayAct lets a party change anything (move money, open, apply, approve) only while it is ACTIVE. A frozen or restricted
+// party may still read. The message is the same whatever the reason: a sanctions freeze must never be disclosed to the
+// customer (FICA s.29 tipping-off). Without a party service configured (development), nothing is checked.
+func (a *API) mayAct(w http.ResponseWriter, r *http.Request, s Session) bool {
+	if a.Services.Party == nil {
+		return true
+	}
+	p, err := a.Services.Party.GetParty(r.Context(), connect.NewRequest(&partyv1.GetPartyRequest{PartyId: s.Party}))
+	if err != nil {
+		writeErr(w, err)
+		return false
+	}
+	if p.Msg.Party.GetStatus() != partyv1.PartyStatus_PARTY_STATUS_ACTIVE {
+		writeJSON(w, http.StatusForbidden, errBody("account_restricted", "this action is not available on your account; please contact us"))
+		return false
+	}
+	return true
 }
 
 // Authenticator turns a request into a session, or refuses it.
@@ -143,6 +163,9 @@ func (a *API) session(h handler) http.HandlerFunc {
 		s, err := a.Auth.Session(r)
 		if err != nil {
 			authError(w, err, "sign in to continue")
+			return
+		}
+		if r.Method != http.MethodGet && !a.mayAct(w, r, s) {
 			return
 		}
 		h(w, r, s)

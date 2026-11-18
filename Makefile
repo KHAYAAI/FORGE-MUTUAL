@@ -268,6 +268,7 @@ test-reg-reporting:
 test-regulatory:
 	python3 -I scripts/check-regulatory-register.py
 	python3 -I scripts/check-asset-register.py
+	python3 -I scripts/check-data-classes.py
 	python3 -I scripts/check-monitoring.py
 	scripts/test-backup-freshness.sh
 	python3 -I scripts/check-secure-config.py

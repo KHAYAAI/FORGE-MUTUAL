@@ -14,6 +14,9 @@ service PartyService {
   rpc ListRelationships(ListRelationshipsRequest) returns (ListRelationshipsResponse);
   rpc SetStatus(SetStatusRequest) returns (SetStatusResponse);
   rpc SetTier(SetTierRequest) returns (SetTierResponse);
+  // Pages through parties, optionally by status, in id order. Used to re-screen every customer when the sanctions list
+  // changes. Returns the masked identity number only.
+  rpc ListParties(ListPartiesRequest) returns (ListPartiesResponse);
 }
 
 enum PartyType {
@@ -126,4 +129,15 @@ message SetTierRequest {
 
 message SetTierResponse {
   Party party = 1;
+}
+
+message ListPartiesRequest {
+  repeated PartyStatus statuses = 1; // empty: every status
+  string after_party_id = 2;         // exclusive cursor; empty for the first page
+  uint32 limit = 3;                  // 1 to 1000
+}
+
+message ListPartiesResponse {
+  repeated Party parties = 1;
+  string next_after_party_id = 2;    // empty when there are no more
 }

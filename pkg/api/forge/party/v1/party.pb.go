@@ -1044,6 +1044,118 @@ func (x *SetTierResponse) GetParty() *Party {
 	return nil
 }
 
+type ListPartiesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Statuses      []PartyStatus          `protobuf:"varint,1,rep,packed,name=statuses,proto3,enum=forge.party.v1.PartyStatus" json:"statuses,omitempty"` // empty: every status
+	AfterPartyId  string                 `protobuf:"bytes,2,opt,name=after_party_id,json=afterPartyId,proto3" json:"after_party_id,omitempty"`           // exclusive cursor; empty for the first page
+	Limit         uint32                 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`                                              // 1 to 1000
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPartiesRequest) Reset() {
+	*x = ListPartiesRequest{}
+	mi := &file_forge_party_v1_party_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPartiesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPartiesRequest) ProtoMessage() {}
+
+func (x *ListPartiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_party_v1_party_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPartiesRequest.ProtoReflect.Descriptor instead.
+func (*ListPartiesRequest) Descriptor() ([]byte, []int) {
+	return file_forge_party_v1_party_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ListPartiesRequest) GetStatuses() []PartyStatus {
+	if x != nil {
+		return x.Statuses
+	}
+	return nil
+}
+
+func (x *ListPartiesRequest) GetAfterPartyId() string {
+	if x != nil {
+		return x.AfterPartyId
+	}
+	return ""
+}
+
+func (x *ListPartiesRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListPartiesResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Parties          []*Party               `protobuf:"bytes,1,rep,name=parties,proto3" json:"parties,omitempty"`
+	NextAfterPartyId string                 `protobuf:"bytes,2,opt,name=next_after_party_id,json=nextAfterPartyId,proto3" json:"next_after_party_id,omitempty"` // empty when there are no more
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ListPartiesResponse) Reset() {
+	*x = ListPartiesResponse{}
+	mi := &file_forge_party_v1_party_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPartiesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPartiesResponse) ProtoMessage() {}
+
+func (x *ListPartiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_party_v1_party_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPartiesResponse.ProtoReflect.Descriptor instead.
+func (*ListPartiesResponse) Descriptor() ([]byte, []int) {
+	return file_forge_party_v1_party_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListPartiesResponse) GetParties() []*Party {
+	if x != nil {
+		return x.Parties
+	}
+	return nil
+}
+
+func (x *ListPartiesResponse) GetNextAfterPartyId() string {
+	if x != nil {
+		return x.NextAfterPartyId
+	}
+	return ""
+}
+
 var File_forge_party_v1_party_proto protoreflect.FileDescriptor
 
 const file_forge_party_v1_party_proto_rawDesc = "" +
@@ -1109,7 +1221,14 @@ const file_forge_party_v1_party_proto_rawDesc = "" +
 	"\x04tier\x18\x02 \x01(\tR\x04tier\x12\x14\n" +
 	"\x05actor\x18\x03 \x01(\tR\x05actor\">\n" +
 	"\x0fSetTierResponse\x12+\n" +
-	"\x05party\x18\x01 \x01(\v2\x15.forge.party.v1.PartyR\x05party*k\n" +
+	"\x05party\x18\x01 \x01(\v2\x15.forge.party.v1.PartyR\x05party\"\x89\x01\n" +
+	"\x12ListPartiesRequest\x127\n" +
+	"\bstatuses\x18\x01 \x03(\x0e2\x1b.forge.party.v1.PartyStatusR\bstatuses\x12$\n" +
+	"\x0eafter_party_id\x18\x02 \x01(\tR\fafterPartyId\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\rR\x05limit\"u\n" +
+	"\x13ListPartiesResponse\x12/\n" +
+	"\aparties\x18\x01 \x03(\v2\x15.forge.party.v1.PartyR\aparties\x12-\n" +
+	"\x13next_after_party_id\x18\x02 \x01(\tR\x10nextAfterPartyId*k\n" +
 	"\tPartyType\x12\x1a\n" +
 	"\x16PARTY_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11PARTY_TYPE_PERSON\x10\x01\x12\x16\n" +
@@ -1129,14 +1248,15 @@ const file_forge_party_v1_party_proto_rawDesc = "" +
 	"\x1dRELATIONSHIP_TYPE_SHAREHOLDER\x10\x02\x12\x19\n" +
 	"\x15RELATIONSHIP_TYPE_UBO\x10\x03\x12\x1f\n" +
 	"\x1bRELATIONSHIP_TYPE_SIGNATORY\x10\x04\x12\x1e\n" +
-	"\x1aRELATIONSHIP_TYPE_EMPLOYEE\x10\x052\xa1\x04\n" +
+	"\x1aRELATIONSHIP_TYPE_EMPLOYEE\x10\x052\xf9\x04\n" +
 	"\fPartyService\x12V\n" +
 	"\vCreateParty\x12\".forge.party.v1.CreatePartyRequest\x1a#.forge.party.v1.CreatePartyResponse\x12M\n" +
 	"\bGetParty\x12\x1f.forge.party.v1.GetPartyRequest\x1a .forge.party.v1.GetPartyResponse\x12b\n" +
 	"\x0fAddRelationship\x12&.forge.party.v1.AddRelationshipRequest\x1a'.forge.party.v1.AddRelationshipResponse\x12h\n" +
 	"\x11ListRelationships\x12(.forge.party.v1.ListRelationshipsRequest\x1a).forge.party.v1.ListRelationshipsResponse\x12P\n" +
 	"\tSetStatus\x12 .forge.party.v1.SetStatusRequest\x1a!.forge.party.v1.SetStatusResponse\x12J\n" +
-	"\aSetTier\x12\x1e.forge.party.v1.SetTierRequest\x1a\x1f.forge.party.v1.SetTierResponseB@Z>github.com/khayaai/forge-mutual/pkg/api/forge/party/v1;partyv1b\x06proto3"
+	"\aSetTier\x12\x1e.forge.party.v1.SetTierRequest\x1a\x1f.forge.party.v1.SetTierResponse\x12V\n" +
+	"\vListParties\x12\".forge.party.v1.ListPartiesRequest\x1a#.forge.party.v1.ListPartiesResponseB@Z>github.com/khayaai/forge-mutual/pkg/api/forge/party/v1;partyv1b\x06proto3"
 
 var (
 	file_forge_party_v1_party_proto_rawDescOnce sync.Once
@@ -1151,7 +1271,7 @@ func file_forge_party_v1_party_proto_rawDescGZIP() []byte {
 }
 
 var file_forge_party_v1_party_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_forge_party_v1_party_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_forge_party_v1_party_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_forge_party_v1_party_proto_goTypes = []any{
 	(PartyType)(0),                    // 0: forge.party.v1.PartyType
 	(PartyStatus)(0),                  // 1: forge.party.v1.PartyStatus
@@ -1170,12 +1290,14 @@ var file_forge_party_v1_party_proto_goTypes = []any{
 	(*SetStatusResponse)(nil),         // 14: forge.party.v1.SetStatusResponse
 	(*SetTierRequest)(nil),            // 15: forge.party.v1.SetTierRequest
 	(*SetTierResponse)(nil),           // 16: forge.party.v1.SetTierResponse
-	(*timestamppb.Timestamp)(nil),     // 17: google.protobuf.Timestamp
+	(*ListPartiesRequest)(nil),        // 17: forge.party.v1.ListPartiesRequest
+	(*ListPartiesResponse)(nil),       // 18: forge.party.v1.ListPartiesResponse
+	(*timestamppb.Timestamp)(nil),     // 19: google.protobuf.Timestamp
 }
 var file_forge_party_v1_party_proto_depIdxs = []int32{
 	0,  // 0: forge.party.v1.Party.type:type_name -> forge.party.v1.PartyType
 	1,  // 1: forge.party.v1.Party.status:type_name -> forge.party.v1.PartyStatus
-	17, // 2: forge.party.v1.Party.created_at:type_name -> google.protobuf.Timestamp
+	19, // 2: forge.party.v1.Party.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 3: forge.party.v1.CreatePartyRequest.type:type_name -> forge.party.v1.PartyType
 	3,  // 4: forge.party.v1.CreatePartyResponse.party:type_name -> forge.party.v1.Party
 	3,  // 5: forge.party.v1.GetPartyResponse.party:type_name -> forge.party.v1.Party
@@ -1186,23 +1308,27 @@ var file_forge_party_v1_party_proto_depIdxs = []int32{
 	1,  // 10: forge.party.v1.SetStatusRequest.to_status:type_name -> forge.party.v1.PartyStatus
 	3,  // 11: forge.party.v1.SetStatusResponse.party:type_name -> forge.party.v1.Party
 	3,  // 12: forge.party.v1.SetTierResponse.party:type_name -> forge.party.v1.Party
-	4,  // 13: forge.party.v1.PartyService.CreateParty:input_type -> forge.party.v1.CreatePartyRequest
-	6,  // 14: forge.party.v1.PartyService.GetParty:input_type -> forge.party.v1.GetPartyRequest
-	9,  // 15: forge.party.v1.PartyService.AddRelationship:input_type -> forge.party.v1.AddRelationshipRequest
-	11, // 16: forge.party.v1.PartyService.ListRelationships:input_type -> forge.party.v1.ListRelationshipsRequest
-	13, // 17: forge.party.v1.PartyService.SetStatus:input_type -> forge.party.v1.SetStatusRequest
-	15, // 18: forge.party.v1.PartyService.SetTier:input_type -> forge.party.v1.SetTierRequest
-	5,  // 19: forge.party.v1.PartyService.CreateParty:output_type -> forge.party.v1.CreatePartyResponse
-	7,  // 20: forge.party.v1.PartyService.GetParty:output_type -> forge.party.v1.GetPartyResponse
-	10, // 21: forge.party.v1.PartyService.AddRelationship:output_type -> forge.party.v1.AddRelationshipResponse
-	12, // 22: forge.party.v1.PartyService.ListRelationships:output_type -> forge.party.v1.ListRelationshipsResponse
-	14, // 23: forge.party.v1.PartyService.SetStatus:output_type -> forge.party.v1.SetStatusResponse
-	16, // 24: forge.party.v1.PartyService.SetTier:output_type -> forge.party.v1.SetTierResponse
-	19, // [19:25] is the sub-list for method output_type
-	13, // [13:19] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	1,  // 13: forge.party.v1.ListPartiesRequest.statuses:type_name -> forge.party.v1.PartyStatus
+	3,  // 14: forge.party.v1.ListPartiesResponse.parties:type_name -> forge.party.v1.Party
+	4,  // 15: forge.party.v1.PartyService.CreateParty:input_type -> forge.party.v1.CreatePartyRequest
+	6,  // 16: forge.party.v1.PartyService.GetParty:input_type -> forge.party.v1.GetPartyRequest
+	9,  // 17: forge.party.v1.PartyService.AddRelationship:input_type -> forge.party.v1.AddRelationshipRequest
+	11, // 18: forge.party.v1.PartyService.ListRelationships:input_type -> forge.party.v1.ListRelationshipsRequest
+	13, // 19: forge.party.v1.PartyService.SetStatus:input_type -> forge.party.v1.SetStatusRequest
+	15, // 20: forge.party.v1.PartyService.SetTier:input_type -> forge.party.v1.SetTierRequest
+	17, // 21: forge.party.v1.PartyService.ListParties:input_type -> forge.party.v1.ListPartiesRequest
+	5,  // 22: forge.party.v1.PartyService.CreateParty:output_type -> forge.party.v1.CreatePartyResponse
+	7,  // 23: forge.party.v1.PartyService.GetParty:output_type -> forge.party.v1.GetPartyResponse
+	10, // 24: forge.party.v1.PartyService.AddRelationship:output_type -> forge.party.v1.AddRelationshipResponse
+	12, // 25: forge.party.v1.PartyService.ListRelationships:output_type -> forge.party.v1.ListRelationshipsResponse
+	14, // 26: forge.party.v1.PartyService.SetStatus:output_type -> forge.party.v1.SetStatusResponse
+	16, // 27: forge.party.v1.PartyService.SetTier:output_type -> forge.party.v1.SetTierResponse
+	18, // 28: forge.party.v1.PartyService.ListParties:output_type -> forge.party.v1.ListPartiesResponse
+	22, // [22:29] is the sub-list for method output_type
+	15, // [15:22] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_forge_party_v1_party_proto_init() }
@@ -1216,7 +1342,7 @@ func file_forge_party_v1_party_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_party_v1_party_proto_rawDesc), len(file_forge_party_v1_party_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

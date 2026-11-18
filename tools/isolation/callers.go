@@ -29,6 +29,7 @@ const apiPrefix = "github.com/khayaai/forge-mutual/pkg/api/forge/"
 // service's behalf are listed with the services that use them.
 var callerSource = map[string][]string{
 	"svc-backoffice-api":    {"services/shared/backoffice-api"},
+	"svc-compliance":        {"services/shared/compliance-engine"},
 	"svc-consolidated-view": {"services/platform/consolidated-view"},
 	"svc-core-bridge":       {"services/bank/core-bridge"},
 	"svc-fx":                {"services/bank/fx-service", "pkg/systemaccounts"},

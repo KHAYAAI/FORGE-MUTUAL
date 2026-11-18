@@ -136,6 +136,29 @@ func GetParty(ctx context.Context, q Querier, id string) (Party, error) {
 	return scanParty(q.QueryRow(ctx, `select `+partyColumns+` from party where party_id = $1::uuid`, id))
 }
 
+// ListParties pages through parties in id order, optionally only those with one of the statuses.
+func ListParties(ctx context.Context, q Querier, statuses []string, after string, limit int) ([]Party, error) {
+	if after == "" {
+		after = "00000000-0000-0000-0000-000000000000"
+	}
+	rows, err := q.Query(ctx, `select `+partyColumns+` from party
+		where party_id > $1::uuid and (cardinality($2::text[]) = 0 or status = any($2::text[]))
+		order by party_id limit $3`, after, statuses, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Party
+	for rows.Next() {
+		p, err := scanParty(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
 // LockParty reads one party and locks its row for the rest of the transaction.
 func LockParty(ctx context.Context, q Querier, id string) (Party, error) {
 	return scanParty(q.QueryRow(ctx, `select `+partyColumns+` from party where party_id = $1::uuid for update`, id))

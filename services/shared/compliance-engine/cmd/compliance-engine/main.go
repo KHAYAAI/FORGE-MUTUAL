@@ -5,17 +5,22 @@ package main
 import (
 	"connectrpc.com/connect"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/eventbus"
+	"github.com/khayaai/forge-mutual/pkg/screening"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/cases"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/feed"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/monitor"
+	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/rescreen"
 	"github.com/khayaai/forge-mutual/services/shared/compliance-engine/internal/service"
 	"log/slog"
 	"net/http"
@@ -72,6 +77,12 @@ func run(log *slog.Logger) error {
 	}
 	consumerErr := make(chan error, 1)
 	go func() { consumerErr <- consumer.Run(ctx) }()
+
+	// Sanctions re-screening of every customer, when the list changes and daily (FICA s.26A to s.26C). It runs only when
+	// PARTY_URL and SCREENING_LIST_FILE are set, and production requires both.
+	if err := startRescreen(ctx, log, pool); err != nil {
+		return err
+	}
 
 	svc := &service.Service{Store: cases.New(pool), Now: time.Now}
 	mux := http.NewServeMux()
@@ -139,4 +150,79 @@ func getenv(name, def string) string {
 		return v
 	}
 	return def
+}
+
+// startRescreen loads the list, then re-screens every customer now and at each RESCREEN_INTERVAL (default 1h; a run is
+// repeated only for a new list version or a new day).
+func startRescreen(ctx context.Context, log *slog.Logger, pool *pgxpool.Pool) error {
+	partyURL, path := os.Getenv("PARTY_URL"), os.Getenv("SCREENING_LIST_FILE")
+	if partyURL == "" || path == "" {
+		if callerauth.IsProduction() {
+			return errors.New("PARTY_URL and SCREENING_LIST_FILE are required in production: customers must be re-screened")
+		}
+		log.Warn("sanctions re-screening is off: PARTY_URL or SCREENING_LIST_FILE is not set")
+		return nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	asOf, err := time.Parse(time.RFC3339, os.Getenv("SCREENING_LIST_AS_OF"))
+	if err != nil {
+		return fmt.Errorf("SCREENING_LIST_AS_OF must be RFC 3339: %w", err)
+	}
+	maxAge, err := time.ParseDuration(getenv("SCREENING_MAX_AGE", "24h"))
+	if err != nil {
+		return fmt.Errorf("SCREENING_MAX_AGE: %w", err)
+	}
+	var names []string
+	for _, l := range strings.Split(string(raw), "\n") {
+		if l = strings.TrimSpace(l); l != "" && !strings.HasPrefix(l, "#") {
+			names = append(names, l)
+		}
+	}
+	scr, err := screening.NewFixture(names, asOf, maxAge, time.Now)
+	if err != nil {
+		return err
+	}
+	sum := sha256.Sum256(raw)
+	version := hex.EncodeToString(sum[:])
+	every, err := time.ParseDuration(getenv("RESCREEN_INTERVAL", "1h"))
+	if err != nil || every <= 0 {
+		return errors.New("RESCREEN_INTERVAL must be a positive duration")
+	}
+	if err := rescreen.Open(ctx, pool); err != nil {
+		return err
+	}
+	outbound, err := serve.OutboundFromEnv()
+	if err != nil {
+		return err
+	}
+	parties := partyv1connect.NewPartyServiceClient(outbound, partyURL, connect.WithInterceptors(connect.UnaryInterceptorFunc(
+		func(next connect.UnaryFunc) connect.UnaryFunc {
+			return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+				req.Header().Set(callerauth.DefaultHeader, "svc-compliance")
+				return next(ctx, req)
+			}
+		})))
+	r := &rescreen.Rescreener{Pool: pool, Parties: parties, Screener: scr}
+	go func() {
+		tick := time.NewTicker(every)
+		defer tick.Stop()
+		for {
+			res, err := r.Run(ctx, version)
+			switch {
+			case err != nil:
+				log.Error("sanctions re-screening failed; will retry", "err", err)
+			case !res.Skipped:
+				log.Info("sanctions re-screening done", "screened", res.Screened, "matched", res.Matched, "frozen", res.Frozen, "list", version[:12])
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-tick.C:
+			}
+		}
+	}()
+	return nil
 }

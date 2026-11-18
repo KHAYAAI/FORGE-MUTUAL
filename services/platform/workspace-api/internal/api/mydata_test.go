@@ -49,3 +49,25 @@ func TestMyDataIsTheSessionPartysOwnAndMasked(t *testing.T) {
 		t.Fatalf("body %s", body)
 	}
 }
+
+type frozenParty struct{ fakeParty }
+
+func (f *frozenParty) GetParty(_ context.Context, r *connect.Request[partyv1.GetPartyRequest]) (*connect.Response[partyv1.GetPartyResponse], error) {
+	return connect.NewResponse(&partyv1.GetPartyResponse{Party: &partyv1.Party{PartyId: r.Msg.PartyId, Status: partyv1.PartyStatus_PARTY_STATUS_FROZEN}}), nil
+}
+
+// A frozen party may read but not act, and is told nothing about why.
+func TestAFrozenPartyMayReadButNotAct(t *testing.T) {
+	cons := &fakeConsolidated{}
+	h := (&API{Auth: fakeAuth{}, Services: Services{Party: &frozenParty{}, Consolidated: cons, Onboarding: &fakeCurrency{}}}).Handler()
+	if w := asCustomer(t, h, "GET", "/v1/accounts", nil); w.Code != http.StatusOK {
+		t.Fatalf("reading accounts while frozen: %d", w.Code)
+	}
+	w := asCustomer(t, h, "POST", "/v1/accounts", map[string]string{"asset": "EUR"})
+	if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "account_restricted") {
+		t.Fatalf("acting while frozen: %d %s", w.Code, w.Body)
+	}
+	if strings.Contains(strings.ToLower(w.Body.String()), "sanction") || strings.Contains(strings.ToLower(w.Body.String()), "frozen") {
+		t.Fatalf("the refusal discloses the reason: %s", w.Body)
+	}
+}

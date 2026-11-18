@@ -1,4 +1,8 @@
 {
+  "svc-compliance": [
+    "ListParties",
+    "SetStatus"
+  ],
   "svc-onboarding": [
     "AddRelationship",
     "CreateParty",

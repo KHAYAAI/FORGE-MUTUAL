@@ -132,6 +132,35 @@ func (s *Service) GetParty(ctx context.Context, req *connect.Request[partyv1.Get
 	return connect.NewResponse(&partyv1.GetPartyResponse{Party: toProto(p)}), nil
 }
 
+// ListParties implements PartyServiceHandler.
+func (s *Service) ListParties(ctx context.Context, req *connect.Request[partyv1.ListPartiesRequest]) (*connect.Response[partyv1.ListPartiesResponse], error) {
+	limit := int(req.Msg.Limit)
+	if limit < 1 || limit > 1000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("limit must be 1 to 1000"))
+	}
+	if req.Msg.AfterPartyId != "" {
+		if err := requireUUID(req.Msg.AfterPartyId); err != nil {
+			return nil, err
+		}
+	}
+	statuses := make([]string, 0, len(req.Msg.Statuses))
+	for _, st := range req.Msg.Statuses {
+		statuses = append(statuses, st.String())
+	}
+	ps, err := store.ListParties(ctx, s.st.Pool(), statuses, req.Msg.AfterPartyId, limit)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	out := &partyv1.ListPartiesResponse{}
+	for _, p := range ps {
+		out.Parties = append(out.Parties, toProto(p))
+	}
+	if len(ps) == limit {
+		out.NextAfterPartyId = ps[len(ps)-1].ID
+	}
+	return connect.NewResponse(out), nil
+}
+
 // AddRelationship implements PartyServiceHandler. lifecycle.CheckRelationship keeps founders and
 // companies separate (invariant 12).
 func (s *Service) AddRelationship(ctx context.Context, req *connect.Request[partyv1.AddRelationshipRequest]) (*connect.Response[partyv1.AddRelationshipResponse], error) {

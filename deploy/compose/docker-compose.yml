@@ -593,7 +593,11 @@ services:
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/cases?sslmode=disable
       CASES_CALLERS_FILE: /stack/callers/cases.json
       CASES_ADDR: ":8400"
-    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+      # Sanctions re-screening of every customer when the list changes, and daily.
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+      SCREENING_LIST_FILE: /stack/screening-list.txt
+      SCREENING_LIST_AS_OF: ${SCREENING_LIST_AS_OF}
+    volumes: ["./config/callers:/stack/callers:ro", "./config/screening-list.txt:/stack/screening-list.txt:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   backoffice:
     image: forge/backoffice-api:dev

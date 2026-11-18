@@ -50,6 +50,9 @@ const (
 	PartyServiceSetStatusProcedure = "/forge.party.v1.PartyService/SetStatus"
 	// PartyServiceSetTierProcedure is the fully-qualified name of the PartyService's SetTier RPC.
 	PartyServiceSetTierProcedure = "/forge.party.v1.PartyService/SetTier"
+	// PartyServiceListPartiesProcedure is the fully-qualified name of the PartyService's ListParties
+	// RPC.
+	PartyServiceListPartiesProcedure = "/forge.party.v1.PartyService/ListParties"
 )
 
 // PartyServiceClient is a client for the forge.party.v1.PartyService service.
@@ -60,6 +63,9 @@ type PartyServiceClient interface {
 	ListRelationships(context.Context, *connect.Request[v1.ListRelationshipsRequest]) (*connect.Response[v1.ListRelationshipsResponse], error)
 	SetStatus(context.Context, *connect.Request[v1.SetStatusRequest]) (*connect.Response[v1.SetStatusResponse], error)
 	SetTier(context.Context, *connect.Request[v1.SetTierRequest]) (*connect.Response[v1.SetTierResponse], error)
+	// Pages through parties, optionally by status, in id order. Used to re-screen every customer when the sanctions list
+	// changes. Returns the masked identity number only.
+	ListParties(context.Context, *connect.Request[v1.ListPartiesRequest]) (*connect.Response[v1.ListPartiesResponse], error)
 }
 
 // NewPartyServiceClient constructs a client for the forge.party.v1.PartyService service. By
@@ -109,6 +115,12 @@ func NewPartyServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(partyServiceMethods.ByName("SetTier")),
 			connect.WithClientOptions(opts...),
 		),
+		listParties: connect.NewClient[v1.ListPartiesRequest, v1.ListPartiesResponse](
+			httpClient,
+			baseURL+PartyServiceListPartiesProcedure,
+			connect.WithSchema(partyServiceMethods.ByName("ListParties")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -120,6 +132,7 @@ type partyServiceClient struct {
 	listRelationships *connect.Client[v1.ListRelationshipsRequest, v1.ListRelationshipsResponse]
 	setStatus         *connect.Client[v1.SetStatusRequest, v1.SetStatusResponse]
 	setTier           *connect.Client[v1.SetTierRequest, v1.SetTierResponse]
+	listParties       *connect.Client[v1.ListPartiesRequest, v1.ListPartiesResponse]
 }
 
 // CreateParty calls forge.party.v1.PartyService.CreateParty.
@@ -152,6 +165,11 @@ func (c *partyServiceClient) SetTier(ctx context.Context, req *connect.Request[v
 	return c.setTier.CallUnary(ctx, req)
 }
 
+// ListParties calls forge.party.v1.PartyService.ListParties.
+func (c *partyServiceClient) ListParties(ctx context.Context, req *connect.Request[v1.ListPartiesRequest]) (*connect.Response[v1.ListPartiesResponse], error) {
+	return c.listParties.CallUnary(ctx, req)
+}
+
 // PartyServiceHandler is an implementation of the forge.party.v1.PartyService service.
 type PartyServiceHandler interface {
 	CreateParty(context.Context, *connect.Request[v1.CreatePartyRequest]) (*connect.Response[v1.CreatePartyResponse], error)
@@ -160,6 +178,9 @@ type PartyServiceHandler interface {
 	ListRelationships(context.Context, *connect.Request[v1.ListRelationshipsRequest]) (*connect.Response[v1.ListRelationshipsResponse], error)
 	SetStatus(context.Context, *connect.Request[v1.SetStatusRequest]) (*connect.Response[v1.SetStatusResponse], error)
 	SetTier(context.Context, *connect.Request[v1.SetTierRequest]) (*connect.Response[v1.SetTierResponse], error)
+	// Pages through parties, optionally by status, in id order. Used to re-screen every customer when the sanctions list
+	// changes. Returns the masked identity number only.
+	ListParties(context.Context, *connect.Request[v1.ListPartiesRequest]) (*connect.Response[v1.ListPartiesResponse], error)
 }
 
 // NewPartyServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -205,6 +226,12 @@ func NewPartyServiceHandler(svc PartyServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(partyServiceMethods.ByName("SetTier")),
 		connect.WithHandlerOptions(opts...),
 	)
+	partyServiceListPartiesHandler := connect.NewUnaryHandler(
+		PartyServiceListPartiesProcedure,
+		svc.ListParties,
+		connect.WithSchema(partyServiceMethods.ByName("ListParties")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.party.v1.PartyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PartyServiceCreatePartyProcedure:
@@ -219,6 +246,8 @@ func NewPartyServiceHandler(svc PartyServiceHandler, opts ...connect.HandlerOpti
 			partyServiceSetStatusHandler.ServeHTTP(w, r)
 		case PartyServiceSetTierProcedure:
 			partyServiceSetTierHandler.ServeHTTP(w, r)
+		case PartyServiceListPartiesProcedure:
+			partyServiceListPartiesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -250,4 +279,8 @@ func (UnimplementedPartyServiceHandler) SetStatus(context.Context, *connect.Requ
 
 func (UnimplementedPartyServiceHandler) SetTier(context.Context, *connect.Request[v1.SetTierRequest]) (*connect.Response[v1.SetTierResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.party.v1.PartyService.SetTier is not implemented"))
+}
+
+func (UnimplementedPartyServiceHandler) ListParties(context.Context, *connect.Request[v1.ListPartiesRequest]) (*connect.Response[v1.ListPartiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.party.v1.PartyService.ListParties is not implemented"))
 }
