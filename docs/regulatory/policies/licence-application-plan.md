@@ -14,7 +14,7 @@
 
 ## Decisions first
 
-1. ADR-0020: bank (public company, R250m capital) or mutual bank (R10m capital, seven founders, depositor-members) (LIC-01, LIC-02).
+1. ADR-0020: owner's direction (2026-11-18) is a **mutual bank** (R10m capital, seven founders, depositor-members), with the **bank** route (public company, R250m) kept open. Both paths are in `docs/governance/LEGAL_FORMS.md` (LIC-01, LIC-02).
 2. Interim model: operate through a sponsor bank while applying.
 
 ## Workstreams and owners

@@ -61,3 +61,23 @@ func TestAnEmptyBankIsNotInBreach(t *testing.T) {
 		t.Fatalf("breaches = %v", r.Breaches)
 	}
 }
+
+// The legal form's minimum capital is a breach of its own: a mutual bank needs R10 million, a bank R250 million.
+func TestCapitalBelowTheLegalMinimumIsABreach(t *testing.T) {
+	pos := Position{Capital: 50_000_000 * 100}
+	p := DefaultParams()
+	p.MinInitialCapital = 10_000_000 * 100 // mutual bank
+	for _, b := range Compute(pos, p).Breaches {
+		if b == "INITIAL_CAPITAL" {
+			t.Fatal("R50 million is above a mutual bank's minimum")
+		}
+	}
+	p.MinInitialCapital = 250_000_000 * 100 // bank
+	found := false
+	for _, b := range Compute(pos, p).Breaches {
+		found = found || b == "INITIAL_CAPITAL"
+	}
+	if !found {
+		t.Fatal("R50 million is below a bank's minimum")
+	}
+}

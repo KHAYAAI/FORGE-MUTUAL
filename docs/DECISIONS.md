@@ -6,6 +6,11 @@ a revision at the next documentation pass.
 
 ## Taken
 
+**2026-11-18: plan for a mutual bank; keep the bank route open (ADR-0020, a direction, not final).**
+Taken by the owner, Tebogo Mvelase, in session. The software supports both through `pkg/banklayer.Profile` and
+`FORGE_LEGAL_FORM` (default `mutual`); the membership module is built for the mutual. ADR-0020 closes only after legal
+advice (`docs/governance/LAWYER_BRIEF.md`). Comparison: `docs/governance/LEGAL_FORMS.md`.
+
 **2026-10-31: payments are held for any open reconciliation break (strict).**
 While any monitored asset has a reconciliation break, every outbound payment is held, whatever its amount. There is no
 threshold. Taken by the product owner in session.

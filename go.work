@@ -5,9 +5,9 @@ use (
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
 	./pkg/callerauth
-	./pkg/licence
 	./pkg/eventbus
 	./pkg/events
+	./pkg/licence
 	./pkg/money
 	./pkg/oidc
 	./pkg/outbox
@@ -15,12 +15,13 @@ use (
 	./pkg/serve
 	./pkg/systemaccounts
 	./pkg/uuid
+	./services/bank/acquiring-service
 	./services/bank/core-bridge
 	./services/bank/deposits-service
-	./services/bank/lending-service
-	./services/bank/acquiring-service
 	./services/bank/fx-service
 	./services/bank/ledger-gateway-bank
+	./services/bank/lending-service
+	./services/bank/membership
 	./services/bank/partner-bank-router
 	./services/bank/payments-orchestrator
 	./services/bank/payouts-service

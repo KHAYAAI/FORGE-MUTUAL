@@ -48,6 +48,7 @@ type Params struct {
 	RWCash, RWBusinessLoan, RWPersonalLoan, RWAcquirer, CCFUndrawn int64 // risk weights and credit conversion, in bps
 	OperationalBps                                                 int64 // share of gross income charged (basic indicator: 15%)
 	MinTotalCapitalBps, MinLeverageBps, MinLCRBps                  int64
+	MinInitialCapital                                              int64 // legal minimum for the legal form, ZAR cents; 0 to skip
 	RunoffRetail, RunoffBusiness, RunoffSavings, RunoffForeign     int64 // 30-day run-off rates, bps
 	InflowBps                                                      int64 // share of contractual inflows counted
 }
@@ -122,6 +123,9 @@ func Compute(pos Position, p Params) Report {
 	r.NetOutflows30 = r.Outflows30 - r.Inflows30
 	r.LCRBps = ratio(r.HQLA, r.NetOutflows30)
 
+	if pos.Capital < p.MinInitialCapital {
+		r.Breaches = append(r.Breaches, "INITIAL_CAPITAL")
+	}
 	if r.TotalCapitalBps < p.MinTotalCapitalBps {
 		r.Breaches = append(r.Breaches, "TOTAL_CAPITAL_RATIO")
 	}

@@ -14,9 +14,9 @@ the customer front door: a person or a company signs in, applies, verifies and g
 this and a launch is mostly not code: a banking licence or sponsor bank, accounts with live providers, owner decisions,
 production infrastructure and an independent security review. Assessed 2026-11-18.
 
-**Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 85 Partial, 25 Open, 4 waiting
+**Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 86 Partial, 24 Open, 4 waiting
 on an external party, none fully met. Governance pack (`docs/governance/`): 52 draft policies, none approved;
-35 seats, 1 named (founder Tebogo Mvelase), 34 vacant. Thresholds: 28 placeholders, none with a named owner. Licence: none.
+36 seats, 1 named (founder Tebogo Mvelase), 35 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
 ### Governance and people

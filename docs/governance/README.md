@@ -7,9 +7,12 @@
 | File | What it is |
 |---|---|
 | [`STRUCTURE.md`](STRUCTURE.md) | Diagrams: board and committees, executive chart, three lines of defence, policy hierarchy, approval matrix, hiring by stage |
-| [`ROLES.md`](ROLES.md) / [`roles.csv`](roles.csv) | All 35 seats, who holds each (Tebogo Mvelase as founder and CEO; everyone else **VACANT**), what each seat needs, and which seats may never be shared |
+| [`ROLES.md`](ROLES.md) / [`roles.csv`](roles.csv) | All 36 seats, who holds each (Tebogo Mvelase as founder and CEO; everyone else **VACANT**), what each seat needs, and which seats may never be shared |
 | [`POLICY_FRAMEWORK.md`](POLICY_FRAMEWORK.md) / [`policies.csv`](policies.csv) | All 52 policies, their owner, approver, review cycle and the register rows they answer |
 | [`../regulatory/policies/`](../regulatory/policies/) | The policy drafts themselves, each with a sign-off block |
+| [`LEGAL_FORMS.md`](LEGAL_FORMS.md) | Mutual bank (planned) and bank (kept open) side by side, with both licence paths |
+| [`RISK_APPETITE_DECISIONS.md`](RISK_APPETITE_DECISIONS.md) | 30 risk appetite numbers with cautious, recommended and bolder options, for the owner to decide |
+| [`LAWYER_BRIEF.md`](LAWYER_BRIEF.md) | What to ask a regulatory lawyer, how to choose one, where to look, and a first email |
 | [`../regulatory/register.csv`](../regulatory/register.csv) | The 114 regulatory requirements, and where we stand on each |
 
 `make governance` rebuilds `ROLES.md` and `POLICY_FRAMEWORK.md` from the two CSVs. The gate (`make test-regulatory`)
@@ -38,10 +41,10 @@ fails if they are out of date, if a policy file is not listed, or if a register 
 
 ### Decisions only the owner can make
 
-- [ ] Legal form: bank or mutual bank (ADR-0020). Decides capital (R250m or R10m), the founders and every form.
+- [~] Legal form: **mutual bank planned, bank kept open** (owner's direction 2026-11-18; ADR-0020 open until legal advice). See `LEGAL_FORMS.md`.
 - [ ] Sponsor bank, or straight to a licence.
 - [ ] Hosting provider and region (ADR-0002). Decides material outsourcing and offshoring notices.
-- [ ] Risk appetite: accept or change every PROPOSED number in `risk-appetite-statement.md`.
+- [ ] Risk appetite: complete `RISK_APPETITE_DECISIONS.md` (30 numbers, each with a recommendation).
 - [ ] Sector appetite (ADR-0012), including how far to go with crypto businesses.
 - [ ] Which products to switch on first (`new-product-approval-policy.md`).
 

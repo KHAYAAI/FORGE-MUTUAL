@@ -4,7 +4,7 @@
 > **Every seat is VACANT except the founder's.** Replace `VACANT` with the appointed person's name only after the
 > appointment is made in writing and, for a director or executive, the fit-and-proper assessment is done.
 
-**35 seats; 2 with a name; 33 vacant.**
+**36 seats; 2 with a name; 34 vacant.**
 
 | # | Role | Line | Holder | Reports to | Priority |
 |---|---|---|---|---|---|
@@ -43,6 +43,7 @@
 | R33 | Non-Executive Director (shareholder or member representative) | Board | VACANT - to be appointed | Board | P1 at capital raise |
 | R34 | External Auditor (two firms if the PA requires) | External | VACANT - to be appointed | Board Audit Committee | P0 before licence application |
 | R35 | Sponsor Bank Relationship Manager (counterparty) | External | VACANT - sponsor not chosen | COO | P0 now |
+| R36 | Member Relations Lead (mutual route only) | First | VACANT - to be appointed (only if the mutual route is confirmed) | Company Secretary | P2 before the first AGM |
 
 ## What each seat needs
 
@@ -395,4 +396,14 @@
 - **Must never be the same person as:** None
 - **Why it is required:** VERIFY-SPONSOR
 - **When:** P0 now
+
+### R36 · Member Relations Lead (mutual route only)
+
+- **Holder:** VACANT - to be appointed (only if the mutual route is confirmed) (Vacant)
+- **Must have:** Runs the member register, member communications, AGM notices and voting (membership module); member admission and exits
+- **Nice to have:** Co-operative or stokvel experience
+- **May share the seat with:** R17 Company Secretary (start)
+- **Must never be the same person as:** R06 MLRO
+- **Why it is required:** LIC-07
+- **When:** P2 before the first AGM
 

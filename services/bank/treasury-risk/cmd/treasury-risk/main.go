@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1/treasuryv1connect"
+	"github.com/khayaai/forge-mutual/pkg/banklayer"
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
 	"github.com/khayaai/forge-mutual/pkg/serve"
 	"github.com/khayaai/forge-mutual/services/bank/treasury-risk/internal/ledgerread"
@@ -103,10 +104,21 @@ func run(log *slog.Logger) error {
 		if err != nil {
 			return err
 		}
-		pr := prudential.Reader{Client: ledger, Entity: reader.Entity, Rates: rates, Capital: capital, GrossIncome: income, Params: prudential.DefaultParams()}
+		// The legal form sets the minimum capital: a mutual bank (planned) or a bank (kept open), ADR-0020.
+		form, err := banklayer.ParseLegalForm(os.Getenv("FORGE_LEGAL_FORM"))
+		if err != nil {
+			return err
+		}
+		profile, err := banklayer.ProfileFor(form)
+		if err != nil {
+			return err
+		}
+		params := prudential.DefaultParams()
+		params.MinInitialCapital = profile.MinInitialCapitalMinor
+		pr := prudential.Reader{Client: ledger, Entity: reader.Entity, Rates: rates, Capital: capital, GrossIncome: income, Params: params}
 		p, h := treasuryv1connect.NewTreasuryServiceHandler(pr, connect.WithInterceptors(callers.Interceptor(callerauth.HeaderSource())))
 		mux.Handle(p, h)
-		log.Warn("prudential weights, run-off rates and minimums are PROPOSED; capital and gross income are configured", "capital_minor", capital)
+		log.Warn("prudential weights, run-off rates and minimums are PROPOSED; capital and gross income are configured", "capital_minor", capital, "legal_form", profile.Name, "min_initial_capital_minor", profile.MinInitialCapitalMinor)
 	}
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
