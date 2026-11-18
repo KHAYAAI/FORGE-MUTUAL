@@ -23,6 +23,7 @@ var (
 	ErrSameSigner  = errors.New("returns: the approver must differ from the preparer")
 	ErrNotApproved = errors.New("returns: return is not approved")
 	ErrBreak       = errors.New("returns: reconciliation break")
+	ErrNotAudited  = errors.New("returns: the external auditor has not reported on this return")
 )
 
 // Cents are minor units of the return's currency (rand cents). Integers only: no floating point near money.
@@ -49,8 +50,10 @@ type Spec struct {
 	Form      string // for example "BA 900"
 	Name      string
 	Frequency string // "monthly", "quarterly", "annual"
-	Lines     []Line
-	Totals    []Total
+	// Audited is true for returns the external auditor must report on before submission (MR-05; which forms, VERIFY).
+	Audited bool
+	Lines   []Line
+	Totals  []Total
 	// Reconcile ties return lines to other sources of truth, such as the ledger. Each returns the figure from the other source.
 	Reconcile map[string]func(in map[string]Cents) (Cents, error)
 }
@@ -58,6 +61,7 @@ type Spec struct {
 // Result is a computed return.
 type Result struct {
 	Form, Period string
+	Audited      bool
 	Values       map[string]Cents
 	Unverified   []string // lines not yet verified against the form instructions
 	Breaks       []string
@@ -67,7 +71,7 @@ type Result struct {
 // Compute evaluates every line from inputs. It fails if an input a line needs is missing. It lists unverified lines and
 // arithmetic or reconciliation breaks in the result rather than hiding them.
 func (s Spec) Compute(period string, in map[string]Cents, at time.Time) (Result, error) {
-	r := Result{Form: s.Form, Period: period, Values: map[string]Cents{}, ComputedAt: at}
+	r := Result{Form: s.Form, Period: period, Audited: s.Audited, Values: map[string]Cents{}, ComputedAt: at}
 	for _, l := range s.Lines {
 		for _, name := range l.Inputs {
 			if _, ok := in[name]; !ok {
@@ -128,6 +132,9 @@ type Certification struct {
 	ApprovedBy   string
 	ApprovedAt   time.Time
 	EvidenceHash string
+	// The external auditor's report, for audited returns: the firm, the signing partner and when.
+	AuditFirm, AuditPartner string
+	AuditedAt               time.Time
 }
 
 // Prepare starts a certification. It refuses a result that has breaks or arithmetic errors.
@@ -157,8 +164,25 @@ func (c Certification) Submittable() error {
 	if c.ApprovedBy == "" {
 		return ErrNotApproved
 	}
+	if c.Result.Audited && c.AuditPartner == "" {
+		return ErrNotAudited
+	}
 	if len(c.Result.Unverified) > 0 {
 		return fmt.Errorf("%w: %s", ErrUnverified, strings.Join(c.Result.Unverified, ", "))
 	}
+	return nil
+}
+
+// AuditorReport records the external auditor's report on an approved return. The auditor must be outside Forge: the
+// partner may not be the preparer or the approver.
+func (c *Certification) AuditorReport(firm, partner string, at time.Time) error {
+	firm, partner = strings.TrimSpace(firm), strings.TrimSpace(partner)
+	if c.ApprovedBy == "" {
+		return ErrNotApproved
+	}
+	if firm == "" || partner == "" || strings.EqualFold(partner, c.PreparedBy) || strings.EqualFold(partner, c.ApprovedBy) {
+		return fmt.Errorf("%w: an independent audit firm and partner are required", ErrSameSigner)
+	}
+	c.AuditFirm, c.AuditPartner, c.AuditedAt = firm, partner, at
 	return nil
 }

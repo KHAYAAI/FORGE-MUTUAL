@@ -14,8 +14,8 @@ the customer front door: a person or a company signs in, applies, verifies and g
 this and a launch is mostly not code: a banking licence or sponsor bank, accounts with live providers, owner decisions,
 production infrastructure and an independent security review. Assessed 2026-11-18.
 
-**Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 86 Partial, 24 Open, 4 waiting
-on an external party, none fully met. Governance pack (`docs/governance/`): 52 draft policies, none approved;
+**Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
+on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 54 draft policies, none approved;
 36 seats, 1 named (founder Tebogo Mvelase), 35 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
@@ -113,6 +113,10 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 **5. Assurance before go-live**
 
 - [ ] **External.** An independent security review and penetration test.
+- [x] Returns: balance sheet and income statement for both forms (BA 100/120, DI 100/200) from the ledger, with
+  auditor sign-off; pro formas from projections (`make proforma`). Other forms not built.
+- [x] Outsourcing notice dates, provider contract clauses, a business impact analysis and a security findings
+  register, each checked by the gate.
 - [ ] **Engineering.** A load test through the whole payment path, on production hardware.
 - [ ] **Owner/Engineering.** An incident and recovery drill on production: a restore, the loss of a site.
 - [ ] **Owner.** A pilot with a small number of friendly customers before opening applications to the public.

@@ -1,9 +1,9 @@
-provider,service,data_shared,processing_location,material,status,contract,exit_plan,owner,notes
-Sponsor bank (to be chosen),Deposits; EFT and PayShap clearing; foreign currency through its partner,Customer identity; all transactions,South Africa (expected),Yes,Not chosen,None,None,Unassigned,Material outsourcing of core banking; PA notice and approval route to confirm (OUT-01 OUT-02)
-Didit,Identity and company verification (KYC and KYB),ID document; selfie; name; ID number; company registry data,Unconfirmed,Yes,Account not created,None,Fall back to a second provider through the kyc.Provider interface,Unassigned,Confirm data location and retention before use (POP-08 D3-03)
-WorkOS,Customer and staff sign-in (AuthKit),Email; name; sign-in events,Unconfirmed (likely USA),Yes,Account not created,None,Any OIDC provider; the apps use standard OIDC,Unassigned,Offshoring of personal data needs a POPIA s.72 basis
-Cloud host (ADR-0002 open),All production hosting,Everything,To be decided (PROPOSED South African region),Yes,Not chosen,None,Infrastructure as code; open-source stack,Unassigned,Directive 3/2018 applies
-Card acquirer (VERIFY-ACQUIRER),Card acceptance,Merchant details; payment amounts (never card data),To be decided,Yes,Not chosen,None,acquiring.Acquirer interface,Unassigned,PCI DSS scope stays with the acquirer
-Sanctions list provider,Sanctions and PEP lists,Party names for screening,To be decided,Yes,Not chosen,None,pkg/screening interface,Unassigned,docs/SANCTIONS_SOURCES.md
-Temporal (self-hosted or Cloud),Workflow engine,Workflow state including party ids,To be decided,Yes if Temporal Cloud,Self-hosted on the local stack,None,Self-host,Unassigned,
-GitHub,Source code and CI,No customer data,USA,No,In use,Standard terms,Any git host,Unassigned,
+provider,service,data_shared,processing_location,material,status,contract,exit_plan,owner,notes,planned_start,pa_notice_due,pa_notified,contract_schedule_met,last_due_diligence
+Sponsor bank (to be chosen),Deposits; EFT and PayShap clearing; foreign currency through its partner,Customer identity; all transactions,South Africa (expected),Yes,Not chosen,None,None,"COO (R08, VACANT)",Material outsourcing of core banking; PA notice and approval route to confirm (OUT-01 OUT-02),,,,No,
+Didit,Identity and company verification (KYC and KYB),ID document; selfie; name; ID number; company registry data,Unconfirmed,Yes,Account not created,None,Fall back to a second provider through the kyc.Provider interface,"CCO (R04, VACANT)",Confirm data location and retention before use (POP-08 D3-03),,,,No,
+WorkOS,Customer and staff sign-in (AuthKit),Email; name; sign-in events,Unconfirmed (likely USA),Yes,Account not created,None,Any OIDC provider; the apps use standard OIDC,"CTO (R10, VACANT)",Offshoring of personal data needs a POPIA s.72 basis,,,,No,
+Cloud host (ADR-0002 open),All production hosting,Everything,To be decided (PROPOSED South African region),Yes,Not chosen,None,Infrastructure as code; open-source stack,"CTO (R10, VACANT)",Directive 3/2018 applies,,,,No,
+Card acquirer (VERIFY-ACQUIRER),Card acceptance,Merchant details; payment amounts (never card data),To be decided,Yes,Not chosen,None,acquiring.Acquirer interface,"COO (R08, VACANT)",PCI DSS scope stays with the acquirer,,,,No,
+Sanctions list provider,Sanctions and PEP lists,Party names for screening,To be decided,Yes,Not chosen,None,pkg/screening interface,"MLRO (R06, VACANT)",docs/SANCTIONS_SOURCES.md,,,,No,
+Temporal (self-hosted or Cloud),Workflow engine,Workflow state including party ids,To be decided,Yes if Temporal Cloud,Self-hosted on the local stack,None,Self-host,"CTO (R10, VACANT)",,,,,No,
+GitHub,Source code and CI,No customer data,USA,No,In use,Standard terms,Any git host,"CTO (R10, VACANT)",,,,,n/a,

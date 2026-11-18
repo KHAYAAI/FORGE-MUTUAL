@@ -86,6 +86,7 @@ flowchart LR
 | [Incident response plan](../regulatory/policies/incident-response-plan.md) | Chief Information Security Officer (R12, VACANT) | IT and Cyber Committee | Yearly | JN-01, JN-02, JN-03, JS2-14, JS2-18 | Draft |
 | [Regulatory incident notification procedure](../regulatory/policies/regulatory-incident-notification-procedure.md) | Chief Information Security Officer (R12, VACANT) | Executive committee | Yearly | JS2-18, JN-04, POP-06 | Draft 0.1 |
 | [Business continuity and disaster recovery policy](../regulatory/policies/business-continuity-and-disaster-recovery-policy.md) | Business Continuity Manager (R28, VACANT) | Board, on IT and Cyber Committee recommendation | Yearly | G4-02, JS1-12, OUT-05 | Draft 0.1 |
+| [Business impact analysis](../regulatory/policies/business-impact-analysis.md) | Business Continuity Manager (R28, VACANT) | IT and Cyber Committee | Yearly | G4-02, JS1-12, OUT-05 | Draft 0.1 |
 
 ## Data and privacy
 
@@ -104,4 +105,5 @@ flowchart LR
 | [Cloud computing and offshoring of data policy](../regulatory/policies/cloud-and-offshoring-policy.md) | Chief Technology Officer (R10, VACANT) | Board, on IT and Cyber Committee recommendation | Yearly | D3-02, D3-03, D3-05, D3-07, OUT-01, POP-08 | Draft 0.1 |
 | [Provider due diligence procedure](../regulatory/policies/provider-due-diligence-procedure.md) | Chief Operating Officer (R08, VACANT) | Executive committee | Yearly | D3-03, OUT-03, OUT-06, JN-04, D3-07 | Draft 0.1 |
 | [Exit plans for providers (Directive 3 of 2018; Guidance Note 5 of 2014)](../regulatory/policies/exit-plans.md) | Chief Operating Officer (R08, VACANT) | Executive committee | Yearly | D3-06 | Draft |
+| [Provider contract schedule: minimum clauses](../regulatory/policies/provider-contract-schedule.md) | Head of Legal (R26, VACANT) | Board, on Audit Committee recommendation | Yearly | D3-05, D3-07, OUT-03, OUT-06, JN-04, POP-08 | Draft 0.1 |
 
