@@ -12,7 +12,11 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 **Not ready to take real customers.** The software is built, tested and runs end to end on a local stack, including
 the customer front door: a person or a company signs in, applies, verifies and gets an account. What stands between
 this and a launch is mostly not code: a banking licence or sponsor bank, accounts with live providers, owner decisions,
-production infrastructure and an independent security review. Assessed 2026-11-17.
+production infrastructure and an independent security review. Assessed 2026-11-18.
+
+**Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 65 Partial, 45 Open, 4 waiting
+on an external party, none fully met. Thresholds: 28 placeholders, none with a named owner. Licence: none.
+Production infrastructure: none. Software gate (`make ci-db`): passing.
 
 ### What is left before real customers
 
@@ -26,8 +30,11 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 - [ ] **External.** Sponsor bank sandbox and wire formats (VERIFY-SPONSOR), partner and FIC formats (VERIFY-PARTNER,
   VERIFY-FIC), and the goAML schema (VERIFY-GOAML; submission is refused until it is confirmed).
 - [ ] **Owner/External.** Regulatory review of the policy, screening and reporting rules.
-- [ ] **Owner.** Name an owner for each of the 21 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
+- [ ] **Owner.** Name an owner for each of the 28 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
   (sector appetite).
+- [x] Daily re-screening of every customer: a match opens a critical case and freezes the customer.
+- [x] A per-person annual foreign allowance on FX (threshold 28), monthly credit statements and default notices
+  (threshold 27), and a data-classification register checked by the gate.
 - [ ] **Owner.** Choose and license the sanctions list source (`docs/SANCTIONS_SOURCES.md`). Screening runs on a
   one-name fixture today.
 
