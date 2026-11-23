@@ -1,0 +1,327 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workspace
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+automountServiceAccountToken: false
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: workspace-tls
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+spec:
+  secretName: workspace-tls
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  uris:
+  - spiffe://forge/svc/svc-workspace
+  dnsNames:
+  - workspace.forge.svc.cluster.local
+  usages:
+  - server auth
+  - client auth
+  - digital signature
+  issuerRef:
+    name: forge-service-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workspace
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: workspace
+      app.kubernetes.io/part-of: forge
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: workspace
+        app.kubernetes.io/part-of: forge
+    spec:
+      serviceAccountName: workspace
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: workspace
+            app.kubernetes.io/part-of: forge
+      containers:
+      - name: workspace
+        image: registry.PLACEHOLDER/forge/workspace-api:TAG
+        ports:
+        - name: https
+          containerPort: 8300
+        - name: health
+          containerPort: 8181
+        env:
+        - name: FORGE_ENV
+          value: production
+        - name: HEALTH_ADDR
+          value: :8181
+        - name: WORKSPACE_ADDR
+          value: :8300
+        - name: TLS_CERT_FILE
+          value: /tls/tls.crt
+        - name: TLS_KEY_FILE
+          value: /tls/tls.key
+        - name: TLS_CA_FILE
+          value: /tls/ca.crt
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://otel-collector.forge-observability.svc.cluster.local:4318
+        - name: CONSOLIDATED_URL
+          value: https://consolidated.forge.svc.cluster.local:8096
+        - name: PAYMENTS_URL
+          value: https://payments.forge.svc.cluster.local:8085
+        - name: FX_URL
+          value: https://fx.forge.svc.cluster.local:8100
+        - name: PAYOUTS_URL
+          value: https://payouts.forge.svc.cluster.local:8200
+        - name: ONBOARDING_URL
+          value: https://onboarding.forge.svc.cluster.local:8083
+        - name: DEPOSITS_URL
+          value: https://deposits.forge.svc.cluster.local:8110
+        - name: LENDING_URL
+          value: https://lending.forge.svc.cluster.local:8120
+        - name: ACQUIRING_URL
+          value: https://acquiring.forge.svc.cluster.local:8130
+        - name: PARTY_URL
+          value: https://party.forge.svc.cluster.local:8081
+        - name: CONSENT_URL
+          value: https://consent.forge.svc.cluster.local:8082
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 10
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 2
+          failureThreshold: 60
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: tls
+          mountPath: /tls
+          readOnly: true
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tls
+        secret:
+          secretName: workspace-tls
+      - name: secrets
+        secret:
+          secretName: workspace-secrets
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workspace
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+spec:
+  selector:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+  ports:
+  - name: https
+    port: 8300
+    targetPort: https
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: workspace
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: workspace
+      app.kubernetes.io/part-of: forge
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: workspace
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: workspace
+    app.kubernetes.io/part-of: forge
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: workspace
+      app.kubernetes.io/part-of: forge
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          forge.io/ingress: 'true'
+    ports:
+    - protocol: TCP
+      port: 8300
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-observability
+    ports:
+    - protocol: TCP
+      port: 4318
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-data
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 9093
+    - protocol: TCP
+      port: 7233
+    - protocol: TCP
+      port: 3001
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: acquiring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: consent
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: consolidated
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: deposits
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: fx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: lending
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: onboarding
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: party
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: payments
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: payouts
+    ports:
+    - protocol: TCP
+      port: 8130
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8096
+    - protocol: TCP
+      port: 8110
+    - protocol: TCP
+      port: 8100
+    - protocol: TCP
+      port: 8120
+    - protocol: TCP
+      port: 8083
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 8085
+    - protocol: TCP
+      port: 8200
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443

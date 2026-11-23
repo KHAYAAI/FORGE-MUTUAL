@@ -4,7 +4,7 @@
 > **Every seat is VACANT except the founder's.** Replace `VACANT` with the appointed person's name only after the
 > appointment is made in writing and, for a director or executive, the fit-and-proper assessment is done.
 
-**36 seats; 2 with a name; 34 vacant.**
+**37 seats; 2 with a name; 35 vacant.**
 
 | # | Role | Line | Holder | Reports to | Priority |
 |---|---|---|---|---|---|
@@ -44,6 +44,7 @@
 | R34 | External Auditor (two firms if the PA requires) | External | VACANT - to be appointed | Board Audit Committee | P0 before licence application |
 | R35 | Sponsor Bank Relationship Manager (counterparty) | External | VACANT - sponsor not chosen | COO | P0 now |
 | R36 | Member Relations Lead (mutual route only) | First | VACANT - to be appointed (only if the mutual route is confirmed) | Company Secretary | P2 before the first AGM |
+| R37 | Relationship Managers (client service) | First | VACANT - to be appointed | Head of Product | P2 before pilot |
 
 ## What each seat needs
 
@@ -406,4 +407,14 @@
 - **Must never be the same person as:** R06 MLRO
 - **Why it is required:** LIC-07
 - **When:** P2 before the first AGM
+
+### R37 · Relationship Managers (client service)
+
+- **Holder:** VACANT - to be appointed (Vacant)
+- **Must have:** A named banker per client business: knows the account, the products and the customer's goals; escalates, never advises on investments
+- **Nice to have:** Technology and crypto-sector experience
+- **May share the seat with:** R18 Head of Product (start)
+- **Must never be the same person as:** R06 MLRO; R16 Credit Officers
+- **Why it is required:** FSCA-TCF
+- **When:** P2 before pilot
 

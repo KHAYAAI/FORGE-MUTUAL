@@ -37,7 +37,7 @@ mkdir -p .pki
 sed -i -e '/^STACK_TLS=/d' -e '/^STACK_SCHEME=/d' "$env_file"
 scheme=http
 if [ "$mtls" = 1 ]; then
-  ./pki.sh .pki svc-deposits svc-lending svc-acquiring svc-ledger svc-party svc-consent svc-policy svc-onboarding svc-consolidated-view svc-notifications \
+  ./pki.sh .pki svc-deposits svc-lending svc-acquiring svc-cards svc-partner-offers svc-ledger svc-party svc-consent svc-policy svc-onboarding svc-consolidated-view svc-notifications \
     svc-audit svc-fx svc-rails svc-partner-router svc-payments svc-payouts svc-reconciliation svc-treasury-risk \
     svc-compliance svc-backoffice-api svc-workspace svc-web svc-backoffice-web svc-stack-journeys svc-stack-probe
   printf 'STACK_TLS=1\nSTACK_SCHEME=https\n' >> "$env_file"
@@ -58,11 +58,12 @@ ensure PARTY_INDEX_KEY b64key
 ensure NOTIFICATIONS_KEY b64key
 ensure KYC_WEBHOOK_SECRET hex32
 ensure ACQUIRER_WEBHOOK_SECRET hex32
+ensure CARD_WEBHOOK_SECRET hex32
 
 # The services read these as files (NAME_FILE), as production requires, never from the environment. .secrets/ is
 # written from .env on every start, readable by the services' unprivileged user, and never committed.
 mkdir -p .secrets
-for name in PARTY_SEAL_KEY PARTY_INDEX_KEY NOTIFICATIONS_KEY KYC_WEBHOOK_SECRET ACQUIRER_WEBHOOK_SECRET; do
+for name in PARTY_SEAL_KEY PARTY_INDEX_KEY NOTIFICATIONS_KEY KYC_WEBHOOK_SECRET ACQUIRER_WEBHOOK_SECRET CARD_WEBHOOK_SECRET; do
   value="$(grep "^$name=" "$env_file" | head -1 | cut -d= -f2-)"
   rm -f ".secrets/$name.new"
   printf '%s' "$value" > ".secrets/$name.new"
@@ -90,6 +91,8 @@ images=(
   "forge/deposits-service:dev services/bank/deposits-service deposits-service"
   "forge/lending-service:dev services/bank/lending-service lending-service"
   "forge/acquiring-service:dev services/bank/acquiring-service acquiring-service"
+  "forge/card-service:dev services/bank/card-service card-service"
+  "forge/partner-offers:dev services/platform/partner-offers partner-offers"
   "forge/rails-gateway:dev services/bank/rails-gateway rails-gateway"
   "forge/partner-bank-router:dev services/bank/partner-bank-router partner-bank-router"
   "forge/payments-orchestrator:dev services/bank/payments-orchestrator payments-orchestrator"
@@ -134,7 +137,7 @@ probe=(curl -s -o /dev/null -w '%{http_code}' --max-time 2 -X POST)
 [ "$mtls" = 1 ] && probe+=(--cacert .pki/ca.crt --cert .pki/svc-stack-probe.crt --key .pki/svc-stack-probe.key)
 declare -A ports=(
   [ledger]=8070 [party]=8081 [consent]=8082 [onboarding]=8083 [policy]=8084 [payments]=8085 [rails]=8086
-  [partner-router]=8099 [fx]=8100 [deposits]=8110 [lending]=8120 [acquiring]=8130 [payouts]=8200 [recon]=8093 [treasury]=8095 [consolidated]=8096
+  [partner-router]=8099 [fx]=8100 [deposits]=8110 [lending]=8120 [acquiring]=8130 [cards]=8140 [partner-offers]=8150 [payouts]=8200 [recon]=8093 [treasury]=8095 [consolidated]=8096
   [notifications]=8097 [audit]=8094 [compliance]=8400 [backoffice]=8500 [workspace]=8300
 )
 failed=()

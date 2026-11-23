@@ -439,6 +439,45 @@ services:
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
     volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
+  cards:
+    <<: *go
+    image: forge/card-service:dev
+    network_mode: host
+    environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-cards.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-cards.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/cards?sslmode=disable
+      CARDS_CALLERS_FILE: /stack/callers/cards.json
+      CARDS_ADDR: ":8140"
+      CARDS_RECOVER_INTERVAL: 1m
+      # The only processor built is the simulator (VERIFY-PROCESSOR); production refuses it.
+      CARD_PROCESSOR: sim
+      CARD_WEBHOOK_SECRET_FILE: /stack/secrets/CARD_WEBHOOK_SECRET
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+
+  partner-offers:
+    <<: *go
+    image: forge/partner-offers:dev
+    network_mode: host
+    environment:
+      TLS_CERT_FILE: ${STACK_TLS:+/stack/pki/svc-partner-offers.crt}
+      TLS_KEY_FILE: ${STACK_TLS:+/stack/pki/svc-partner-offers.key}
+      TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
+      <<: *dev
+      DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/partner_offers?sslmode=disable
+      PARTNER_OFFERS_CALLERS_FILE: /stack/callers/partner-offers.json
+      PARTNER_OFFERS_ADDR: ":8150"
+      # Off: third-party offers are not used. Every product is provided, licensed and monitored by its provider.
+      PARTNER_OFFERS_ENABLED: "false"
+      CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
+      PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+    volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
+
   rails:
     <<: *go
     image: forge/rails-gateway:dev

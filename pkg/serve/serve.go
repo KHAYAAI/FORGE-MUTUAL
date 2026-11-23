@@ -32,6 +32,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/khayaai/forge-mutual/pkg/callerauth"
@@ -144,6 +145,13 @@ func Run(ctx context.Context, srv *http.Server, log *slog.Logger) error {
 	tlsOn := srv.TLSConfig != nil && (len(srv.TLSConfig.Certificates) > 0 || srv.TLSConfig.GetCertificate != nil)
 	mtls := tlsOn && srv.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert
 	errc := make(chan error, 1)
+	ready := &atomic.Bool{}
+	ready.Store(true)
+	stopHealth, err := startHealth(os.Getenv("HEALTH_ADDR"), ready, log)
+	if err != nil {
+		return err
+	}
+	defer stopHealth()
 	go func() {
 		if tlsOn {
 			errc <- srv.ListenAndServeTLS("", "")
@@ -154,6 +162,7 @@ func Run(ctx context.Context, srv *http.Server, log *slog.Logger) error {
 	log.Info("listening", "addr", srv.Addr, "tls", tlsOn, "mutual_tls", mtls)
 	select {
 	case <-ctx.Done():
+		ready.Store(false) // tell the orchestrator to stop sending traffic before the listener closes
 		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		return srv.Shutdown(shutdown)

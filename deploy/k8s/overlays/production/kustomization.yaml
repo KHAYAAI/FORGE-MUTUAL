@@ -1,0 +1,76 @@
+# Production overlay: pins every image. CI replaces the registry and tag from the release; nothing else
+# should change here. PLACEHOLDER values in ../../base wait on the decisions listed in ../../README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+images:
+- name: registry.PLACEHOLDER/forge/acquiring-service
+  newName: registry.PLACEHOLDER/forge/acquiring-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/audit-service
+  newName: registry.PLACEHOLDER/forge/audit-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/backoffice-api
+  newName: registry.PLACEHOLDER/forge/backoffice-api
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/card-service
+  newName: registry.PLACEHOLDER/forge/card-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/compliance-engine
+  newName: registry.PLACEHOLDER/forge/compliance-engine
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/consent-service
+  newName: registry.PLACEHOLDER/forge/consent-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/consolidated-view
+  newName: registry.PLACEHOLDER/forge/consolidated-view
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/deposits-service
+  newName: registry.PLACEHOLDER/forge/deposits-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/fx-service
+  newName: registry.PLACEHOLDER/forge/fx-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/ledger-gateway-bank
+  newName: registry.PLACEHOLDER/forge/ledger-gateway-bank
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/lending-service
+  newName: registry.PLACEHOLDER/forge/lending-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/notifications
+  newName: registry.PLACEHOLDER/forge/notifications
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/onboarding
+  newName: registry.PLACEHOLDER/forge/onboarding
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/partner-bank-router
+  newName: registry.PLACEHOLDER/forge/partner-bank-router
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/partner-offers
+  newName: registry.PLACEHOLDER/forge/partner-offers
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/party-service
+  newName: registry.PLACEHOLDER/forge/party-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/payments-orchestrator
+  newName: registry.PLACEHOLDER/forge/payments-orchestrator
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/payouts-service
+  newName: registry.PLACEHOLDER/forge/payouts-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/policy-service
+  newName: registry.PLACEHOLDER/forge/policy-service
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/rails-gateway
+  newName: registry.PLACEHOLDER/forge/rails-gateway
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/reconciliation
+  newName: registry.PLACEHOLDER/forge/reconciliation
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/treasury-risk
+  newName: registry.PLACEHOLDER/forge/treasury-risk
+  newTag: TAG
+- name: registry.PLACEHOLDER/forge/workspace-api
+  newName: registry.PLACEHOLDER/forge/workspace-api
+  newTag: TAG

@@ -40,6 +40,8 @@ recorded here.
 | 26 | Deposit insurance cover per depositor | R100 000 | `internal/prudential/scv.go` `CoverLimit` | CFO | _unassigned_ | Placeholder: confirm the CODI limit and which deposits qualify |
 | 27 | Default notice timing | issued at 20 days overdue; 14 days to respond | `internal/lending/notices.go` | Risk owner (credit) and legal | _unassigned_ | Placeholder: verify against NCA s.129 and its timelines |
 | 28 | Individual annual foreign allowance | R1 000 000 a calendar year (`FX_PERSON_ANNUAL_ALLOWANCE_MINOR`) | `services/bank/fx-service/internal/store` | MLRO and Head of Treasury | _unassigned_ | Placeholder: verify the single discretionary allowance and the tax-clearance route with an authorised dealer |
+| 29 | Card limits: per transaction and per day | default R10 000 and R25 000; ceilings R50 000 and R100 000 (`CARDS_DEFAULT_*`, `CARDS_MAX_*`) | `services/bank/card-service/cmd/card-service/main.go` | Risk owner and Head of Product | _unassigned_ | Placeholder: set from fraud loss data and the programme manager's rules |
+| 30 | Card blocked merchant categories and open cards per party | MCC 7995, 7801, 7802; 5 open cards (`CARDS_BLOCKED_MCC`, `CARDS_MAX_PER_PARTY`) | `services/bank/card-service/cmd/card-service/main.go` | CCO and Head of Product | _unassigned_ | Placeholder: confirm gambling categories with compliance; decide the policy on crypto-exchange merchants |
 
 Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).

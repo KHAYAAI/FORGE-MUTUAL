@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package forge.cards.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/cards/v1;cardsv1";
+
+// CardService issues virtual debit cards on a customer's own account and shows what was spent. Card numbers never
+// reach Forge: the processor holds them and shows them to the cardholder directly (DisplayCard). Forge holds a token,
+// the last four digits and the expiry.
+//
+// Status: built against a processor simulator, off in production until FORGE_APPROVAL_CARDS names the approving
+// decision (pkg/licence), and not yet reachable from the customer app. See services/bank/card-service/SPEC.md.
+service CardService {
+  // IssueCard creates a virtual card on an account the party owns. The key makes a retry safe.
+  rpc IssueCard(IssueCardRequest) returns (IssueCardResponse);
+  rpc ListCards(ListCardsRequest) returns (ListCardsResponse);
+  rpc GetCard(GetCardRequest) returns (GetCardResponse);
+  // SetCardStatus freezes, unfreezes or closes a card. A closed card stays closed.
+  rpc SetCardStatus(SetCardStatusRequest) returns (SetCardStatusResponse);
+  // SetLimits changes a card's own limits, never above the bank's ceilings.
+  rpc SetLimits(SetLimitsRequest) returns (SetLimitsResponse);
+  rpc ListAuthorisations(ListAuthorisationsRequest) returns (ListAuthorisationsResponse);
+  // DisplayCard returns a short-lived address on the processor where the cardholder sees the number and security code.
+  rpc DisplayCard(DisplayCardRequest) returns (DisplayCardResponse);
+}
+
+message Card {
+  string card_id = 1;
+  string party_id = 2;
+  string account_id = 3;
+  string label = 4;
+  string last4 = 5;
+  uint32 expiry_month = 6;
+  uint32 expiry_year = 7;
+  string status = 8;                   // ACTIVE, FROZEN or CLOSED
+  string per_transaction_limit_minor = 9; // rand cents
+  string daily_limit_minor = 10;
+  string created_at = 11;              // RFC 3339
+  string network = 12;                 // "SIMULATED" until a processor is chosen
+}
+
+message IssueCardRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string account_id = 3;
+  string label = 4; // for example "Online subscriptions"
+}
+message IssueCardResponse { Card card = 1; }
+
+message ListCardsRequest { string party_id = 1; }
+message ListCardsResponse { repeated Card cards = 1; }
+
+message GetCardRequest {
+  string party_id = 1;
+  string card_id = 2;
+}
+message GetCardResponse { Card card = 1; }
+
+message SetCardStatusRequest {
+  string party_id = 1;
+  string card_id = 2;
+  string status = 3; // ACTIVE, FROZEN or CLOSED
+  string actor = 4;
+}
+message SetCardStatusResponse { Card card = 1; }
+
+message SetLimitsRequest {
+  string party_id = 1;
+  string card_id = 2;
+  string per_transaction_limit_minor = 3;
+  string daily_limit_minor = 4;
+}
+message SetLimitsResponse { Card card = 1; }
+
+message Authorisation {
+  string auth_id = 1;
+  string card_id = 2;
+  string merchant_name = 3;
+  string mcc = 4;
+  string country = 5;
+  string currency = 6;
+  string amount_minor = 7;
+  string status = 8;        // HELD, CAPTURED, REVERSED, REFUNDED, DECLINED, EXCEPTION
+  string decline_reason = 9; // set when DECLINED; never a financial-crime reason
+  string captured_minor = 10;
+  string refunded_minor = 11;
+  string at = 12;
+}
+
+message ListAuthorisationsRequest {
+  string party_id = 1;
+  string card_id = 2;
+  uint32 limit = 3; // 1 to 200, default 50
+}
+message ListAuthorisationsResponse { repeated Authorisation authorisations = 1; }
+
+message DisplayCardRequest {
+  string party_id = 1;
+  string card_id = 2;
+}
+message DisplayCardResponse {
+  string url = 1;        // on the processor, not on Forge
+  string expires_at = 2; // RFC 3339; about a minute
+}

@@ -16,7 +16,7 @@ databases=(
   ledger_pg_test recon_test payments_test inbound_test audit_test treasury_test
   compliance_test policy_test party_test consent_test outbox_test fx_test payouts_test
   consolidated_test core_bridge_test partner_router_test notifications_test eventbus_test
-  deposits_test lending_test acquiring_test membership_test
+  deposits_test lending_test acquiring_test membership_test cards_test partner_offers_test
 )
 
 for db in "${databases[@]}"; do
@@ -48,6 +48,8 @@ done
   echo "export LENDING_TEST_DSN='$host/lending_test?sslmode=disable'"
   echo "export ACQUIRING_TEST_DSN='$host/acquiring_test?sslmode=disable'"
   echo "export MEMBERSHIP_TEST_DSN='$host/membership_test?sslmode=disable'"
+  echo "export CARDS_TEST_DSN='$host/cards_test?sslmode=disable'"
+  echo "export PARTNER_OFFERS_TEST_DSN='$host/partner_offers_test?sslmode=disable'"
   echo "export EVENTBUS_TEST_DSN='$host/eventbus_test?sslmode=disable'"
   echo "export KAFKA_TEST_BROKERS='$brokers'"
 } > "$out"

@@ -1,4 +1,7 @@
 {
+  "svc-cards": [
+    "GetParty"
+  ],
   "svc-compliance": [
     "ListParties",
     "SetStatus"
@@ -12,6 +15,9 @@
     "GetParty",
     "SetStatus",
     "SetTier"
+  ],
+  "svc-partner-offers": [
+    "GetParty"
   ],
   "svc-payments": [
     "GetParty"

@@ -62,6 +62,7 @@ flowchart LR
 | [Risk Management and Compliance Programme (FICA s.42)](../regulatory/policies/rmcp.md) | Money Laundering Reporting Officer (R06, VACANT) | Board | Yearly | FIC-01, FIC-10 | Draft |
 | [Cash threshold reporting procedure](../regulatory/policies/cash-threshold-reporting-procedure.md) | Money Laundering Reporting Officer (R06, VACANT) | Financial Crime Committee | Yearly | FIC-07 | Draft 0.1 |
 | [Complaints and treating customers fairly policy](../regulatory/policies/complaints-and-fair-treatment-policy.md) | Head of Customer Service and Complaints (R19, VACANT) | Board, on Social and Ethics Committee recommendation | Yearly | BR-02 | Draft 0.1 |
+| [Cash policy](../regulatory/policies/cash-policy.md) | Money Laundering Reporting Officer (R06, VACANT) | Board, on Risk and Capital Management Committee recommendation | Yearly, and before any cash channel is added | FIC-07, FIC-10 | Draft 0.1 |
 
 ## Assurance
 

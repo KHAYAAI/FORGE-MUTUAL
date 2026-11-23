@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- acquiring.yaml
+- audit.yaml
+- backoffice.yaml
+- cards.yaml
+- compliance.yaml
+- consent.yaml
+- consolidated.yaml
+- deposits.yaml
+- fx.yaml
+- ledger.yaml
+- lending.yaml
+- namespace.yaml
+- notifications.yaml
+- onboarding.yaml
+- partner-offers.yaml
+- partner-router.yaml
+- party.yaml
+- payments.yaml
+- payouts.yaml
+- policy.yaml
+- rails.yaml
+- recon.yaml
+- treasury.yaml
+- workspace.yaml
