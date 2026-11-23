@@ -81,15 +81,22 @@ benefits; one page cites a qualifying income of about R800 000 a year (indicativ
 
 Honest list of what the two banks do that Forge does not yet:
 
-1. **No dedicated relationship manager** (Investec's signature). Add a seat to the roster and a service standard.
+1. **Relationship managers: standard written, no one hired.** Seat R37 and `docs/governance/SERVICE_STANDARD.md`; the client
+   record, queue and reporting it needs are not built.
 2. **Card issuing: built, not usable.** `services/bank/card-service` issues virtual debit cards on a customer's account
    and approves each purchase against the ledger in real time (holds, limits, clearing, reversal, refund), tested against
    a processor simulator. It needs a card programme manager or sponsor, a processor, and the sponsor's and regulator's
    agreement before it can be switched on, and it is not yet reachable from the customer app.
-3. **No investment or wealth products.** Out of scope; a partnership is the realistic route.
-4. **No stablecoin or on-chain settlement.** Designed, not built, and needs a licence decision and a regulator view.
-5. **No branches, ATMs or cash.** By design: Forge takes no cash today (register row FIC-07).
-6. **No licence, no sponsor, no customers.** Everything above is software and documents until that changes.
+3. **Investments and wealth: a referral partnership, not a product.** `docs/products/WEALTH_PARTNERSHIP.md` sets out the
+   introducer model, consent and a recommendation to wait until after the pilot. Nothing built.
+4. **Stablecoin or on-chain settlement: decision memo and invariants written, no service.** The architecture forbids token
+   assets in the bank ledger without an own licence, and puts digital assets in a separate entity. `docs/products/DIGITAL_ASSETS.md`
+   sets out three options and recommends a licensed-partner route first; `pkg/digitalassets` holds the tested reserve,
+   wallet and travel-rule checks any future build must pass.
+5. **No branches, ATMs or cash, by design.** `docs/regulatory/policies/cash-policy.md` says so and says what must be true
+   before that changes (register row FIC-07).
+6. **No licence, no sponsor, no customers.** Cannot be built. Everything above is software and documents until that changes;
+   see `docs/governance/SPONSOR_BANK_PITCH.md` and `docs/governance/LAWYER_BRIEF.md` for the route.
 
 ## Why this model
 

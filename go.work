@@ -5,6 +5,7 @@ use (
 	./pkg/banklayer
 	./pkg/banklayer/bootstrap
 	./pkg/callerauth
+	./pkg/digitalassets
 	./pkg/eventbus
 	./pkg/events
 	./pkg/licence

@@ -21,7 +21,9 @@
 5. **Crypto:** what a bank or mutual bank may do for FSCA-licensed crypto-asset service providers, and the
    PA's current position on banks holding or lending against crypto assets.
 6. **Credit:** NCR registration, and the default notice and statement wording we built (NCA s.108 and s.129).
-7. **Outsourcing and cloud:** which of our providers (WorkOS, Didit, hosting) are material, and what notices to the PA
+7. **Digital assets:** the eight questions in `docs/products/DIGITAL_ASSETS.md`: whether a tokenised deposit is a deposit, the
+   FSCA's position, reserve and capital treatment, the travel rule, and exchange control.
+8. **Outsourcing and cloud:** which of our providers (WorkOS, Didit, hosting) are material, and what notices to the PA
    are needed.
 
 **Phase 2: the application (quoted separately)**
