@@ -22,6 +22,9 @@ data:
       "svc-onboarding": [
         "Grant"
       ],
+      "svc-partner-offers": [
+        "Check"
+      ],
       "svc-workspace": [
         "List"
       ]
@@ -244,6 +247,9 @@ spec:
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: onboarding
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: partner-offers
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: workspace

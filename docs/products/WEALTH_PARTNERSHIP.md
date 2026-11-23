@@ -1,6 +1,8 @@
 # Investments and wealth: a partnership, not a product
 
-> **DRAFT.** Investec's model combines banking with investment, estate and tax advice. Forge will not provide those
+> **DRAFT.** The introducer layer is now built (`services/platform/partner-offers`, `SPEC.md` there) and is **switched off**: every
+> product is provided, licensed and monitored by a third party, and the code says so in every offer. No partner is chosen.
+> Investec's model combines banking with investment, estate and tax advice. Forge will not provide those
 > itself: they need separate licences, people and a different risk culture. The realistic route is an **introducer
 > (referral) partnership** with a licensed provider. Nothing here is built and no partner is approached. Not legal advice;
 > the lawyer (`docs/governance/LAWYER_BRIEF.md`) settles every regulatory point below.
@@ -57,8 +59,8 @@ conversations; the sponsor bank may have a preferred partner.
 
 | Item | Status |
 |---|---|
-| A referral register and consent screen in the back office | Not built |
-| A consent purpose "share with an investment partner" in the consent service | Not built (the service supports purposes generally) |
+| A referral register and consent screen in the back office | The register and the rules are built (`partner-offers`); the screens are not |
+| A consent purpose "share with an investment partner" in the consent service | Used by `partner-offers` as `share_with_partner:<provider>`; the screen that asks is not built |
 | An API link to a chosen partner | Not built; depends on the partner |
 | A referral-fee ledger entry (income) | Not built; use FEE income (2002) |
 

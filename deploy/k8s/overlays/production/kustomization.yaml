@@ -47,6 +47,9 @@ images:
 - name: registry.PLACEHOLDER/forge/partner-bank-router
   newName: registry.PLACEHOLDER/forge/partner-bank-router
   newTag: TAG
+- name: registry.PLACEHOLDER/forge/partner-offers
+  newName: registry.PLACEHOLDER/forge/partner-offers
+  newTag: TAG
 - name: registry.PLACEHOLDER/forge/party-service
   newName: registry.PLACEHOLDER/forge/party-service
   newTag: TAG

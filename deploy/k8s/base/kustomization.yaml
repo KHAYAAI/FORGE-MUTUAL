@@ -15,6 +15,7 @@ resources:
 - namespace.yaml
 - notifications.yaml
 - onboarding.yaml
+- partner-offers.yaml
 - partner-router.yaml
 - party.yaml
 - payments.yaml

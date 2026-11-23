@@ -35,6 +35,7 @@ use (
 	./services/platform/consolidated-view
 	./services/platform/notifications
 	./services/platform/onboarding
+	./services/platform/partner-offers
 	./services/platform/party-service
 	./services/platform/workspace-api
 	./services/shared/audit-service

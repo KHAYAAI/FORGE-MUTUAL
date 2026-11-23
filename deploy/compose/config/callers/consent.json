@@ -2,6 +2,9 @@
   "svc-onboarding": [
     "Grant"
   ],
+  "svc-partner-offers": [
+    "Check"
+  ],
   "svc-workspace": [
     "List"
   ]

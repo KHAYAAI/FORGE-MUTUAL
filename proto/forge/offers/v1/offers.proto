@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package forge.offers.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;offersv1";
+
+// Third-party offers: investments and crypto-asset services that a licensed provider supplies, and Forge only introduces.
+//
+// THE RULE THIS SERVICE EXISTS TO ENFORCE: every product here is provided, licensed and monitored by a third party,
+// never by Forge Mutual. Forge does not provide it, advise on it, hold the customer's money or assets in it, or guarantee
+// it. The statement saying so is generated from the provider's verified licence by code, not typed by hand, it accompanies
+// every offer, and a customer must acknowledge it (by its hash) before a referral is made. A product whose provider's
+// licence has not been verified in the last 12 months is not shown at all.
+//
+// Status: built, tested, OFF by default (PARTNER_OFFERS_ENABLED) and off in production until FORGE_APPROVAL_PARTNER_OFFERS
+// names the approving decision (pkg/licence). Not reachable from the customer app. No provider is chosen.
+service PartnerOffersService {
+  // ListOffers returns the offers a party may see, each with its mandatory statement. Hidden: any offer whose provider is
+  // not active, whose licence is unverified, stale or expired, or whose own status is not active.
+  rpc ListOffers(ListOffersRequest) returns (ListOffersResponse);
+  // CreateReferral records that the party read and acknowledged the statement and consented to share their details with the
+  // provider, and returns the provider's own address where the party continues. Forge takes no money and gives no advice.
+  rpc CreateReferral(CreateReferralRequest) returns (CreateReferralResponse);
+  rpc ListReferrals(ListReferralsRequest) returns (ListReferralsResponse);
+}
+
+// Compliance's side. Registering a provider and verifying its licence are two different people.
+service PartnerAdminService {
+  rpc RegisterProvider(RegisterProviderRequest) returns (RegisterProviderResponse);
+  // VerifyLicence records that someone other than the registrant checked the licence on the regulator's own register.
+  rpc VerifyLicence(VerifyLicenceRequest) returns (VerifyLicenceResponse);
+  rpc SuspendProvider(SuspendProviderRequest) returns (SuspendProviderResponse);
+  rpc UpsertOffer(UpsertOfferRequest) returns (UpsertOfferResponse);
+  rpc SetOfferStatus(SetOfferStatusRequest) returns (SetOfferStatusResponse);
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+}
+
+message Offer {
+  string offer_id = 1;
+  string category = 2;   // INVESTMENTS or CRYPTO_ASSETS
+  string title = 3;
+  string summary = 4;
+  string provider_name = 5;
+  string licence_type = 6;   // FSP or CASP
+  string licence_number = 7;
+  string regulator = 8;      // for example "FSCA"
+  string statement = 9;      // the mandatory third-party statement, generated; show it in full
+  string statement_hash = 10; // sent back in CreateReferral to prove this exact text was acknowledged
+  string fee_disclosure = 11;
+}
+
+message ListOffersRequest {
+  string party_id = 1;
+  string category = 2; // optional filter
+}
+message ListOffersResponse { repeated Offer offers = 1; }
+
+message CreateReferralRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string offer_id = 3;
+  bool acknowledged_third_party = 4; // must be true
+  string statement_hash = 5;         // must match the offer's current statement
+}
+message Referral {
+  string referral_id = 1;
+  string offer_id = 2;
+  string provider_name = 3;
+  string handoff_url = 4; // the provider's address; carries the referral id and nothing personal
+  string created_at = 5;
+}
+message CreateReferralResponse { Referral referral = 1; }
+
+message ListReferralsRequest { string party_id = 1; }
+message ListReferralsResponse { repeated Referral referrals = 1; }
+
+message RegisterProviderRequest {
+  string provider_id = 1;
+  string name = 2;
+  string licence_type = 3;  // FSP or CASP
+  string regulator = 4;
+  string licence_number = 5;
+  string licence_source_url = 6; // the regulator's register entry, https
+  string actor = 7;
+}
+message Provider {
+  string provider_id = 1;
+  string name = 2;
+  string licence_type = 3;
+  string regulator = 4;
+  string licence_number = 5;
+  string status = 6;               // PENDING, ACTIVE, SUSPENDED or WITHDRAWN
+  string licence_verified_at = 7;
+  string licence_verified_by = 8;
+  string licence_expires_at = 9;
+}
+message RegisterProviderResponse { Provider provider = 1; }
+
+message VerifyLicenceRequest {
+  string provider_id = 1;
+  string actor = 2;
+  string licence_expires_at = 3; // RFC 3339 date; empty if the register shows no expiry
+}
+message VerifyLicenceResponse { Provider provider = 1; }
+
+message SuspendProviderRequest {
+  string provider_id = 1;
+  string reason = 2;
+  string actor = 3;
+}
+message SuspendProviderResponse { Provider provider = 1; }
+
+message UpsertOfferRequest {
+  string offer_id = 1;
+  string provider_id = 2;
+  string category = 3;
+  string title = 4;
+  string summary = 5;
+  string handoff_url = 6;      // https, on the provider's own domain
+  string fee_disclosure = 7;   // required: what, if anything, Forge is paid
+  string actor = 8;
+}
+message UpsertOfferResponse { Offer offer = 1; }
+
+message SetOfferStatusRequest {
+  string offer_id = 1;
+  string status = 2; // ACTIVE or WITHDRAWN
+  string actor = 3;
+}
+message SetOfferStatusResponse { string status = 1; }
+
+message ListProvidersRequest {}
+message ListProvidersResponse { repeated Provider providers = 1; }

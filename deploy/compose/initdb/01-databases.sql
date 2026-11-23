@@ -10,6 +10,7 @@ create database deposits;
 create database lending;
 create database acquiring;
 create database cards;
+create database partner_offers;
 create database consolidated;
 create database recon;
 create database treasury;

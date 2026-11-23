@@ -36,6 +36,9 @@ data:
         "SetStatus",
         "SetTier"
       ],
+      "svc-partner-offers": [
+        "GetParty"
+      ],
       "svc-payments": [
         "GetParty"
       ],
@@ -274,6 +277,9 @@ spec:
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: onboarding
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: partner-offers
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: payments

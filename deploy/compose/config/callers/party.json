@@ -16,6 +16,9 @@
     "SetStatus",
     "SetTier"
   ],
+  "svc-partner-offers": [
+    "GetParty"
+  ],
   "svc-payments": [
     "GetParty"
   ],

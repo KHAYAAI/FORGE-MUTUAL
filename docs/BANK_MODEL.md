@@ -88,7 +88,9 @@ Honest list of what the two banks do that Forge does not yet:
    a processor simulator. It needs a card programme manager or sponsor, a processor, and the sponsor's and regulator's
    agreement before it can be switched on, and it is not yet reachable from the customer app.
 3. **Investments and wealth: a referral partnership, not a product.** `docs/products/WEALTH_PARTNERSHIP.md` sets out the
-   introducer model, consent and a recommendation to wait until after the pilot. Nothing built.
+   introducer model, consent and a recommendation to wait until after the pilot. **The introducer layer is built and switched off**
+   (`services/platform/partner-offers`): every product is provided, licensed and monitored by a third party and the code
+   says so in every offer; no provider is chosen.
 4. **Stablecoin or on-chain settlement: decision memo and invariants written, no service.** The architecture forbids token
    assets in the bank ledger without an own licence, and puts digital assets in a separate entity. `docs/products/DIGITAL_ASSETS.md`
    sets out three options and recommends a licensed-partner route first; `pkg/digitalassets` holds the tested reserve,

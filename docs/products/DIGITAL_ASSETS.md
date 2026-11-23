@@ -63,6 +63,9 @@ FSCA-licensed crypto businesses, no crypto on our own balance sheet). B and C ch
 
 ## What is built
 
+- **Option A's front door:** `services/platform/partner-offers` can present a **licensed crypto-asset service provider's** on/off-ramp as a
+  third-party product (category `CRYPTO_ASSETS`, CASP licence required). Forge never touches the token. Every offer states that
+  it is provided, licensed and monitored by the provider, and the whole layer is **switched off**. No provider is chosen.
 - `pkg/digitalassets`: `Attest` (reserve cover), `Wallet.Usable` (fail-closed wallet checks) and `TravelRule`. It
   holds no state, calls no network and writes to no ledger. It exists so that whoever builds A, B or C starts from tested
   invariants, and so CI can hold them to those invariants.
