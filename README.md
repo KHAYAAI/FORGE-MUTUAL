@@ -22,6 +22,7 @@ Production infrastructure: none. Software gate (`make ci-db`): passing.
 ### Hosting
 
 Fly.io for the synthetic-data preview, AWS (Cape Town proposed) for production: [`docs/HOSTING.md`](docs/HOSTING.md).
+The AWS landing zone is written as Terraform and checked on paper, never applied: [`deploy/aws`](deploy/aws/README.md).
 
 ### The model
 

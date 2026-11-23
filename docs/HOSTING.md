@@ -64,6 +64,41 @@ So the **database layer** could be created from here; **deploying the services**
 organisation is yours. You ruled out A-CARD accounts for this project. Confirm whether `tebogo-mvelase` is the
 organisation you want Forge in, or whether you will create a separate Forge organisation.
 
+## Cost, and what is already in the Fly organisation
+
+**Found, not created by Forge:** a Managed Postgres cluster named `durin-staging-db` (plan `dev-256`, Frankfurt, ready)
+already exists in `tebogo-mvelase`, created on 2026-11-23 at 21:05 UTC, during this session but not by it. "Durin" is
+not a Forge name, so the organisation is evidently shared with another project. That is a second reason to give Forge
+its own Fly organisation. It was not touched, and nothing of Forge's should be created next to it until you decide.
+
+**Prices Fly returns for Managed Postgres** (read from the account, US dollars a month):
+
+| Plan | CPU | Memory | $/month |
+|---|---|---|---|
+| dev-256 | 1 shared | 256 MB | 4 |
+| basic | 2 shared | 1 GB | 38 |
+| starter | 2 shared | 2 GB | 72 |
+| launch | 2 performance | 8 GB | 282 |
+| scale | 4 performance | 32 GB | 962 |
+| Performance | 8 performance | 64 GB | 1 922 |
+
+One cluster can hold many databases, so the preview needs one cluster, not 20. **`starter` ($72) is the smallest I would
+run all 20 service databases on.** Machine, volume and bandwidth prices were not available to me and are not in this table.
+
+**Proposed ceiling for the preview: US$300 a month** (PROPOSED, for you to accept or change). Rough build-up, with
+everything except the Postgres row an unverified estimate from general knowledge:
+
+| Item | Estimate $/month |
+|---|---|
+| Managed Postgres `starter`, one cluster | 72 (from Fly) |
+| 21 services, one small Machine each | 60 to 100 |
+| Kafka, Temporal and a ledger Machine with a volume | 40 to 80 |
+| Volumes, bandwidth, spare | 30 |
+| **Total** | **about 200 to 280** |
+
+Set a billing alert at 50% and 80% of the ceiling in the Fly dashboard, and stop the preview (scale to zero) outside
+working hours. If the ceiling is not accepted, nothing is created.
+
 ## WorkOS and Didit
 
 | | State | What it means |
@@ -92,8 +127,10 @@ register the webhook, and run an onboarding end to end with simulated outcomes.
 The AWS connection in this session needs you to sign in again (`/mcp`, or the connector settings), and I do not know
 which AWS account it reaches. Once it is back I will read who the caller is (read-only) and stop if it is not an account
 you intend for Forge. Nothing is created in AWS without your say-so; a Terraform description of the landing zone
-(accounts, `af-south-1` network, EKS, RDS, MSK, KMS, a private CA) is the first piece of work, and it can be written and
-checked on paper before any account exists.
+(`deploy/aws`: accounts, `af-south-1` network, EKS, RDS, MSK, TigerBeetle hosts, KMS, WORM storage, a private CA,
+organisation guardrails) is **written and checked on paper**; it has never been planned or applied. The open question
+it raises is disaster recovery: AWS has one region in South Africa as far as we know, so a geographically separate
+site is a decision for the lawyer and the regulator (`deploy/aws/README.md`, finding 1).
 
 ## Plan
 
@@ -108,9 +145,9 @@ flowchart LR
 
 | Step | Who | Needs |
 |---|---|---|
-| Confirm the Fly organisation, and the cost ceiling | You | A decision |
+| Choose the Fly organisation (a separate Forge one is recommended) and the cost ceiling (US$300 proposed) | You | A decision; nothing is created until then |
 | Fly deploy token; host allowlist | You (credential form, environment settings) | The token, approval of the settings change |
 | Build images; create preview apps and Postgres | Me | The two above |
 | Reconnect AWS; confirm the account | You, then me | Sign-in |
-| Terraform for the AWS landing zone, on paper | Me | Nothing, can start now |
+| Terraform for the AWS landing zone, on paper | Me | **Done**: `deploy/aws/` |
 | PA notice for AWS production hosting | CCO (vacant), lawyer | Appointments; a start date |
