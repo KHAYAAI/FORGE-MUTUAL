@@ -12,10 +12,10 @@ items that need a human decision are in [`docs/QUESTIONS.md`](docs/QUESTIONS.md)
 **Not ready to take real customers.** The software is built, tested and runs end to end on a local stack, including
 the customer front door: a person or a company signs in, applies, verifies and gets an account. What stands between
 this and a launch is mostly not code: a banking licence or sponsor bank, accounts with live providers, owner decisions,
-production infrastructure and an independent security review. Assessed 2026-11-18.
+production infrastructure and an independent security review. Assessed 2026-11-23.
 
 **Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
-on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 54 draft policies, none approved;
+on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 55 draft policies, none approved;
 37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 30 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
@@ -27,6 +27,15 @@ The AWS landing zone is written as Terraform and checked on paper, never applied
 ### The model
 
 How the bank is shaped by Erebor (technology) and Investec (service), and where it differs: [`docs/BANK_MODEL.md`](docs/BANK_MODEL.md).
+
+
+### Readiness by stage
+
+| Stage | Where we are | What is missing |
+|---|---|---|
+| **Conversations** (sponsor banks, a regulatory lawyer, the Prudential Authority's pre-application meeting, investors, first hires) | **Ready to start.** A working platform, a governance pack (structure, 37 seats, 55 draft policies), a 114-line regulatory register, a bank-model note, a legal-forms comparison (mutual planned, bank open), a sponsor pitch, a lawyer brief and a risk appetite worksheet. | The founder's own fit-and-proper file; real financial projections (the pro formas use illustrative figures); a named lawyer and a sponsor shortlist; the owner's answers to the risk appetite worksheet. |
+| **Licence application** (Prudential Authority registration as a mutual bank or a bank) | **Not ready.** Policies and structure are drafted, but nothing is approved. 2 of about 18 returns per route are built, with unverified line mapping. | Capital (R10m mutual, R250m bank); at least 7 founding members for a mutual; a board with independent directors; fit-and-proper filings for every director and executive; approved policies; a business plan with real projections; the lawyer's advice on the legal form. Typically 18 to 24 months or more from a complete application (general knowledge; confirm with the lawyer). |
+| **Live launch** (real customers, through a sponsor bank first) | **Not ready.** The software passes its gate on a local stack, with every external party simulated. | A signed sponsor bank; the MLRO, risk and compliance heads; approved policies; production hosting and a Prudential Authority notice 20 working days ahead; a penetration test; live WorkOS and Didit; a licensed sanctions list; lawyer-reviewed terms and privacy notice; FIC registration; a pilot. Roughly 6 to 12 months if the first steps start now (general knowledge). |
 
 ### Governance and people
 
@@ -104,13 +113,16 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
   Not built: a bureau check, the NCA pre-agreement statement document, collections beyond retrying, write-offs.
 - [x] **Card issuing:** virtual debit cards with real-time approval against the ledger (`services/bank/card-service`),
   tested against a processor simulator; not reachable from the customer app yet.
+- [x] **Third-party offers** (`services/platform/partner-offers`): introduces investment and crypto-asset products that a licensed
+  provider supplies. **Every product is provided, licensed and monitored by a third party, never by Forge**, and the code states
+  it in every offer. **Switched off**; no provider chosen; not reachable from the customer app.
 - [ ] **Owner/External.** For card issuing: a programme manager or sponsor, a processor, and the regulator's view.
 - [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
   reconciliation of acquirer payouts.
 
 **4. Production infrastructure: none exists yet**
 
-- [x] Kubernetes manifests for the 22 services (`deploy/k8s`): mutual TLS certificates, caller lists, network policies,
+- [x] Kubernetes manifests for the 23 services (`deploy/k8s`): mutual TLS certificates, caller lists, network policies,
   hardened pods, health probes. Generated and checked on paper; **never applied to a cluster**.
 - [ ] **Owner/Engineering.** A cloud account and region (ADR-0002), and the data layer and secret store the manifests
   expect (`deploy/k8s/README.md` lists 9 things still to decide). Nothing provisions production yet.
@@ -213,7 +225,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 
 **Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
 
-- Threshold owners: the 28 placeholder thresholds each need a named owner who confirms them. None is named.
+- Threshold owners: the 30 placeholder thresholds each need a named owner who confirms them. None is named.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
 - Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
   it. The apps sign in with development sign-in only.
