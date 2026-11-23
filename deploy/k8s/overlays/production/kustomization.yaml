@@ -14,6 +14,9 @@ images:
 - name: registry.PLACEHOLDER/forge/backoffice-api
   newName: registry.PLACEHOLDER/forge/backoffice-api
   newTag: TAG
+- name: registry.PLACEHOLDER/forge/card-service
+  newName: registry.PLACEHOLDER/forge/card-service
+  newTag: TAG
 - name: registry.PLACEHOLDER/forge/compliance-engine
   newName: registry.PLACEHOLDER/forge/compliance-engine
   newTag: TAG

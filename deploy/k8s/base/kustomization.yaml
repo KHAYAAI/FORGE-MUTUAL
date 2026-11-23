@@ -4,6 +4,7 @@ resources:
 - acquiring.yaml
 - audit.yaml
 - backoffice.yaml
+- cards.yaml
 - compliance.yaml
 - consent.yaml
 - consolidated.yaml

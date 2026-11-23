@@ -1,4 +1,7 @@
 {
+  "svc-cards": [
+    "GetParty"
+  ],
   "svc-compliance": [
     "ListParties",
     "SetStatus"

@@ -1,5 +1,18 @@
 {
+  "svc-acquiring": [
+    "GetBalances"
+  ],
+  "svc-cards": [
+    "GetBalances"
+  ],
+  "svc-deposits": [
+    "GetBalances"
+  ],
   "svc-fx": [
+    "GetBalances"
+  ],
+  "svc-lending": [
+    "GetActivity",
     "GetBalances"
   ],
   "svc-payouts": [
@@ -7,16 +20,6 @@
   ],
   "svc-workspace": [
     "GetActivity",
-    "GetBalances"
-  ],
-  "svc-deposits": [
-    "GetBalances"
-  ],
-  "svc-lending": [
-    "GetActivity",
-    "GetBalances"
-  ],
-  "svc-acquiring": [
     "GetBalances"
   ]
 }

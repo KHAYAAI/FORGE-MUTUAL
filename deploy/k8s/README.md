@@ -11,7 +11,7 @@ python3 -I scripts/check-k8s.py --selftest   # structure, hardening, grants; run
 
 ## What is here
 
-21 Go services, each with: a ServiceAccount, a Deployment (2 replicas, rolling update with no unavailable pods), a
+22 Go services, each with: a ServiceAccount, a Deployment (2 replicas, rolling update with no unavailable pods), a
 Service, a PodDisruptionBudget, a cert-manager Certificate, a NetworkPolicy, and its caller list as a ConfigMap.
 
 | Property | How |

@@ -49,6 +49,7 @@ func DefaultConfig() Config {
 			3003: true, // SPONSOR_POOLED
 			3010: true, // AD_PARTNER_SETTLEMENT
 			3020: true, // ACQUIRER_SETTLEMENT (acquiring-service: card takings due from the acquirer)
+			3030: true, // CARD_SCHEME_SETTLEMENT (card-service: card purchases owed to the scheme or processor)
 			5001: true, // PARTNER_BANK_MIRROR
 		},
 		TransferCodes: map[uint16]bool{
@@ -60,6 +61,8 @@ func DefaultConfig() Config {
 			21: true, // FX_SPREAD
 			30: true, // FEE
 			31: true, // RAIL_SETTLE
+			50: true, // CARD_AUTH_HOLD (card-service: a pending hold on the customer's account)
+			51: true, // CARD_SETTLE (card-service: a card purchase posted, or a card refund)
 			52: true, // ACQUIRING_SETTLEMENT
 			65: true, // INTEREST_CREDIT (deposit interest paid to a customer)
 			66: true, // LOAN_DISBURSEMENT

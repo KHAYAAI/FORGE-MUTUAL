@@ -23,6 +23,12 @@ data:
         "CreateAccounts",
         "CreateTransfers"
       ],
+      "svc-cards": [
+        "CreateAccounts",
+        "CreateTransfers",
+        "PostPending",
+        "VoidPending"
+      ],
       "svc-consolidated-view": [
         "GetBalances",
         "ListAccounts"
@@ -288,6 +294,9 @@ spec:
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: acquiring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cards
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: consolidated

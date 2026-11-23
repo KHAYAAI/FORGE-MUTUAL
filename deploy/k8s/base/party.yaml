@@ -19,6 +19,9 @@ metadata:
 data:
   callers.json: |
     {
+      "svc-cards": [
+        "GetParty"
+      ],
       "svc-compliance": [
         "ListParties",
         "SetStatus"
@@ -259,6 +262,9 @@ spec:
   - Egress
   ingress:
   - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cards
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: compliance

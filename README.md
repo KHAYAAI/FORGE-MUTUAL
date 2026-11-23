@@ -16,7 +16,7 @@ production infrastructure and an independent security review. Assessed 2026-11-1
 
 **Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
 on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 54 draft policies, none approved;
-37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
+37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 30 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
 ### Hosting
@@ -47,7 +47,7 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 - [ ] **External.** Sponsor bank sandbox and wire formats (VERIFY-SPONSOR), partner and FIC formats (VERIFY-PARTNER,
   VERIFY-FIC), and the goAML schema (VERIFY-GOAML; submission is refused until it is confirmed).
 - [ ] **Owner/External.** Regulatory review of the policy, screening and reporting rules.
-- [ ] **Owner.** Name an owner for each of the 28 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
+- [ ] **Owner.** Name an owner for each of the 30 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
   (sector appetite).
 - [x] Daily re-screening of every customer: a match opens a critical case and freezes the customer.
 - [x] A per-person annual foreign allowance on FX (threshold 28), monthly credit statements and default notices
@@ -102,12 +102,15 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 - [ ] **Owner/External.** For savings: treasury and regulatory sign-off of the products and rates.
 - [ ] **Owner/External.** For credit: a credit policy and committee, NCA registration, a credit bureau, capital.
   Not built: a bureau check, the NCA pre-agreement statement document, collections beyond retrying, write-offs.
+- [x] **Card issuing:** virtual debit cards with real-time approval against the ledger (`services/bank/card-service`),
+  tested against a processor simulator; not reachable from the customer app yet.
+- [ ] **Owner/External.** For card issuing: a programme manager or sponsor, a processor, and the regulator's view.
 - [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
   reconciliation of acquirer payouts.
 
 **4. Production infrastructure: none exists yet**
 
-- [x] Kubernetes manifests for the 21 services (`deploy/k8s`): mutual TLS certificates, caller lists, network policies,
+- [x] Kubernetes manifests for the 22 services (`deploy/k8s`): mutual TLS certificates, caller lists, network policies,
   hardened pods, health probes. Generated and checked on paper; **never applied to a cluster**.
 - [ ] **Owner/Engineering.** A cloud account and region (ADR-0002), and the data layer and secret store the manifests
   expect (`deploy/k8s/README.md` lists 9 things still to decide). Nothing provisions production yet.

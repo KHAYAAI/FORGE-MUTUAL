@@ -1459,6 +1459,7 @@ All licences VERIFY before commitment. "Avoid" means do not adopt without an app
 | 3003 | SPONSOR_POOLED | Mirror of the sponsor pooled account | Reconciled daily |
 | 3010 | AD_PARTNER_SETTLEMENT | Cross-border payouts via AD partner | Reconciled daily |
 | 3020 | ACQUIRER_SETTLEMENT | Card takings due from the acquiring bank | Reconciled daily |
+| 3030 | CARD_SCHEME_SETTLEMENT | Card purchases owed to the scheme or processor | Reconciled daily |
 | 5001 | PARTNER_BANK_MIRROR | Balance at a partner bank, per currency | Reconciled daily |
 | 5002 | REWARDS_POOL | Capped incentives (later) | `debits_must_not_exceed_credits` |
 | 6001 | INTERCO_DUE_TO_DAST | Payable to digital-asset entity | Stage C |
@@ -1471,8 +1472,8 @@ All licences VERIFY before commitment. "Avoid" means do not adopt without an app
 
 | Code | Name | Code | Name |
 |---|---|---|---|
-| 10 | DEPOSIT_IN | 50 | CARD_AUTH_HOLD (later) |
-| 11 | PAYMENT_OUT | 51 | CARD_SETTLE (later) |
+| 10 | DEPOSIT_IN | 50 | CARD_AUTH_HOLD |
+| 11 | PAYMENT_OUT | 51 | CARD_SETTLE |
 | 12 | INTERNAL_TRANSFER | 60 | PAYOUT_BULK |
 | 13 | CROSS_BORDER_OUT | 61 | REWARD_CREDIT |
 | 20 | FX_LEG | 62 | INVOICE_PAYMENT |

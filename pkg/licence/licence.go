@@ -31,10 +31,12 @@ const (
 	GBPAccounts    Product = "gbp_accounts"    // authorised dealer and partner bank
 	InboundSWIFT   Product = "inbound_swift"   // authorised dealer; SARB cross-border reporting
 	Acquiring      Product = "acquiring"       // acquiring bank, card schemes, PCI
+	Cards          Product = "cards"           // issuing: a card programme manager or sponsor, the schemes, PCI, the processor
+	DigitalAssets  Product = "digital_assets"  // deposit tokens and on-chain settlement: the regulator's view first, FSCA and PA
 )
 
 // All lists every gated product.
-var All = []Product{Savings, NoticeDeposits, Overdraft, TermLoans, RevenueBased, EURAccounts, GBPAccounts, InboundSWIFT, Acquiring}
+var All = []Product{Savings, NoticeDeposits, Overdraft, TermLoans, RevenueBased, EURAccounts, GBPAccounts, InboundSWIFT, Acquiring, Cards, DigitalAssets}
 
 // ErrNotApproved is returned for a product that production may not offer.
 var ErrNotApproved = errors.New("licence: this product is not approved for use")

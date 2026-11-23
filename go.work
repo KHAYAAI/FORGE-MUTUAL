@@ -16,6 +16,7 @@ use (
 	./pkg/systemaccounts
 	./pkg/uuid
 	./services/bank/acquiring-service
+	./services/bank/card-service
 	./services/bank/core-bridge
 	./services/bank/deposits-service
 	./services/bank/fx-service
