@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1/acquiringv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/cards/v1/cardsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1/depositsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1/offersv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/party/v1/partyv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
@@ -74,6 +76,8 @@ func run(log *slog.Logger) error {
 			References:   paymentsv1connect.NewInboundReferenceServiceClient(outbound, urls["PAYMENTS_URL"], caller()),
 			Deposits:     depositsClient(outbound, caller()),
 			Lending:      lendingClient(outbound, caller()),
+			Cards:        cardsClient(outbound, caller()),
+			Offers:       offersClient(outbound, caller()),
 			Acquiring:    acquiringClient(outbound, caller()),
 			Checkout:     checkoutClient(outbound, caller()),
 			Party:        partyClient(outbound, caller()),
@@ -141,6 +145,22 @@ func depositsClient(h connect.HTTPClient, opt connect.ClientOption) depositsv1co
 		return nil
 	}
 	return depositsv1connect.NewDepositsServiceClient(h, u, opt)
+}
+
+// cardsClient is the card-service client, or nil when CARDS_URL is not set (cards are not offered). Not set in the stack: cards are off.
+func cardsClient(h connect.HTTPClient, opt connect.ClientOption) cardsv1connect.CardServiceClient {
+	if u := os.Getenv("CARDS_URL"); u != "" {
+		return cardsv1connect.NewCardServiceClient(h, u, opt)
+	}
+	return nil
+}
+
+// offersClient is the partner-offers client, or nil when PARTNER_OFFERS_URL is not set (third-party offers are not offered). Not set in the stack.
+func offersClient(h connect.HTTPClient, opt connect.ClientOption) offersv1connect.PartnerOffersServiceClient {
+	if u := os.Getenv("PARTNER_OFFERS_URL"); u != "" {
+		return offersv1connect.NewPartnerOffersServiceClient(h, u, opt)
+	}
+	return nil
 }
 
 // lendingClient is the lending-service client, or nil when LENDING_URL is not set (credit is not offered).

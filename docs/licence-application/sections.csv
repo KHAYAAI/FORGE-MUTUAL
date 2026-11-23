@@ -1,0 +1,19 @@
+section,title,register_ids,owner_role,note
+A1,Legal form and constitution,LIC-01;LIC-07,Head of Legal (R26) with the lawyer,Mutual bank constitution or company articles; see docs/governance/LEGAL_FORMS.md
+A2,Name and naming authorisation,LIC-17,Chief Compliance Officer (R04),No 'bank' or 'mutual bank' in public naming until authorised
+A3,Capital and proof of funds,LIC-02,CFO (R03) and the founder,R10m (mutual) or R250m (bank) with written proof
+A4,Founders and shareholders or members,LIC-05;LIC-07,Company Secretary (R17),Register of founders and members; fit and proper for significant holders; membership module checks seven founders
+B1,Board and executive officers,LIC-06;MR-03,Board chair (R05) and Nominations Committee,Composition and independence; at least two employee directors on the mutual route
+B2,Fit-and-proper statements (DI 020 / BA 020),BR-06,Company Secretary (R17),See docs/governance/FIT_AND_PROPER_PACK.md; nobody has filed
+B3,Directors' report on internal control,MR-02,Board (Audit Committee),Yearly report to the Registrar
+C1,Business plan and public-interest motivation,LIC-15,Founder and CFO,Outline only; see docs/regulatory/policies/business-plan-outline.md
+C2,Financial projections and pro forma returns,LIC-08;LIC-11;BR-07;MR-06;RET-01;MR-05,CFO (R03) and Regulatory Reporting (R22),make proforma builds DI/BA 100 and 200 from projections; other forms outstanding; figures are illustrative
+D1,Risk management framework and policies,LIC-13;BR-01;BR-02;MR-01,Chief Risk Officer (R02),Risk framework and appetite drafted; appetite numbers await the owner
+D2,Capital adequacy and liquidity,LIC-03;LIC-04;LIC-12;BR-04,Head of Treasury (R13),Capital and leverage ratios and the liquidity coverage ratio are computed from the ledger (treasury-risk); concentration policy and liquidity plan drafted
+D3,Internal audit,BR-05;LIC-14,Head of Internal Audit (R11),Charter drafted; 12 months of findings need a running audit function
+D4,Business continuity and recovery,LIC-09;D3-06;JS1-11;JS2-13,Business Continuity Manager (R28),Business impact analysis and recovery plan drafted; no tested DR site
+E1,IT systems and material outsourcing submission,LIC-10;JS1-01;JS1-02;JS1-03;JS1-05;JS1-06;JS1-10;JS1-12;JS2-01;JS2-09;JS2-10;JS2-14,CTO (R10) and CISO (R12),Assembled from the IT policies and docs/ARCHITECTURE.md
+E2,Cloud and offshoring,D3-01;D3-02;D3-03;D3-05;D3-07,CTO (R10) and Head of Legal (R26),Hosting direction in docs/HOSTING.md; PA notice 20 working days before production
+E3,Outsourcing register and contracts,OUT-01;OUT-02;OUT-03;OUT-04;OUT-05;OUT-06,COO (R08) and Head of Legal (R26),docs/regulatory/outsourcing-register.csv computes notice dates
+E4,Cyber resilience and testing,G4-01;G4-02;JS2-15;JS2-16,CISO (R12),No penetration test yet; findings in docs/regulatory/security-findings.csv
+F1,Regulator engagement,LIC-16,Founder and CCO,Pre-application meeting with the PA; FSCA concurrence

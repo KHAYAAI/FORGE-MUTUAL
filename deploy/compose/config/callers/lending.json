@@ -1,15 +1,16 @@
 {
+  "svc-backoffice-api": [
+    "DecideCreditApplication",
+    "ListCreditApplications"
+  ],
   "svc-workspace": [
     "AcceptOffer",
     "ApplyForCredit",
     "Draw",
+    "GetPreAgreement",
     "GetStatement",
     "ListFacilities",
     "ListLoanProducts",
     "Repay"
-  ],
-  "svc-backoffice-api": [
-    "DecideCreditApplication",
-    "ListCreditApplications"
   ]
 }

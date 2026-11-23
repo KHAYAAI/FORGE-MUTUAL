@@ -21,12 +21,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	consentv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/consent/v1/consentv1connect"
 	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
@@ -83,6 +86,31 @@ func run(log *slog.Logger) error {
 	svc := &lending.Service{
 		Pool: pool, Ledger: ledger, Products: lending.DefaultProducts(), Licence: gate, Entity: "BANK",
 		Owners: owners{consolidated}, Activity: consolidated,
+		CreditProviderReg: os.Getenv("NCR_REGISTRATION"), RequirePreAgreement: os.Getenv("LENDING_REQUIRE_PRE_AGREEMENT") == "true" || callerauth.IsProduction(),
+		RequireBureau: callerauth.IsProduction(),
+	}
+	if n, err := strconv.Atoi(getenv("LENDING_WRITE_OFF_AFTER_DAYS", "90")); err != nil || n < 30 || n > 365 {
+		return errors.New("LENDING_WRITE_OFF_AFTER_DAYS must be 30 to 365")
+	} else {
+		svc.WriteOffAfterDays = n
+	}
+	// The credit bureau. No bureau is chosen yet (VERIFY-BUREAU): the simulator is the only one built, and production refuses it,
+	// so production cannot assess credit until a real adapter exists (RequireBureau).
+	switch os.Getenv("BUREAU") {
+	case "sim":
+		if err := serve.RefuseInProduction(serve.Switch{Name: "BUREAU=sim", Set: true}); err != nil {
+			return err
+		}
+		consentURL := os.Getenv("CONSENT_URL")
+		if consentURL == "" {
+			return errors.New("CONSENT_URL is required with a credit bureau: an enquiry needs the customer's consent")
+		}
+		svc.Bureau = lending.SimBureau{}
+		svc.Consents = consentCheck{consentv1connect.NewConsentServiceClient(outbound, consentURL, callerAs("svc-lending"))}
+		log.Warn("the credit bureau is the simulator (VERIFY-BUREAU)")
+	case "":
+	default:
+		return errors.New(`BUREAU must be "sim" or unset: no credit bureau is chosen yet`)
 	}
 	if err := svc.EnsureSystemAccounts(ctx); err != nil {
 		return fmt.Errorf("interest income account: %w", err)
@@ -132,6 +160,18 @@ func run(log *slog.Logger) error {
 	}
 	log.Info("lending-service listening", "addr", srv.Addr, "licence", gate.Status())
 	return serve.Run(ctx, srv, log)
+}
+
+type consentCheck struct {
+	client consentv1connect.ConsentServiceClient
+}
+
+func (c consentCheck) Allowed(ctx context.Context, party, purpose, scope string) (bool, error) {
+	res, err := c.client.Check(ctx, connect.NewRequest(&consentv1.CheckRequest{PartyId: party, Purpose: purpose, Scope: scope}))
+	if err != nil {
+		return false, fmt.Errorf("consent: %w", err)
+	}
+	return res.Msg.Allowed, nil
 }
 
 type owners struct {

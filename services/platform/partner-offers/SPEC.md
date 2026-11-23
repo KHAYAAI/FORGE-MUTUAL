@@ -4,8 +4,10 @@ Entity: platform. Introduces customers to investment and crypto-asset products t
 API: `proto/forge/offers/v1/offers.proto` (`PartnerOffersService` for customers, `PartnerAdminService` for compliance).
 
 Status: built and tested against Postgres (5 tests). **Switched off**: nothing runs unless `PARTNER_OFFERS_ENABLED=true`,
-production also needs `FORGE_APPROVAL_PARTNER_OFFERS` to name an approving decision (`pkg/licence`), no provider is
-chosen, and nothing in the customer app calls it (the caller list `deploy/compose/config/callers/partner-offers.json` is empty).
+production also needs `FORGE_APPROVAL_PARTNER_OFFERS` to name an approving decision (`pkg/licence`), and no provider is
+chosen. It is wired to the customer app (workspace-api routes `/v1/offers`, `/v1/offers/{offer}/referrals`, `/v1/referrals` and a web
+page `/invest` that shows the statement in full and needs the customer to tick an acknowledgement), but `PARTNER_OFFERS_URL` is unset,
+so the routes answer "not offered", and no navigation link points to the page. Only workspace-api may call it (`deploy/compose/config/callers/offers.json`).
 
 ## The rule
 
@@ -35,7 +37,8 @@ advise on it, hold the customer's money or assets in it, or guarantee it. The co
 - A provider chosen, a contract, and a due-diligence file (`docs/regulatory/policies/provider-due-diligence-procedure.md`).
 - Confirmation from the lawyer that the statement wording, the risk warnings and any referral fee are lawful (VERIFY), and from
   the sponsor bank and the Prudential Authority that a bank may make such introductions at all.
-- Reaching it from the customer app and the back office; the consent purpose set-up; a referral-fee ledger entry.
+- A back-office screen for compliance to register and verify providers (the admin API exists; nothing calls it); a screen that asks the
+  customer for the `share_with_partner:<provider>` consent; a referral-fee ledger entry; a navigation link to `/invest`.
 - Re-checking licences automatically against the regulator's register: today a person does it, and the 12-month rule hides
   anything not re-checked.
 - Reporting to the provider, and complaint routing to it.

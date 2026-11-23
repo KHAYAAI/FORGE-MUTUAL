@@ -59,7 +59,7 @@ conversations; the sponsor bank may have a preferred partner.
 
 | Item | Status |
 |---|---|
-| A referral register and consent screen in the back office | The register and the rules are built (`partner-offers`); the screens are not |
+| A referral register, the customer's page and a compliance back-office screen | The register, the rules, the workspace routes and the customer page `/invest` are built; the compliance screen is not |
 | A consent purpose "share with an investment partner" in the consent service | Used by `partner-offers` as `share_with_partner:<provider>`; the screen that asks is not built |
 | An API link to a chosen partner | Not built; depends on the partner |
 | A referral-fee ledger entry (income) | Not built; use FEE income (2002) |

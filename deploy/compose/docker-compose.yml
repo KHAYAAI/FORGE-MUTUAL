@@ -414,6 +414,8 @@ services:
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/lending?sslmode=disable
       LENDING_CALLERS_FILE: /stack/callers/lending.json
       LENDING_ADDR: ":8120"
+      BUREAU: sim
+      CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
       LENDING_WORK_INTERVAL: 1m
       LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
       CONSOLIDATED_URL: ${STACK_SCHEME:-http}://127.0.0.1:8096
@@ -470,7 +472,7 @@ services:
       TLS_CA_FILE: ${STACK_TLS:+/stack/pki/ca.crt}
       <<: *dev
       DATABASE_URL: postgres://postgres:forge-local-only@127.0.0.1:5433/partner_offers?sslmode=disable
-      PARTNER_OFFERS_CALLERS_FILE: /stack/callers/partner-offers.json
+      PARTNER_OFFERS_CALLERS_FILE: /stack/callers/offers.json
       PARTNER_OFFERS_ADDR: ":8150"
       # Off: third-party offers are not used. Every product is provided, licensed and monitored by its provider.
       PARTNER_OFFERS_ENABLED: "false"

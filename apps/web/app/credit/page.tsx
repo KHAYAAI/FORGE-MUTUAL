@@ -18,6 +18,7 @@ const STATUS: Record<string, string> = {
   ACTIVE: "Active",
   SETTLED: "Repaid",
   CANCELLED: "Cancelled",
+  WRITTEN_OFF: "Closed: please contact us",
 };
 const key = () => crypto.randomUUID();
 const terms = (p: Product) =>
@@ -67,8 +68,8 @@ export default function CreditPage() {
     await load();
   }
 
-  async function accept(id: string) {
-    const res = await api.POST("/v1/facilities/{facility}/accept", { params: { path: { facility: id } }, body: { accepts_terms: true } });
+  async function accept(id: string, preAgreementHash: string) {
+    const res = await api.POST("/v1/facilities/{facility}/accept", { params: { path: { facility: id } }, body: { accepts_terms: true, pre_agreement_hash: preAgreementHash } });
     if (!res.response.ok) return fail(res.error, res.response.status);
     setDone("Accepted. The facility is active.");
     await load();
@@ -151,10 +152,16 @@ export default function CreditPage() {
 function FacilityCard({ f, name, onAccept, onMove }: {
   f: Facility;
   name: string;
-  onAccept: (id: string) => Promise<void>;
+  onAccept: (id: string, preAgreementHash: string) => Promise<void>;
   onMove: (id: string, kind: "draw" | "repay", value: string) => Promise<void>;
 }) {
   const [value, setValue] = useState("");
+  const [pre, setPre] = useState<components["schemas"]["PreAgreement"] | null>(null);
+  const [ack, setAck] = useState(false);
+  useEffect(() => {
+    if (f.status !== "APPROVED") return;
+    void api.GET("/v1/facilities/{facility}/pre-agreement", { params: { path: { facility: f.facility_id } } }).then((r) => setPre(r.data ?? null));
+  }, [f.status, f.facility_id]);
   const next = f.schedule.find((i) => i.status === "DUE" || i.status === "ARREARS");
   return (
     <li className="rounded-[2rem] bg-stone-100 p-8" aria-label={name}>
@@ -185,7 +192,21 @@ function FacilityCard({ f, name, onAccept, onMove }: {
           <p>
             Total you will repay: <strong className="tabular-nums">{formatMinor(f.total_repayable_minor, "ZAR")}</strong>
           </p>
-          <button type="button" onClick={() => onAccept(f.facility_id)} className="rounded-full bg-stone-900 px-6 py-3 text-white hover:bg-black">
+          {pre ? (
+            <div className="rounded-xl border border-stone-400 bg-white p-4" role="region" aria-label="Pre-agreement statement and quotation">
+              <p className="whitespace-pre-line">{pre.statement}</p>
+            </div>
+          ) : null}
+          <label className="flex items-start gap-3">
+            <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="mt-1" />
+            <span>I have read the pre-agreement statement and quotation and I accept this offer.</span>
+          </label>
+          <button
+            type="button"
+            disabled={!pre || !ack}
+            onClick={() => pre && onAccept(f.facility_id, pre.statement_hash)}
+            className="rounded-full bg-stone-900 px-6 py-3 text-white hover:bg-black disabled:opacity-40"
+          >
             Accept the offer
           </button>
         </div>

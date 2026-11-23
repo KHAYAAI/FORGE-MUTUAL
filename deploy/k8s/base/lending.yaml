@@ -27,6 +27,7 @@ data:
         "AcceptOffer",
         "ApplyForCredit",
         "Draw",
+        "GetPreAgreement",
         "GetStatement",
         "ListFacilities",
         "ListLoanProducts",
@@ -136,6 +137,8 @@ spec:
           value: kafka
         - name: LENDING_CALLERS_FILE
           value: /config/callers.json
+        - name: CONSENT_URL
+          value: https://consent.forge.svc.cluster.local:8082
         - name: LENDING_WORK_INTERVAL
           value: 1m
         - name: LEDGER_URL
@@ -295,11 +298,16 @@ spec:
   - to:
     - podSelector:
         matchLabels:
+          app.kubernetes.io/name: consent
+    - podSelector:
+        matchLabels:
           app.kubernetes.io/name: consolidated
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: ledger
     ports:
+    - protocol: TCP
+      port: 8082
     - protocol: TCP
       port: 8096
     - protocol: TCP

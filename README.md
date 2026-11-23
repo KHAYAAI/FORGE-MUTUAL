@@ -16,7 +16,7 @@ production infrastructure and an independent security review. Assessed 2026-11-2
 
 **Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
 on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 55 draft policies, none approved;
-37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 30 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
+37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 31 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
 ### Hosting
@@ -37,6 +37,11 @@ How the bank is shaped by Erebor (technology) and Investec (service), and where 
 | **Licence application** (Prudential Authority registration as a mutual bank or a bank) | **Not ready.** Policies and structure are drafted, but nothing is approved. 2 of about 18 returns per route are built, with unverified line mapping. | Capital (R10m mutual, R250m bank); at least 7 founding members for a mutual; a board with independent directors; fit-and-proper filings for every director and executive; approved policies; a business plan with real projections; the lawyer's advice on the legal form. Typically 18 to 24 months or more from a complete application (general knowledge; confirm with the lawyer). |
 | **Live launch** (real customers, through a sponsor bank first) | **Not ready.** The software passes its gate on a local stack, with every external party simulated. | A signed sponsor bank; the MLRO, risk and compliance heads; approved policies; production hosting and a Prudential Authority notice 20 working days ahead; a penetration test; live WorkOS and Didit; a licensed sanctions list; lawyer-reviewed terms and privacy notice; FIC registration; a pilot. Roughly 6 to 12 months if the first steps start now (general knowledge). |
 
+### Licence application pack
+
+[`docs/licence-application/PACK.md`](docs/licence-application/PACK.md) is generated (`make licence-pack`) from the regulatory register: 18 sections, 59
+requirements, each with its owner, evidence and gap. It is an index of what the application needs, not the application.
+
 ### Governance and people
 
 The board, committees, executive chart, three lines of defence and every seat the bank needs are drawn in
@@ -56,7 +61,7 @@ Ticked items are done. Each open item says who must act: **Owner** (a decision o
 - [ ] **External.** Sponsor bank sandbox and wire formats (VERIFY-SPONSOR), partner and FIC formats (VERIFY-PARTNER,
   VERIFY-FIC), and the goAML schema (VERIFY-GOAML; submission is refused until it is confirmed).
 - [ ] **Owner/External.** Regulatory review of the policy, screening and reporting rules.
-- [ ] **Owner.** Name an owner for each of the 30 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
+- [ ] **Owner.** Name an owner for each of the 31 placeholder thresholds (`docs/THRESHOLDS.md`), and decide ADR-0012
   (sector appetite).
 - [x] Daily re-screening of every customer: a match opens a critical case and freezes the customer.
 - [x] A per-person annual foreign allowance on FX (threshold 28), monthly credit statements and default notices
@@ -110,12 +115,14 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
   (VERIFY-FINSURV); nothing is submitted yet.
 - [ ] **Owner/External.** For savings: treasury and regulatory sign-off of the products and rates.
 - [ ] **Owner/External.** For credit: a credit policy and committee, NCA registration, a credit bureau, capital.
-  Not built: a bureau check, the NCA pre-agreement statement document, collections beyond retrying, write-offs.
+  Built, against simulators and with draft wording: a credit bureau check (consent, fail closed, an adverse record needs a written
+  reason), the NCA pre-agreement statement (generated, acknowledged by hash), and write-offs (two people, after a default notice, 90 days
+  past due). Not built: a real bureau, collections beyond retrying, recoveries after a write-off.
 - [x] **Card issuing:** virtual debit cards with real-time approval against the ledger (`services/bank/card-service`),
-  tested against a processor simulator; not reachable from the customer app yet.
+  tested against a processor simulator; wired to the customer app (`/cards`) but not switched on.
 - [x] **Third-party offers** (`services/platform/partner-offers`): introduces investment and crypto-asset products that a licensed
   provider supplies. **Every product is provided, licensed and monitored by a third party, never by Forge**, and the code states
-  it in every offer. **Switched off**; no provider chosen; not reachable from the customer app.
+  it in every offer. Wired to the customer app (`/invest`) but **switched off**; no provider chosen.
 - [ ] **Owner/External.** For card issuing: a programme manager or sponsor, a processor, and the regulator's view.
 - [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
   reconciliation of acquirer payouts.
@@ -158,7 +165,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 
 **Verified**
 
-- The full gate passes on `c4118a2`: lint, 83 test packages against real Postgres 17, Kafka 3.9 and TigerBeetle 0.16.60, the
+- The full gate (`make ci-db`) passes on the head of the branch, last run 2026-11-23: lint, 83 test packages against real Postgres 17, Kafka 3.9 and TigerBeetle 0.16.60, the
   entity-isolation check and the caller-list check.
 - 477 Go test functions in 37 modules. Playwright: 70 tests across the two apps, including the accessibility scans
   and the security-header checks.
@@ -225,7 +232,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 
 **Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
 
-- Threshold owners: the 30 placeholder thresholds each need a named owner who confirms them. None is named.
+- Threshold owners: the 31 placeholder thresholds each need a named owner who confirms them. None is named.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
 - Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
   it. The apps sign in with development sign-in only.
@@ -338,7 +345,7 @@ database-backed suite runs; the only opt-in suite is the live Fineract test, whi
 Every v1 service in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 6 now exists, and the back office has its
 KYC review screen and live cases. The customer application flow and the `OnboardPerson`
 workflow were built on 2026-11-17. Not yet built: moving the payments orchestrator's rails from the rails-gateway simulator onto
-`BankLayer`, the customer USD account flow, and the core-bridge on the local stack (it needs a live Apache Fineract there).
+`BankLayer`, and the core-bridge on the local stack (it needs a live Apache Fineract there).
 
 ## Production configuration
 

@@ -13,7 +13,7 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;off
 // licence has not been verified in the last 12 months is not shown at all.
 //
 // Status: built, tested, OFF by default (PARTNER_OFFERS_ENABLED) and off in production until FORGE_APPROVAL_PARTNER_OFFERS
-// names the approving decision (pkg/licence). Not reachable from the customer app. No provider is chosen.
+// names the approving decision (pkg/licence). Wired to the customer app through workspace-api but not configured, so off. No provider is chosen.
 service PartnerOffersService {
   // ListOffers returns the offers a party may see, each with its mandatory statement. Hidden: any offer whose provider is
   // not active, whose licence is unverified, stale or expired, or whose own status is not active.

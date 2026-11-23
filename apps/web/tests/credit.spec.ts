@@ -25,7 +25,12 @@ test("a customer applies, sees the full cost, and accepts the offer", async ({ p
     }
     return reply(route, 200, { facilities });
   });
+  let accepted: unknown = null;
+  await page.route("**/api/v1/facilities/fac-1/pre-agreement", (route) =>
+    reply(route, 200, { statement: "PRE-AGREEMENT STATEMENT AND QUOTATION\n\nAmount of credit: R120000.00.", statement_hash: "hash-1" }),
+  );
   await page.route("**/api/v1/facilities/fac-1/accept", (route) => {
+    accepted = route.request().postDataJSON();
     facilities = [{ ...base, status: "ACTIVE", outstanding_minor: "12000000", schedule: [{ number: 1, due_on: "2026-12-17", principal_minor: "934000", interest_minor: "145000", status: "DUE" }] }];
     return reply(route, 200, facilities[0]);
   });
@@ -47,8 +52,12 @@ test("a customer applies, sees the full cost, and accepts the offer", async ({ p
   await expect(card.getByText("R 129 500.00")).toBeVisible();
   const a11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(a11y.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+  await expect(card.getByRole("region", { name: "Pre-agreement statement and quotation" })).toContainText("PRE-AGREEMENT STATEMENT AND QUOTATION");
+  await expect(card.getByRole("button", { name: "Accept the offer" })).toBeDisabled();
+  await card.getByRole("checkbox").check();
   await card.getByRole("button", { name: "Accept the offer" }).click();
   await expect(page.getByText("Accepted. The facility is active.")).toBeVisible();
+  expect(accepted).toMatchObject({ accepts_terms: true, pre_agreement_hash: "hash-1" });
   await expect(card.getByText("Next payment R 10 790.00 on 2026-12-17")).toBeVisible();
 });
 

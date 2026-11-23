@@ -25,7 +25,7 @@ DEV_KEYS = {"FORGE_ENV", "ACQUIRER", "BANK_ALLOW_SIMULATION", "DIDIT_ENVIRONMENT
             "DATABASE_URL", "KAFKA_BROKERS", "OTEL_EXPORTER_OTLP_ENDPOINT", "TB_ADDRESSES", "TEMPORAL_HOST",
             "FX_RATE_ZAR_PER_USD", "FX_RATE_ZAR_PER_EUR", "FX_RATE_ZAR_PER_GBP", "FX_RATE_AS_OF", "TREASURY_FX_RATES",
             "BANK_CONFIG", "POLICY_BUNDLE_DIR", "BACKOFFICE_CLIENTS", "WORKSPACE_CLIENTS", "DIDIT_CALLBACK_URL",
-            "SCREENING_LIST_AS_OF"}
+            "SCREENING_LIST_AS_OF", "BUREAU", "CARD_PROCESSOR", "PARTNER_OFFERS_ENABLED"}
 # Services that talk to the outside world (providers, partners). Narrow these to the providers' addresses once chosen.
 EXTERNAL = {"onboarding", "notifications", "payments", "rails", "partner-router", "acquiring", "compliance", "workspace", "backoffice"}
 INGRESS = {"workspace", "backoffice"}  # reached from the customer and staff web apps, through the ingress controller

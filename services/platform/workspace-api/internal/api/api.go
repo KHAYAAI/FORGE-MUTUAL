@@ -19,10 +19,12 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/khayaai/forge-mutual/pkg/api/forge/cards/v1/cardsv1connect"
 	consolidatedv1 "github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/consolidated/v1/consolidatedv1connect"
 	fxv1 "github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1/fxv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1/offersv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	paymentsv1 "github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
@@ -94,10 +96,12 @@ type Services struct {
 	Onboarding   onboardingv1connect.OnboardingServiceClient
 	CrossBorder  paymentsv1connect.CrossBorderServiceClient
 	References   paymentsv1connect.InboundReferenceServiceClient
-	Deposits     depositsv1connect.DepositsServiceClient   // nil: savings are not offered
-	Lending      lendingv1connect.LendingServiceClient     // nil: credit is not offered
-	Acquiring    acquiringv1connect.AcquiringServiceClient // nil: card payments are not offered
-	Party        partyv1connect.PartyServiceClient         // nil: data access is not offered
+	Deposits     depositsv1connect.DepositsServiceClient    // nil: savings are not offered
+	Lending      lendingv1connect.LendingServiceClient      // nil: credit is not offered
+	Acquiring    acquiringv1connect.AcquiringServiceClient  // nil: card payments are not offered
+	Cards        cardsv1connect.CardServiceClient           // nil: cards are not offered
+	Offers       offersv1connect.PartnerOffersServiceClient // nil: third-party offers are not offered
+	Party        partyv1connect.PartyServiceClient          // nil: data access is not offered
 	Consent      consentv1connect.ConsentServiceClient
 	Checkout     acquiringv1connect.CheckoutServiceClient
 }
@@ -142,6 +146,17 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/facilities/{facility}/accept", a.session(a.acceptOffer))
 	mux.HandleFunc("POST /v1/facilities/{facility}/draw", a.session(a.moveCredit(false)))
 	mux.HandleFunc("POST /v1/facilities/{facility}/repay", a.session(a.moveCredit(true)))
+	mux.HandleFunc("GET /v1/facilities/{facility}/pre-agreement", a.session(a.preAgreement))
+	mux.HandleFunc("GET /v1/cards", a.session(a.listCards))
+	mux.HandleFunc("POST /v1/cards", a.session(a.issueCard))
+	mux.HandleFunc("GET /v1/cards/{card}", a.session(a.getCard))
+	mux.HandleFunc("POST /v1/cards/{card}/status", a.session(a.setCardStatus))
+	mux.HandleFunc("POST /v1/cards/{card}/limits", a.session(a.setCardLimits))
+	mux.HandleFunc("GET /v1/cards/{card}/authorisations", a.session(a.listCardAuthorisations))
+	mux.HandleFunc("POST /v1/cards/{card}/display", a.session(a.displayCard))
+	mux.HandleFunc("GET /v1/offers", a.session(a.listOffers))
+	mux.HandleFunc("POST /v1/offers/{offer}/referrals", a.session(a.createReferral))
+	mux.HandleFunc("GET /v1/referrals", a.session(a.listReferrals))
 	mux.HandleFunc("GET /v1/my-data", a.session(a.myData))
 	mux.HandleFunc("GET /v1/payment-links", a.session(a.listPaymentLinks))
 	mux.HandleFunc("POST /v1/payment-links", a.session(a.createPaymentLink))

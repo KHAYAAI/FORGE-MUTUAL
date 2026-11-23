@@ -18,7 +18,13 @@ metadata:
     app.kubernetes.io/part-of: forge
 data:
   callers.json: |
-    {}
+    {
+      "svc-workspace": [
+        "CreateReferral",
+        "ListOffers",
+        "ListReferrals"
+      ]
+    }
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -122,8 +128,6 @@ spec:
           value: kafka
         - name: PARTNER_OFFERS_CALLERS_FILE
           value: /config/callers.json
-        - name: PARTNER_OFFERS_ENABLED
-          value: 'false'
         - name: CONSENT_URL
           value: https://consent.forge.svc.cluster.local:8082
         - name: PARTY_URL
@@ -236,7 +240,14 @@ spec:
   policyTypes:
   - Ingress
   - Egress
-  ingress: []
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: workspace
+    ports:
+    - protocol: TCP
+      port: 8150
   egress:
   - to:
     - namespaceSelector: {}
