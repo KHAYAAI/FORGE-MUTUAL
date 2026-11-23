@@ -1,0 +1,12 @@
+{
+  "svc-workspace": [
+    "CancelPaymentLink",
+    "CreatePaymentLink",
+    "GetCheckout",
+    "ListPaymentLinks",
+    "ListSettlements",
+    "RefundPayment",
+    "SimulatePayment",
+    "StartCheckout"
+  ]
+}

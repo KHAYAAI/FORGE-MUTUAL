@@ -1,0 +1,58 @@
+// Compliance cases (ARCHITECTURE.md 15.1). A case is opened by a monitoring rule and closed by a different person, with a
+// real note. The overdue flag is computed when the case is read, against the SLA.
+syntax = "proto3";
+
+package forge.cases.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1;casesv1";
+
+service CasesService {
+  rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
+  rpc GetCase(GetCaseRequest) returns (GetCaseResponse);
+  // CloseCase is the checker's decision. The person who opened the case cannot close it.
+  rpc CloseCase(CloseCaseRequest) returns (CloseCaseResponse);
+}
+
+message Case {
+  string case_id = 1;
+  string party_id = 2;
+  string rule = 3;
+  string severity = 4;
+  string detail = 5;
+  repeated string evidence = 6;
+  string status = 7;        // OPEN or CLOSED
+  string opened_by = 8;
+  string opened_at = 9;     // RFC 3339
+  string sla_due_at = 10;   // RFC 3339
+  bool overdue = 11;        // open and past the SLA at the time of the read
+  string closed_by = 12;
+  string closed_at = 13;    // RFC 3339, empty while open
+  string closing_note = 14;
+}
+
+message ListCasesRequest {
+  bool open_only = 1;
+  uint32 limit = 2; // 1 to 500; 0 means 100
+}
+
+message ListCasesResponse {
+  repeated Case cases = 1; // oldest SLA first
+}
+
+message GetCaseRequest {
+  string case_id = 1;
+}
+
+message GetCaseResponse {
+  Case case = 1;
+}
+
+message CloseCaseRequest {
+  string case_id = 1;
+  string actor = 2;
+  string note = 3; // at least 20 characters
+}
+
+message CloseCaseResponse {
+  Case case = 1;
+}

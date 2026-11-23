@@ -1,0 +1,7 @@
+{
+  "svc-backoffice-api": [
+    "GetPrudentialReport",
+    "GetSingleCustomerView",
+    "GetTrialBalance"
+  ]
+}

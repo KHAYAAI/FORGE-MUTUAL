@@ -1,0 +1,274 @@
+// Package onboarding is the business onboarding workflow (ARCHITECTURE.md 11.3). It is a Temporal workflow:
+// deterministic, with every side effect in an activity. Each activity is safe to retry.
+package onboarding
+
+import (
+	"time"
+
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
+)
+
+// Signal and query names.
+const (
+	SignalKYCResult = "kyc-result"
+	SignalKYCReview = "kyc-review"
+	QueryStatus     = "status"
+)
+
+// KYCTimeout is how long onboarding waits for every verification before declining.
+const KYCTimeout = 7 * 24 * time.Hour
+
+// Terminal states reported in Status.State.
+const (
+	StateRunning   = "RUNNING"
+	StateCompleted = "COMPLETED"
+	StateDeclined  = "DECLINED"
+	StateFailed    = "FAILED"
+)
+
+// DirectorInput is a person named on the application.
+type DirectorInput struct {
+	LegalName    string
+	NationalID   string
+	OwnershipBps uint32
+	IsUBO        bool
+}
+
+// Input starts one onboarding.
+type Input struct {
+	OnboardingID       string // canonical UUID; also the business transaction id in the ledger
+	RequestHash        string
+	LegalName          string
+	RegistrationNumber string
+	Country            string
+	SectorCode         string
+	Directors          []DirectorInput
+	Actor              string
+	// KYCTimeoutSeconds overrides KYCTimeout when positive. The RPC never sets it. Tests use it to
+	// exercise the real timer on a dev server without waiting seven days.
+	KYCTimeoutSeconds int64
+}
+
+// KYCSignal is delivered by the webhook receiver when a provider reports a verdict.
+type KYCSignal struct {
+	SubjectPartyID string
+	Verdict        string // APPROVED or DECLINED
+	SessionID      string
+}
+
+// KYCReviewSignal is delivered when a person decides a review the provider could not decide.
+type KYCReviewSignal struct {
+	SubjectPartyID string
+	Decision       string // APPROVED or DECLINED
+	Reviewer       string
+	Note           string
+}
+
+// Status is the workflow's state. It is returned as the final result and by the status query.
+type Status struct {
+	OnboardingID   string
+	RequestHash    string
+	State          string
+	Steps          []string
+	CompanyPartyID string
+	PersonPartyIDs []string
+	AccountIDs     []string
+	Tier           string
+	DeclineReason  string
+	Kind           string // "business" or "person"
+}
+
+// Activity options: retries are bounded, and an activity that cannot succeed fails the workflow
+// rather than retrying forever.
+var activityOptions = temporal.RetryPolicy{
+	InitialInterval:    time.Second,
+	BackoffCoefficient: 2,
+	MaximumInterval:    time.Minute,
+	MaximumAttempts:    5,
+	NonRetryableErrorTypes: []string{
+		ErrTypeNotConfigured,
+		ErrTypeProviderRejected,
+		ErrTypeValidation,
+	},
+}
+
+// OnboardBusiness runs the onboarding saga. A decline before accounts are created leaves nothing in the
+// ledger, and closes the parties. An error that exhausts its retries marks the run FAILED and returns the
+// error, so the state shows how far it got.
+func OnboardBusiness(ctx workflow.Context, in Input) (Status, error) {
+	st := Status{OnboardingID: in.OnboardingID, RequestHash: in.RequestHash, State: StateRunning, Kind: "business"}
+	if err := workflow.SetQueryHandler(ctx, QueryStatus, func() (Status, error) { return st, nil }); err != nil {
+		return st, err
+	}
+	actx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 30 * time.Second,
+		RetryPolicy:         &activityOptions,
+	})
+	var acts *Activities
+
+	fail := func(err error) (Status, error) {
+		st.State = StateFailed
+		st.DeclineReason = err.Error()
+		return st, err
+	}
+	decline := func(reason string) (Status, error) {
+		st.State = StateDeclined
+		st.DeclineReason = reason
+		if err := workflow.ExecuteActivity(actx, acts.CloseParties, st.AllParties()).Get(actx, nil); err != nil {
+			return fail(err)
+		}
+		st.Steps = append(st.Steps, "parties_closed")
+		return st, nil
+	}
+
+	// 1. Create the company and each director as prospects. Idempotent by key.
+	var pro ProspectsResult
+	if err := workflow.ExecuteActivity(actx, acts.CreateProspects, in).Get(actx, &pro); err != nil {
+		return fail(err)
+	}
+	st.CompanyPartyID, st.PersonPartyIDs = pro.CompanyID, pro.PersonIDs
+	st.Steps = append(st.Steps, "prospects_created")
+
+	// 1b. Link each director to the company. These relationships are what the policy's
+	// person-to-entity rule (transfer code 63) checks.
+	if err := workflow.ExecuteActivity(actx, acts.CreateRelationships, in, pro).Get(actx, nil); err != nil {
+		return fail(err)
+	}
+	st.Steps = append(st.Steps, "relationships_created")
+
+	// 2. Record the consents that cover the checks that follow.
+	if err := workflow.ExecuteActivity(actx, acts.RecordConsents, in, pro).Get(actx, nil); err != nil {
+		return fail(err)
+	}
+	st.Steps = append(st.Steps, "consents_recorded")
+
+	// 3. Move parties to KYC_PENDING and start the verifications.
+	if err := workflow.ExecuteActivity(actx, acts.StartVerifications, in, pro).Get(actx, nil); err != nil {
+		return fail(err)
+	}
+	st.Steps = append(st.Steps, "verifications_started")
+
+	// 4. Wait for a verdict on every subject. Any decline, or the timeout, declines the application.
+	subjects := append([]string{st.CompanyPartyID}, st.PersonPartyIDs...)
+	if reason, err := awaitVerdicts(ctx, actx, in, subjects); err != nil {
+		return fail(err)
+	} else if reason != "" {
+		return decline(reason)
+	}
+	st.Steps = append(st.Steps, "kyc_approved")
+
+	// 5. Sanctions and PEP screening. An unavailable list declines: it never passes.
+	var hits []string
+	if err := workflow.ExecuteActivity(actx, acts.Screen, in).Get(actx, &hits); err != nil {
+		return decline("screening_unavailable")
+	}
+	if len(hits) > 0 {
+		return decline("screening_match")
+	}
+	st.Steps = append(st.Steps, "screened")
+
+	// 6. Sector eligibility from policy-service. Only listed sectors pass (ADR-0012 open).
+	var sector SectorResult
+	if err := workflow.ExecuteActivity(actx, acts.EvaluateSector, in).Get(actx, &sector); err != nil {
+		return decline("sector_check_unavailable")
+	}
+	if !sector.Allowed {
+		return decline("sector_not_eligible:" + sector.Reason)
+	}
+	st.Steps = append(st.Steps, "sector_eligible")
+
+	// 7. Tier, then the company's ledger account. These are the first money-side effects.
+	st.Tier = AssessTier(in)
+	if err := workflow.ExecuteActivity(actx, acts.SetTier, st.CompanyPartyID, st.Tier).Get(actx, nil); err != nil {
+		return fail(err)
+	}
+	var accounts []string
+	if err := workflow.ExecuteActivity(actx, acts.CreateAccounts, in, st.CompanyPartyID).Get(actx, &accounts); err != nil {
+		return fail(err)
+	}
+	st.AccountIDs = accounts
+	st.Steps = append(st.Steps, "accounts_created")
+
+	// 8. Activate.
+	if err := workflow.ExecuteActivity(actx, acts.ActivateParties, st.AllParties()).Get(actx, nil); err != nil {
+		return fail(err)
+	}
+	st.Steps = append(st.Steps, "activated")
+	st.State = StateCompleted
+	return st, nil
+}
+
+func (s Status) AllParties() []string {
+	return append([]string{s.CompanyPartyID}, s.PersonPartyIDs...)
+}
+
+// ErrType names are the non-retryable error types activities may return.
+const (
+	ErrTypeNotConfigured    = "NotConfigured"
+	ErrTypeProviderRejected = "ProviderRejected" // the provider refused a request that a retry cannot fix
+	ErrTypeValidation       = "Validation"
+)
+
+// awaitVerdicts waits for a verdict on every subject, and returns "" when all are approved, or the reason to decline.
+// A REVIEW verdict opens a review for a person to decide, and the wait goes on under the same timeout. A decision or
+// verdict for a subject it is not waiting on is ignored, so a repeated or late delivery changes nothing.
+func awaitVerdicts(ctx, actx workflow.Context, in Input, subjects []string) (string, error) {
+	var acts *Activities
+	pending := map[string]bool{}
+	for _, id := range subjects {
+		pending[id] = true
+	}
+	signals := workflow.GetSignalChannel(ctx, SignalKYCResult)
+	reviews := workflow.GetSignalChannel(ctx, SignalKYCReview)
+	kycTimeout := KYCTimeout
+	if in.KYCTimeoutSeconds > 0 {
+		kycTimeout = time.Duration(in.KYCTimeoutSeconds) * time.Second
+	}
+	timer := workflow.NewTimer(ctx, kycTimeout)
+	inReview := map[string]bool{} // subjects a person is deciding
+	for len(pending) > 0 {
+		var sig KYCSignal
+		var rev KYCReviewSignal
+		gotVerdict, gotReview, timedOut := false, false, false
+		sel := workflow.NewSelector(ctx)
+		sel.AddReceive(signals, func(c workflow.ReceiveChannel, _ bool) { c.Receive(ctx, &sig); gotVerdict = true })
+		sel.AddReceive(reviews, func(c workflow.ReceiveChannel, _ bool) { c.Receive(ctx, &rev); gotReview = true })
+		sel.AddFuture(timer, func(workflow.Future) { timedOut = true })
+		sel.Select(ctx)
+		if timedOut {
+			return "kyc_timeout", nil
+		}
+		if gotReview {
+			if !inReview[rev.SubjectPartyID] {
+				continue
+			}
+			switch rev.Decision {
+			case "DECLINED":
+				return "kyc_review_declined:" + rev.SubjectPartyID, nil
+			case "APPROVED":
+				delete(pending, rev.SubjectPartyID)
+				delete(inReview, rev.SubjectPartyID)
+			}
+			continue
+		}
+		if !gotVerdict {
+			continue
+		}
+		switch sig.Verdict {
+		case "DECLINED":
+			return "kyc_declined:" + sig.SubjectPartyID, nil
+		case "APPROVED":
+			delete(pending, sig.SubjectPartyID)
+		case "REVIEW":
+			if !pending[sig.SubjectPartyID] || inReview[sig.SubjectPartyID] {
+				continue
+			}
+			if err := workflow.ExecuteActivity(actx, acts.OpenKYCReview, in, sig.SubjectPartyID).Get(actx, nil); err != nil {
+				return "", err
+			}
+			inReview[sig.SubjectPartyID] = true
+		}
+	}
+	return "", nil
+}

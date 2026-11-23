@@ -1,0 +1,103 @@
+// Savings and notice deposits (deposits-service). Interest accrues daily on the balance and is paid monthly into the
+// account. A notice account pays out only after its notice period. Both are gated by pkg/licence (savings,
+// notice_deposits): production refuses them until treasury and the regulator have signed them off.
+syntax = "proto3";
+
+package forge.deposits.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/deposits/v1;depositsv1";
+
+service DepositsService {
+  // The products offered, with their current rates.
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  // Opens a savings or notice account for an active customer. One per product per party; asking again returns it.
+  rpc OpenDepositAccount(OpenDepositAccountRequest) returns (OpenDepositAccountResponse);
+  // The party's deposit accounts, each with its balance, interest accrued this month and money under notice.
+  rpc ListDepositAccounts(ListDepositAccountsRequest) returns (ListDepositAccountsResponse);
+  // Moves money from the party's current account into a deposit account.
+  rpc Deposit(DepositRequest) returns (DepositResponse);
+  // Takes money out. Instant for savings; for a notice account it gives notice, and the money moves on the due date.
+  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse);
+  // Cancels a notice that has not yet paid out.
+  rpc CancelNotice(CancelNoticeRequest) returns (CancelNoticeResponse);
+}
+
+message Product {
+  string product_id = 1;   // savings, notice-32, notice-90
+  string name = 2;
+  uint32 rate_bps = 3;     // annual rate in basis points
+  uint32 notice_days = 4;  // 0 for instant access
+  bool available = 5;      // false when production may not offer it (pkg/licence)
+}
+
+message ListProductsRequest {}
+message ListProductsResponse { repeated Product products = 1; }
+
+message OpenDepositAccountRequest {
+  string party_id = 1;
+  string product_id = 2;
+  string actor = 3;
+}
+
+message OpenDepositAccountResponse { DepositAccount account = 1; }
+
+message Notice {
+  string notice_id = 1;
+  string amount_minor = 2;
+  string to_account_id = 3;
+  string given_at = 4;   // RFC 3339
+  string due_on = 5;     // YYYY-MM-DD
+  string status = 6;     // PENDING, PAID, CANCELLED, FAILED
+}
+
+message DepositAccount {
+  string account_id = 1;
+  string product_id = 2;
+  uint32 rate_bps = 3;
+  uint32 notice_days = 4;
+  string balance_minor = 5;
+  string accrued_minor = 6;      // interest accrued this month, not yet paid (whole cents, rounded down)
+  string under_notice_minor = 7; // the sum of pending notices
+  string available_minor = 8;    // what may be withdrawn or given notice on now
+  string opened_at = 9;
+  repeated Notice notices = 10;
+  string interest_paid_minor = 11; // all interest paid into the account so far
+}
+
+message ListDepositAccountsRequest { string party_id = 1; }
+message ListDepositAccountsResponse { repeated DepositAccount accounts = 1; }
+
+message DepositRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string from_account_id = 3;  // the party's rand current account
+  string to_account_id = 4;    // the party's deposit account
+  string amount_minor = 5;
+  string actor = 6;
+}
+
+message WithdrawRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string from_account_id = 3;  // the party's deposit account
+  string to_account_id = 4;    // the party's rand current account
+  string amount_minor = 5;
+  string actor = 6;
+}
+
+message DepositResponse {
+  string state = 1;          // MOVED
+}
+
+message WithdrawResponse {
+  string state = 1;          // MOVED, or NOTICE_GIVEN for a notice account
+  Notice notice = 2;         // set when notice was given
+}
+
+message CancelNoticeRequest {
+  string party_id = 1;
+  string notice_id = 2;
+  string actor = 3;
+}
+
+message CancelNoticeResponse { Notice notice = 1; }

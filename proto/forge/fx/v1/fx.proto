@@ -1,0 +1,61 @@
+// FX (ARCHITECTURE.md 12.2). Quotes disclose the spread. A quote is locked when it is booked, within its validity.
+// Amounts are integer minor units; rates are integers scaled by 10^8.
+syntax = "proto3";
+
+package forge.fx.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/fx/v1;fxv1";
+
+service FXService {
+  rpc Quote(QuoteRequest) returns (QuoteResponse);
+  rpc Book(BookRequest) returns (BookResponse);
+  rpc GetDeal(GetDealRequest) returns (GetDealResponse);
+}
+
+message QuoteRequest {
+  string party_id = 1;
+  string sell_asset = 2;
+  string buy_asset = 3;
+  string sell_amount_minor = 4;
+}
+
+message QuoteResponse {
+  string quote_id = 1;
+  string sell_asset = 2;
+  string buy_asset = 3;
+  string sell_amount_minor = 4;
+  string buy_amount_minor = 5;
+  string rate_scaled = 6;      // the rate the customer gets, in the buy-per-sell direction the disclosure states
+  string mid_rate_scaled = 7;  // the market rate before the spread
+  uint32 spread_bps = 8;
+  string spread_minor = 9;     // the spread the bank keeps, in the sell asset
+  string expires_at = 10;      // RFC 3339
+  string disclosure = 11;
+}
+
+message BookRequest {
+  string party_id = 1;
+  string quote_id = 2;
+  string sell_account_id = 3; // the customer's account in the sell asset
+  string buy_account_id = 4;  // the customer's account in the buy asset
+}
+
+message BookResponse {
+  string deal_id = 1;
+  string state = 2;
+}
+
+message GetDealRequest {
+  string party_id = 1;
+  string deal_id = 2;
+}
+
+message GetDealResponse {
+  string deal_id = 1;
+  string state = 2;
+  string reason = 3;
+  string sell_asset = 4;
+  string buy_asset = 5;
+  string sell_amount_minor = 6;
+  string buy_amount_minor = 7;
+}

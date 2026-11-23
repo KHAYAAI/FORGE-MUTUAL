@@ -1,0 +1,47 @@
+// Rails gateway API (ARCHITECTURE.md 12.1). The gateway sends instructions to a payment rail and reports
+// their status. Initiation is idempotent by instruction_id.
+syntax = "proto3";
+
+package forge.rails.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/rails/v1;railsv1";
+
+service RailService {
+  rpc Initiate(InitiateRequest) returns (InitiateResponse);
+  rpc Status(StatusRequest) returns (StatusResponse);
+}
+
+enum RailStatus {
+  RAIL_STATUS_UNSPECIFIED = 0;
+  RAIL_STATUS_ACCEPTED = 1;  // the rail took the instruction; no final outcome yet
+  RAIL_STATUS_PENDING = 2;   // still in flight
+  RAIL_STATUS_SETTLED = 3;   // final: money moved
+  RAIL_STATUS_REJECTED = 4;  // final: money did not move
+  RAIL_STATUS_RETURNED = 5;  // final: money moved and came back
+}
+
+message InitiateRequest {
+  string instruction_id = 1;
+  string rail = 2; // "EFT" in this version
+  string amount_minor = 3;
+  string asset = 4;
+  string beneficiary_name = 5;
+  string account_number = 6;
+  string bank_code = 7;
+  // Simulation only. Honoured when the gateway runs with simulation enabled; refused otherwise.
+  string scenario = 8;
+}
+
+message InitiateResponse {
+  RailStatus status = 1;
+  string reference = 2;
+}
+
+message StatusRequest {
+  string instruction_id = 1;
+}
+
+message StatusResponse {
+  RailStatus status = 1;
+  string reference = 2;
+}

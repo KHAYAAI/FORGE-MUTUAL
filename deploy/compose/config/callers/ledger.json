@@ -1,0 +1,48 @@
+{
+  "svc-consolidated-view": [
+    "GetBalances",
+    "ListAccounts"
+  ],
+  "svc-core-bridge": [
+    "GetBalances",
+    "ListAccounts"
+  ],
+  "svc-fx": [
+    "CreateAccounts",
+    "CreateTransfers",
+    "GetBalances",
+    "PostPending",
+    "VoidPending"
+  ],
+  "svc-onboarding": [
+    "CreateAccounts"
+  ],
+  "svc-payments": [
+    "CreateAccounts",
+    "CreateTransfers",
+    "PostPending",
+    "VoidPending"
+  ],
+  "svc-reconciliation": [
+    "GetBalances",
+    "ListAccounts"
+  ],
+  "svc-treasury-risk": [
+    "GetBalances",
+    "ListAccounts"
+  ],
+  "svc-deposits": [
+    "CreateAccounts",
+    "CreateTransfers",
+    "GetBalances"
+  ],
+  "svc-lending": [
+    "CreateAccounts",
+    "CreateTransfers",
+    "GetBalances"
+  ],
+  "svc-acquiring": [
+    "CreateAccounts",
+    "CreateTransfers"
+  ]
+}

@@ -1,0 +1,102 @@
+// Treasury and prudential risk (treasury-risk). The prudential report: capital adequacy, leverage, liquidity coverage
+// and stress results, computed from the ledger. Weights, rates and minimums are PROPOSED (docs/THRESHOLDS.md).
+syntax = "proto3";
+
+package forge.treasury.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1;treasuryv1";
+
+service TreasuryService {
+  rpc GetPrudentialReport(GetPrudentialReportRequest) returns (GetPrudentialReportResponse);
+  // The trial balance by currency and account code, with each ledger's double-entry check, and the management balance
+  // sheet in rand built from it. The base the management accounts and the returns are built on.
+  rpc GetTrialBalance(GetTrialBalanceRequest) returns (GetTrialBalanceResponse);
+  // The single customer view for deposit insurance: each depositor's covered and uncovered deposits.
+  rpc GetSingleCustomerView(GetSingleCustomerViewRequest) returns (GetSingleCustomerViewResponse);
+}
+
+message GetSingleCustomerViewRequest {}
+
+message DepositorView {
+  string party_id = 1;
+  uint32 accounts = 2;
+  string insured_eligible_minor = 3;  // rand deposits flagged insured
+  string covered_minor = 4;           // up to the cover limit
+  string uncovered_minor = 5;         // eligible above the limit, plus deposits not eligible (foreign, or not flagged)
+}
+
+message GetSingleCustomerViewResponse {
+  string as_of = 1;
+  string cover_limit_minor = 2;
+  repeated DepositorView depositors = 3;
+  string total_covered_minor = 4;
+  string total_uncovered_minor = 5;
+}
+
+message GetTrialBalanceRequest {}
+
+message TrialBalanceLine {
+  string asset = 1;
+  uint32 code = 2;
+  string name = 3;
+  uint32 accounts = 4;
+  string debits_minor = 5;
+  string credits_minor = 6;
+  string net_minor = 7;    // credits less debits: positive is owed by Forge (a liability), negative is owed to Forge
+}
+
+message LedgerCheck {
+  string asset = 1;
+  string net_minor = 2;    // the sum of every account on the ledger: zero in double entry
+  bool balanced = 3;
+}
+
+message BalanceSheetLine {
+  string section = 1;      // ASSETS, LIABILITIES, INTERNAL
+  string label = 2;
+  string rand_minor = 3;
+}
+
+message GetTrialBalanceResponse {
+  string as_of = 1;
+  repeated TrialBalanceLine lines = 2;
+  repeated LedgerCheck checks = 3;
+  repeated BalanceSheetLine balance_sheet = 4;
+  string total_assets_minor = 5;
+  string total_liabilities_minor = 6;
+  string internal_minor = 7;  // income, expense, positions and suspense: what makes assets and liabilities differ
+}
+
+message GetPrudentialReportRequest {}
+
+message StressScenario {
+  string name = 1;
+  string description = 2;
+  string liquidity_left_minor = 3;
+  int64 total_capital_bps = 4;
+  bool survives = 5;
+}
+
+message GetPrudentialReportResponse {
+  string as_of = 1;
+  string capital_minor = 2;
+  string credit_rwa_minor = 3;
+  string market_rwa_minor = 4;
+  string operational_rwa_minor = 5;
+  string total_rwa_minor = 6;
+  int64 total_capital_bps = 7;
+  int64 min_total_capital_bps = 8;
+  string leverage_exposure_minor = 9;
+  int64 leverage_bps = 10;
+  int64 min_leverage_bps = 11;
+  string hqla_minor = 12;
+  string net_outflows_30d_minor = 13;
+  int64 lcr_bps = 14;
+  int64 min_lcr_bps = 15;
+  repeated string breaches = 16;
+  repeated StressScenario stress = 17;
+  repeated string limitations = 18;  // what this report does not yet see
+  string deposits_minor = 19;
+  string loans_minor = 20;
+  string largest_depositor_minor = 21;
+}

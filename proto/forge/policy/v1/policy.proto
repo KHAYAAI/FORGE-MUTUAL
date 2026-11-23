@@ -1,0 +1,28 @@
+// Policy decision API (ARCHITECTURE.md section 10). Decisions are made by OPA rules in policy/.
+syntax = "proto3";
+
+package forge.policy.v1;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/policy/v1;policyv1";
+
+service PolicyService {
+  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+}
+
+message EvaluateRequest {
+  // One of: limits, assets, entity, recon, sector. Each maps to package forge.<name> in policy/.
+  string decision_point = 1;
+  string entity_code = 2;
+  string request_id = 3; // caller's correlation id, copied into the decision event
+  google.protobuf.Struct input = 4;
+}
+
+message EvaluateResponse {
+  bool allow = 1;
+  bool stepup = 2;
+  string reason = 3;
+  string bundle_version = 4;
+  string decision_id = 5;
+}

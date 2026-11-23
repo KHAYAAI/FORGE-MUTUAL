@@ -1,0 +1,10 @@
+{
+  "svc-workspace": [
+    "CancelNotice",
+    "Deposit",
+    "ListDepositAccounts",
+    "ListProducts",
+    "OpenDepositAccount",
+    "Withdraw"
+  ]
+}

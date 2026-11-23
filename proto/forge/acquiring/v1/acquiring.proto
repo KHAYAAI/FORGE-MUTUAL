@@ -1,0 +1,112 @@
+// Merchant acquiring (acquiring-service): payment links and point-of-sale payment requests for the businesses that
+// bank with Forge. Card details never reach Forge: the payer pays on the acquiring bank's hosted checkout, and the
+// acquirer reports each result to a signed webhook. Card takings settle to the merchant's account the next day, less
+// the merchant discount rate. Gated by pkg/licence (acquiring): production refuses it until an acquiring bank, the
+// card schemes and PCI DSS scope are in place, and refuses the simulator always.
+syntax = "proto3";
+
+package forge.acquiring.v1;
+
+option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/acquiring/v1;acquiringv1";
+
+service AcquiringService {
+  rpc CreatePaymentLink(CreatePaymentLinkRequest) returns (CreatePaymentLinkResponse);
+  rpc ListPaymentLinks(ListPaymentLinksRequest) returns (ListPaymentLinksResponse);
+  rpc CancelPaymentLink(CancelPaymentLinkRequest) returns (CancelPaymentLinkResponse);
+  rpc RefundPayment(RefundPaymentRequest) returns (RefundPaymentResponse);
+  rpc ListSettlements(ListSettlementsRequest) returns (ListSettlementsResponse);
+}
+
+// The payer's side, for the public pay page. It needs no sign-in: the token is the capability.
+service CheckoutService {
+  rpc GetCheckout(GetCheckoutRequest) returns (GetCheckoutResponse);
+  rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);
+  // The acquirer simulator's checkout: approve or decline a test payment. Refused unless the simulator is in use.
+  rpc SimulatePayment(SimulatePaymentRequest) returns (SimulatePaymentResponse);
+}
+
+message PaymentLink {
+  string link_id = 1;
+  string token = 2;          // in the pay URL; shown to the merchant only
+  string channel = 3;        // link, pos
+  string amount_minor = 4;
+  string description = 5;
+  string reference = 6;      // the merchant's own, e.g. an invoice number
+  string status = 7;         // OPEN, PAID, EXPIRED, CANCELLED
+  string created_at = 8;
+  string expires_at = 9;
+  string paid_at = 10;
+  string refunded_minor = 11;
+  string settlement_account_id = 12;
+  string merchant_name = 13;
+}
+
+message CreatePaymentLinkRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string settlement_account_id = 3; // the merchant's rand account the takings settle to
+  string amount_minor = 4;
+  string description = 5;
+  string reference = 6;
+  string channel = 7;               // link (default) or pos
+  string merchant_name = 8;         // what the payer sees
+  uint32 valid_hours = 9;           // default 168 (a week) for a link, 1 for point-of-sale
+  string actor = 10;
+}
+
+message CreatePaymentLinkResponse { PaymentLink link = 1; }
+
+message ListPaymentLinksRequest { string party_id = 1; }
+message ListPaymentLinksResponse { repeated PaymentLink links = 1; }
+
+message CancelPaymentLinkRequest {
+  string party_id = 1;
+  string link_id = 2;
+  string actor = 3;
+}
+
+message CancelPaymentLinkResponse { PaymentLink link = 1; }
+
+message RefundPaymentRequest {
+  string idempotency_key = 1;
+  string party_id = 2;
+  string link_id = 3;
+  string amount_minor = 4;
+  string actor = 5;
+}
+
+message RefundPaymentResponse { PaymentLink link = 1; }
+
+message Settlement {
+  string settlement_id = 1;
+  string day = 2;            // the day the payments were taken (YYYY-MM-DD)
+  string gross_minor = 3;
+  string fee_minor = 4;      // the merchant discount
+  string net_minor = 5;      // paid to the merchant
+  uint32 payments = 6;
+  string status = 7;         // PENDING, PAID
+}
+
+message ListSettlementsRequest { string party_id = 1; }
+message ListSettlementsResponse { repeated Settlement settlements = 1; uint32 mdr_bps = 2; }
+
+message GetCheckoutRequest { string token = 1; }
+
+message GetCheckoutResponse {
+  string merchant_name = 1;
+  string amount_minor = 2;
+  string description = 3;
+  string reference = 4;
+  string status = 5;         // OPEN, PAID, EXPIRED, CANCELLED
+  string expires_at = 6;
+}
+
+message StartCheckoutRequest { string token = 1; }
+message StartCheckoutResponse { string checkout_url = 1; bool simulated = 2; }
+
+message SimulatePaymentRequest {
+  string token = 1;
+  bool approve = 2;
+}
+
+message SimulatePaymentResponse { string status = 1; }

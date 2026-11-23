@@ -1,0 +1,1754 @@
+openapi: 3.1.0
+info:
+  title: Forge customer workspace API
+  version: 1.0.0
+  description: |
+    The backend for the customer workspace. It keeps no state: each route is a view for the signed-in session's party,
+    forwarded to the service that owns the data.
+
+    Money is always a string of integer minor units (cents for ZAR and USD). Rates are integers scaled by 10^8.
+
+    The party comes from the session. A request body that names a party is refused with 400. Writes that create money
+    movement require an Idempotency-Key header; the key is scoped to the party, so two customers cannot collide.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Liveness. Open; needs no session.
+      responses:
+        "200":
+          description: The process is up.
+  /v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: The session party's accounts and balances.
+      responses:
+        "200":
+          description: Accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: openCurrencyAccount
+      summary: Open a further current account in a currency (ZAR, USD, EUR or GBP). One per currency; asking again returns it.
+      description: |
+        EUR and GBP are refused (409) in production until approved (pkg/licence).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [asset]
+              properties:
+                asset:
+                  type: string
+                  enum: [ZAR, USD, EUR, GBP]
+      responses:
+        "201":
+          description: The account, and the reference a payer quotes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenedAccount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/accounts/{account}/activity:
+    get:
+      operationId: listActivity
+      summary: Postings to one of the session party's accounts, oldest first after a cursor.
+      parameters:
+        - name: account
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: after
+          in: query
+          description: Return entries with a sequence number greater than this.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        "200":
+          description: Entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entries, next_after]
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityEntry"
+                  next_after:
+                    type: integer
+                    description: Pass as `after` to read the next page.
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /v1/payments:
+    post:
+      operationId: createPayment
+      summary: Send a domestic ZAR payment from one of the session party's accounts.
+      description: The source account is checked against the session party before payments is asked.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentRequest"
+      responses:
+        "202":
+          description: Accepted. The payment's outcome arrives through GET.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [payment_id]
+                properties:
+                  payment_id:
+                    type: string
+                    format: uuid
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payments/{payment}:
+    get:
+      operationId: getPayment
+      summary: A payment's state.
+      parameters:
+        - name: payment
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The payment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/fx/quotes:
+    post:
+      operationId: quoteFx
+      summary: Price a conversion between the session party's currencies. The quote is valid for 60 seconds and books once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRequest"
+      responses:
+        "200":
+          description: The quote, with its disclosure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          $ref: "#/components/responses/Error"
+  /v1/fx/deals:
+    post:
+      operationId: bookFx
+      summary: Book a quote between two of the session party's accounts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+      responses:
+        "202":
+          description: Booked. The deal's state moves on as its legs post.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deal_id, state]
+                properties:
+                  deal_id:
+                    type: string
+                  state:
+                    type: string
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/fx/deals/{deal}:
+    get:
+      operationId: getFxDeal
+      summary: A conversion's state.
+      parameters:
+        - name: deal
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The deal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches:
+    post:
+      operationId: createPayoutBatch
+      summary: Create a bulk payout as the maker. A different person must approve it before anything is sent.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRequest"
+      responses:
+        "201":
+          description: Created in DRAFT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches/{batch}:
+    get:
+      operationId: getPayoutBatch
+      summary: A batch with each item's state.
+      parameters:
+        - name: batch
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The batch.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/payout-batches/{batch}/approve:
+    post:
+      operationId: approvePayoutBatch
+      summary: Approve a batch as the checker. The checker must not be the maker. Starts the run.
+      parameters:
+        - name: batch
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The batch, now RUNNING.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/receiving-details:
+    get:
+      operationId: receivingDetails
+      summary: The reference for each of the party's accounts, which a payer quotes to pay into it.
+      responses:
+        "200":
+          description: The references.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [details]
+                properties:
+                  details:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReceivingDetail"
+  /v1/cross-border-credits:
+    get:
+      operationId: listCrossBorderCredits
+      summary: Foreign-currency payments the party received, each with the reason it was paid (for SARB reporting).
+      responses:
+        "200":
+          description: The credits, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [credits]
+                properties:
+                  credits:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CrossBorderCredit"
+  /v1/cross-border-credits/{credit}/reason:
+    post:
+      operationId: classifyCrossBorderCredit
+      summary: Give the reason for a payment received from abroad. Once given, it is not changed here.
+      parameters:
+        - name: credit
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason_code]
+              properties:
+                reason_code:
+                  type: string
+                note:
+                  type: string
+                  maxLength: 200
+      responses:
+        "200":
+          description: The credit, with its reason.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossBorderCredit"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/payment-reasons:
+    get:
+      operationId: listPaymentReasons
+      summary: The reasons a customer may give for a payment received from abroad.
+      responses:
+        "200":
+          description: The reasons.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reasons]
+                properties:
+                  reasons:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, label]
+                      properties:
+                        code:
+                          type: string
+                        label:
+                          type: string
+  /v1/deposit-products:
+    get:
+      operationId: listDepositProducts
+      summary: Savings and notice products, their rates, and whether each is available.
+      responses:
+        "200":
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DepositProduct"
+  /v1/deposit-accounts:
+    get:
+      operationId: listDepositAccounts
+      summary: The party's savings and notice accounts.
+      responses:
+        "200":
+          description: The accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DepositAccount"
+    post:
+      operationId: openDepositAccount
+      summary: Open a savings or notice account. One per product; asking again returns it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [product_id]
+              properties:
+                product_id:
+                  type: string
+      responses:
+        "201":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositAccount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/deposits:
+    post:
+      operationId: depositToSavings
+      summary: Move money from the party's rand current account into a deposit account.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositMove"
+      responses:
+        "200":
+          description: Moved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state]
+                properties:
+                  state:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/withdrawals:
+    post:
+      operationId: withdrawFromSavings
+      summary: Take money out of a deposit account. Instant for savings; gives notice for a notice account.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositMove"
+      responses:
+        "200":
+          description: Moved, or notice given.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state]
+                properties:
+                  state:
+                    type: string
+                    enum: [MOVED, NOTICE_GIVEN]
+                  notice:
+                    $ref: "#/components/schemas/Notice"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/notices/{notice}/cancel:
+    post:
+      operationId: cancelNotice
+      summary: Cancel a notice that has not yet paid out.
+      parameters:
+        - name: notice
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The cancelled notice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/loan-products:
+    get:
+      operationId: listLoanProducts
+      summary: Credit products, their terms, and whether each is available.
+      responses:
+        "200":
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LoanProduct"
+  /v1/facilities:
+    get:
+      operationId: listFacilities
+      summary: The party's credit applications and facilities.
+      responses:
+        "200":
+          description: The facilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [facilities]
+                properties:
+                  facilities:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Facility"
+    post:
+      operationId: applyForCredit
+      summary: Apply for credit. Assessed at once on the account's last 90 days; a credit officer decides.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [product_id, amount_minor, current_account_id]
+              properties:
+                product_id:
+                  type: string
+                amount_minor:
+                  type: string
+                term_months:
+                  type: integer
+                current_account_id:
+                  type: string
+                purpose:
+                  type: string
+                  maxLength: 200
+      responses:
+        "201":
+          description: The application, assessed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/statement:
+    get:
+      operationId: facilityStatement
+      summary: The facility's statement for a calendar month (NCA s.108).
+      parameters:
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{4}-[0-9]{2}$"
+      responses:
+        "200":
+          description: The statement.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [facility_id, period, entries, outstanding_now_minor]
+                properties:
+                  facility_id:
+                    type: string
+                  period:
+                    type: string
+                  outstanding_now_minor:
+                    type: string
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      required: [at, kind, principal_minor, interest_minor, description]
+                      properties:
+                        at:
+                          type: string
+                        kind:
+                          type: string
+                        principal_minor:
+                          type: string
+                        interest_minor:
+                          type: string
+                        description:
+                          type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/accept:
+    post:
+      operationId: acceptOffer
+      summary: Accept an approved offer on its quotation; the money is paid out.
+      parameters:
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [accepts_terms]
+              properties:
+                accepts_terms:
+                  type: boolean
+      responses:
+        "200":
+          description: The active facility.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/draw:
+    post:
+      operationId: drawFacility
+      summary: Draw on an overdraft facility into the current account, up to the limit.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The facility after the draw.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/repay:
+    post:
+      operationId: repayFacility
+      summary: Repay early. A term loan is settled early only in full, and future interest is waived.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The facility after the repayment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Facility"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payment-links:
+    get:
+      operationId: listPaymentLinks
+      summary: The merchant's payment links and point-of-sale requests.
+      responses:
+        "200":
+          description: The links.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PaymentLink"
+    post:
+      operationId: createPaymentLink
+      summary: Create a payment link (or a point-of-sale request) the payer pays by card at the acquirer.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [settlement_account_id, amount_minor, description, merchant_name]
+              properties:
+                settlement_account_id:
+                  type: string
+                amount_minor:
+                  type: string
+                description:
+                  type: string
+                  maxLength: 140
+                reference:
+                  type: string
+                  maxLength: 35
+                channel:
+                  type: string
+                  enum: [link, pos]
+                merchant_name:
+                  type: string
+                  maxLength: 80
+                valid_hours:
+                  type: integer
+      responses:
+        "201":
+          description: The link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payment-links/{link}/cancel:
+    post:
+      operationId: cancelPaymentLink
+      summary: Cancel an open link.
+      parameters:
+        - name: link
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The cancelled link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/payment-links/{link}/refund:
+    post:
+      operationId: refundPayment
+      summary: Refund a settled card payment, up to what is left to refund.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: link
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount_minor]
+              properties:
+                amount_minor:
+                  type: string
+      responses:
+        "200":
+          description: The link after the refund.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/settlements:
+    get:
+      operationId: listSettlements
+      summary: Card takings settled to the merchant, per day, with the merchant discount.
+      responses:
+        "200":
+          description: The settlements.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [settlements, mdr_bps]
+                properties:
+                  mdr_bps:
+                    type: integer
+                  settlements:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Settlement"
+  /v1/checkout/{token}:
+    get:
+      operationId: getCheckout
+      summary: The payer's view of a payment, by its token. No sign-in.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: What is being paid, and to whom.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkout"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/checkout/{token}/start:
+    post:
+      operationId: startCheckout
+      summary: Send the payer to the acquirer's hosted checkout. No sign-in.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Where to send the payer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checkout_url, simulated]
+                properties:
+                  checkout_url:
+                    type: string
+                  simulated:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/checkout/{token}/simulate:
+    post:
+      operationId: simulateCheckout
+      summary: The acquirer simulator's test checkout. Refused unless the simulator is in use.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [approve]
+              properties:
+                approve:
+                  type: boolean
+      responses:
+        "200":
+          description: The result.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/applications/person:
+    post:
+      operationId: applyPerson
+      summary: Apply for a personal account. For a signed-in applicant; needs no party yet.
+      description: |
+        One application per applicant and kind: sending it again returns the same application. Limited to 10
+        submissions an hour per applicant.
+      security:
+        - devApplicant: []
+          devActor: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonApplication"
+      responses:
+        "202":
+          description: Accepted. The onboarding has started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/applications/business:
+    post:
+      operationId: applyBusiness
+      summary: Apply for a business account, naming the company and each director.
+      security:
+        - devApplicant: []
+          devActor: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessApplication"
+      responses:
+        "202":
+          description: Accepted. The onboarding has started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+  /v1/applications/{kind}:
+    get:
+      operationId: getApplication
+      summary: The signed-in applicant's own application of this kind.
+      security:
+        - devApplicant: []
+          devActor: []
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [person, business]
+      responses:
+        "200":
+          description: Where the application stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    devParty:
+      type: apiKey
+      in: header
+      name: X-Forge-Party
+      description: Development only. Refused in production. A canonical UUID.
+    devActor:
+      type: apiKey
+      in: header
+      name: X-Forge-Actor
+      description: Development only. Refused in production. The signed-in person, up to 64 characters.
+    devApplicant:
+      type: apiKey
+      in: header
+      name: X-Forge-Applicant
+      description: Development only. Refused in production, where the subject comes from the verified sign-in token.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Up to 100 characters. The same key with the same request returns the same result.
+      schema:
+        type: string
+        maxLength: 100
+  responses:
+    Error:
+      description: An error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [invalid_argument, unauthenticated, permission_denied, not_found, already_exists, failed_precondition, unavailable, internal]
+            message:
+              type: string
+    Account:
+      type: object
+      required: [account_id, asset, available_minor, holding_entity, insured]
+      properties:
+        account_id:
+          type: string
+        asset:
+          type: string
+          enum: [ZAR, USD, EUR, GBP]
+        available_minor:
+          type: string
+        holding_entity:
+          type: string
+          description: The entity that holds the money. Every balance names it.
+        insured:
+          type: boolean
+        product_id:
+          type: string
+        as_of:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [EVENT, LEDGER]
+    ActivityEntry:
+      type: object
+      required: [seq, transfer_id, direction, amount_minor, asset, at]
+      properties:
+        seq:
+          type: integer
+        transfer_id:
+          type: string
+        direction:
+          type: string
+          enum: [IN, OUT]
+        amount_minor:
+          type: string
+        asset:
+          type: string
+        at:
+          type: string
+          format: date-time
+    PaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [account_id, amount_minor, asset, beneficiary_name, account_number, bank_code, reference]
+      properties:
+        account_id:
+          type: string
+        amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+        asset:
+          type: string
+          enum: [ZAR]
+        beneficiary_name:
+          type: string
+          maxLength: 140
+        account_number:
+          type: string
+          pattern: "^[A-Za-z0-9]{4,34}$"
+        bank_code:
+          type: string
+          pattern: "^[A-Za-z0-9]{1,11}$"
+        reference:
+          type: string
+          maxLength: 140
+    Payment:
+      type: object
+      required: [payment_id, state]
+      properties:
+        payment_id:
+          type: string
+        state:
+          type: string
+          enum: [PAYMENT_STATE_RUNNING, PAYMENT_STATE_AWAITING_APPROVAL, PAYMENT_STATE_COMPLETED, PAYMENT_STATE_DECLINED, PAYMENT_STATE_FAILED, PAYMENT_STATE_CANCELLED, PAYMENT_STATE_REPAIR_REQUIRED, PAYMENT_STATE_RESERVED]
+        reason:
+          type: string
+        amount_minor:
+          type: string
+        asset:
+          type: string
+    QuoteRequest:
+      type: object
+      additionalProperties: false
+      required: [sell_asset, buy_asset, sell_amount_minor]
+      properties:
+        sell_asset:
+          type: string
+          enum: [ZAR, USD, EUR, GBP]
+        buy_asset:
+          type: string
+          enum: [ZAR, USD, EUR, GBP]
+        sell_amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+    Quote:
+      type: object
+      required: [quote_id, sell_asset, buy_asset, sell_amount_minor, buy_amount_minor, rate_scaled, mid_rate_scaled, spread_bps, spread_minor, expires_at, disclosure]
+      properties:
+        quote_id:
+          type: string
+        sell_asset:
+          type: string
+        buy_asset:
+          type: string
+        sell_amount_minor:
+          type: string
+        buy_amount_minor:
+          type: string
+        rate_scaled:
+          type: string
+          description: The rate the customer gets, scaled by 10^8.
+        mid_rate_scaled:
+          type: string
+        spread_bps:
+          type: integer
+        spread_minor:
+          type: string
+          description: The spread the bank keeps, in the sell asset.
+        expires_at:
+          type: string
+          format: date-time
+        disclosure:
+          type: string
+          description: The text the customer must see before booking.
+    BookRequest:
+      type: object
+      additionalProperties: false
+      required: [quote_id, sell_account_id, buy_account_id]
+      properties:
+        quote_id:
+          type: string
+        sell_account_id:
+          type: string
+        buy_account_id:
+          type: string
+    Deal:
+      type: object
+      required: [deal_id, state]
+      properties:
+        deal_id:
+          type: string
+        state:
+          type: string
+          enum: [BOOKED, SELL_PENDING, BUY_PENDING, BUY_POSTED, COMPLETED, VOIDED, REVERSED]
+        reason:
+          type: string
+    BatchRequest:
+      type: object
+      additionalProperties: false
+      required: [from_account_id, asset, items]
+      properties:
+        from_account_id:
+          type: string
+        asset:
+          type: string
+          enum: [ZAR]
+        items:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/BatchItemRequest"
+    BatchItemRequest:
+      type: object
+      additionalProperties: false
+      required: [item_key, amount_minor, beneficiary_name, account_number, bank_code, reference]
+      properties:
+        item_key:
+          type: string
+          pattern: "^[A-Za-z0-9._-]{1,64}$"
+        amount_minor:
+          type: string
+          pattern: "^[1-9][0-9]*$"
+        beneficiary_name:
+          type: string
+          maxLength: 140
+        account_number:
+          type: string
+        bank_code:
+          type: string
+        reference:
+          type: string
+          maxLength: 140
+    Batch:
+      type: object
+      required: [batch_id, from_account_id, asset, total_minor, state, created_by, run, items]
+      properties:
+        batch_id:
+          type: string
+        from_account_id:
+          type: string
+        asset:
+          type: string
+        total_minor:
+          type: string
+        state:
+          type: string
+          enum: [BATCH_STATE_DRAFT, BATCH_STATE_RUNNING, BATCH_STATE_COMPLETED, BATCH_STATE_COMPLETED_WITH_EXCEPTIONS]
+        created_by:
+          type: string
+        approved_by:
+          type: string
+        run:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            required: [item_key, amount_minor, state]
+            properties:
+              item_key:
+                type: string
+              amount_minor:
+                type: string
+              state:
+                type: string
+                enum: [ITEM_STATE_PENDING, ITEM_STATE_SENT, ITEM_STATE_SETTLED, ITEM_STATE_FAILED, ITEM_STATE_UNCERTAIN]
+              payment_id:
+                type: string
+              reason:
+                type: string
+    PersonApplication:
+      type: object
+      additionalProperties: false
+      required: [legal_name, national_id]
+      properties:
+        legal_name:
+          type: string
+          maxLength: 200
+        national_id:
+          type: string
+          description: A 13-digit South African identity number with a valid check digit.
+          pattern: "^[0-9]{13}$"
+    BusinessApplication:
+      type: object
+      additionalProperties: false
+      required: [legal_name, registration_number, sector_code, directors]
+      properties:
+        legal_name:
+          type: string
+          maxLength: 200
+        registration_number:
+          type: string
+          maxLength: 32
+        sector_code:
+          type: string
+        directors:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [legal_name, national_id, ownership_bps, is_ubo]
+            properties:
+              legal_name:
+                type: string
+              national_id:
+                type: string
+                pattern: "^[0-9]{13}$"
+              ownership_bps:
+                type: integer
+                minimum: 0
+                maximum: 10000
+              is_ubo:
+                type: boolean
+    Application:
+      type: object
+      description: |
+        Where an application stands. A declined application never says why: telling an applicant about a sanctions
+        or screening match would be tipping-off.
+      required: [kind, state, next, steps]
+      properties:
+        kind:
+          type: string
+          enum: [person, business]
+        state:
+          type: string
+          enum: [in_progress, approved, declined, failed]
+        next:
+          type: string
+          description: What the applicant does next, "verify" or "wait"; empty once the application has ended.
+        steps:
+          type: array
+          items:
+            type: string
+        verify:
+          type: array
+          description: The hosted verification links. Each is a bearer link, shown only to the applicant.
+          items:
+            type: object
+            required: [kind, url]
+            properties:
+              kind:
+                type: string
+                enum: [person, business]
+              url:
+                type: string
+                format: uri
+        party_id:
+          type: string
+          format: uuid
+          description: Present once the application is approved.
+    OpenedAccount:
+      type: object
+      required: [account_id, asset, reference, partner]
+      properties:
+        account_id:
+          type: string
+        asset:
+          type: string
+        reference:
+          type: string
+        partner:
+          type: string
+          description: The partner bank that holds a foreign account; empty for the rand.
+    ReceivingDetail:
+      type: object
+      required: [reference, asset, account_id]
+      properties:
+        reference:
+          type: string
+        asset:
+          type: string
+        account_id:
+          type: string
+    CrossBorderCredit:
+      type: object
+      required: [credit_id, account_id, asset, amount_minor, reference, booked_at, status, reason_code, reason_note, classified_by, classified_at]
+      properties:
+        credit_id:
+          type: string
+        account_id:
+          type: string
+        asset:
+          type: string
+        amount_minor:
+          type: string
+        reference:
+          type: string
+        booked_at:
+          type: string
+        status:
+          type: string
+          enum: [AWAITING_REASON, CLASSIFIED]
+        reason_code:
+          type: string
+        reason_note:
+          type: string
+        classified_by:
+          type: string
+        classified_at:
+          type: string
+    DepositProduct:
+      type: object
+      required: [product_id, name, rate_bps, notice_days, available]
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        rate_bps:
+          type: integer
+        notice_days:
+          type: integer
+        available:
+          type: boolean
+    Notice:
+      type: object
+      required: [notice_id, amount_minor, to_account_id, given_at, due_on, status]
+      properties:
+        notice_id:
+          type: string
+        amount_minor:
+          type: string
+        to_account_id:
+          type: string
+        given_at:
+          type: string
+        due_on:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, PAID, CANCELLED, FAILED]
+    DepositAccount:
+      type: object
+      required: [account_id, product_id, rate_bps, notice_days, balance_minor, accrued_minor, under_notice_minor, available_minor, opened_at, notices, interest_paid_minor]
+      properties:
+        account_id:
+          type: string
+        product_id:
+          type: string
+        rate_bps:
+          type: integer
+        notice_days:
+          type: integer
+        balance_minor:
+          type: string
+        accrued_minor:
+          type: string
+        under_notice_minor:
+          type: string
+        available_minor:
+          type: string
+        opened_at:
+          type: string
+        interest_paid_minor:
+          type: string
+        notices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+    DepositMove:
+      type: object
+      additionalProperties: false
+      required: [from_account_id, to_account_id, amount_minor]
+      properties:
+        from_account_id:
+          type: string
+        to_account_id:
+          type: string
+        amount_minor:
+          type: string
+    LoanProduct:
+      type: object
+      required: [product_id, name, rate_bps, fee_bps, sweep_bps, min_minor, max_minor, max_term_months, available]
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        rate_bps:
+          type: integer
+        fee_bps:
+          type: integer
+        sweep_bps:
+          type: integer
+        min_minor:
+          type: string
+        max_minor:
+          type: string
+        max_term_months:
+          type: integer
+        available:
+          type: boolean
+    Instalment:
+      type: object
+      required: [number, due_on, principal_minor, interest_minor, status]
+      properties:
+        number:
+          type: integer
+        due_on:
+          type: string
+        principal_minor:
+          type: string
+        interest_minor:
+          type: string
+        status:
+          type: string
+          enum: [DUE, PAID, ARREARS, WAIVED]
+    Facility:
+      type: object
+      required: [facility_id, product_id, status, requested_minor, approved_minor, rate_bps, term_months, fee_bps, sweep_bps, outstanding_minor, available_minor, total_repayable_minor, applied_at, schedule, days_past_due]
+      properties:
+        facility_id:
+          type: string
+        product_id:
+          type: string
+        status:
+          type: string
+          enum: [ASSESSED, APPROVED, DECLINED, ACTIVE, SETTLED, CANCELLED]
+        requested_minor:
+          type: string
+        approved_minor:
+          type: string
+        rate_bps:
+          type: integer
+        term_months:
+          type: integer
+        fee_bps:
+          type: integer
+        sweep_bps:
+          type: integer
+        outstanding_minor:
+          type: string
+        available_minor:
+          type: string
+        total_repayable_minor:
+          type: string
+        applied_at:
+          type: string
+        decided_at:
+          type: string
+        current_account_id:
+          type: string
+        purpose:
+          type: string
+        days_past_due:
+          type: integer
+        default_notice:
+          type: object
+          description: An outstanding default notice (NCA s.129), if any.
+          required: [notice_id, issued_at, respond_by, arrears_minor, days_past_due, text]
+          properties:
+            notice_id:
+              type: string
+            issued_at:
+              type: string
+            respond_by:
+              type: string
+            arrears_minor:
+              type: string
+            days_past_due:
+              type: integer
+            text:
+              type: string
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/Instalment"
+    PaymentLink:
+      type: object
+      required: [link_id, token, channel, amount_minor, description, reference, status, created_at, expires_at, paid_at, refunded_minor, settlement_account_id, merchant_name]
+      properties:
+        link_id:
+          type: string
+        token:
+          type: string
+        channel:
+          type: string
+          enum: [link, pos]
+        amount_minor:
+          type: string
+        description:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, PAID, EXPIRED, CANCELLED]
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        paid_at:
+          type: string
+        refunded_minor:
+          type: string
+        settlement_account_id:
+          type: string
+        merchant_name:
+          type: string
+    Settlement:
+      type: object
+      required: [settlement_id, day, gross_minor, fee_minor, net_minor, payments, status]
+      properties:
+        settlement_id:
+          type: string
+        day:
+          type: string
+        gross_minor:
+          type: string
+        fee_minor:
+          type: string
+        net_minor:
+          type: string
+        payments:
+          type: integer
+        status:
+          type: string
+    Checkout:
+      type: object
+      required: [merchant_name, amount_minor, description, reference, status, expires_at]
+      properties:
+        merchant_name:
+          type: string
+        amount_minor:
+          type: string
+        description:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, PAID, EXPIRED, CANCELLED]
+        expires_at:
+          type: string

@@ -1,0 +1,25 @@
+{
+  "svc-backoffice-api": [
+    "ApprovePayment",
+    "GetPayment",
+    "ResolveRepair"
+  ],
+  "svc-payouts": [
+    "CreatePayment",
+    "GetPayment"
+  ],
+  "svc-reconciliation": [
+    "GetInFlight"
+  ],
+  "svc-workspace": [
+    "ClassifyCrossBorderCredit",
+    "CreatePayment",
+    "GetPayment",
+    "ListCrossBorderCredits",
+    "ListInboundReferences",
+    "ListPaymentReasons"
+  ],
+  "svc-onboarding": [
+    "RegisterInboundReference"
+  ]
+}
