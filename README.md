@@ -102,8 +102,10 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 
 **4. Production infrastructure: none exists yet**
 
-- [ ] **Owner/Engineering.** A cloud account and region, and infrastructure as code (Kubernetes or equivalent). Nothing
-  in this repository provisions production.
+- [x] Kubernetes manifests for the 21 services (`deploy/k8s`): mutual TLS certificates, caller lists, network policies,
+  hardened pods, health probes. Generated and checked on paper; **never applied to a cluster**.
+- [ ] **Owner/Engineering.** A cloud account and region (ADR-0002), and the data layer and secret store the manifests
+  expect (`deploy/k8s/README.md` lists 9 things still to decide). Nothing provisions production yet.
 - [ ] **Engineering.** A production TigerBeetle cluster (six replicas on dedicated hosts), measured, with an upgrade
   rehearsal.
 - [ ] **Engineering.** Production Temporal, Kafka (TLS and SASL, more than one broker) and Postgres (managed, with TLS).
@@ -112,7 +114,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 - [ ] **Engineering.** Off-site, immutable storage for backups, the WAL archive, audit anchors and evidence packs
   (VERIFY-WORM).
 - [ ] **Engineering.** A tracing backend, metrics, dashboards, alerts and an on-call rota.
-- [ ] **Engineering.** A health listener that needs no client certificate, for the orchestrator's probes.
+- [x] A health listener that needs no client certificate (`HEALTH_ADDR`, `/livez`, `/readyz`), tested in `pkg/serve`.
 
 **5. Assurance before go-live**
 

@@ -275,6 +275,7 @@ test-regulatory:
 	python3 -I scripts/check-outsourcing.py
 	python3 -I scripts/test-check-outsourcing.py
 	python3 -I scripts/check-security-findings.py
+	python3 -I scripts/check-k8s.py --selftest
 	python3 -I scripts/check-monitoring.py
 	scripts/test-backup-freshness.sh
 	python3 -I scripts/check-secure-config.py

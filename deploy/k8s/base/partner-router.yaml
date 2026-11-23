@@ -1,0 +1,287 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: partner-router
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: partner-router-callers
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+data:
+  callers.json: |
+    {
+      "svc-onboarding": [
+        "OpenAccount"
+      ]
+    }
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: partner-router-tls
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+spec:
+  secretName: partner-router-tls
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  uris:
+  - spiffe://forge/svc/svc-partner-router
+  dnsNames:
+  - partner-router.forge.svc.cluster.local
+  usages:
+  - server auth
+  - client auth
+  - digital signature
+  issuerRef:
+    name: forge-service-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: partner-router
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: partner-router
+      app.kubernetes.io/part-of: forge
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: partner-router
+        app.kubernetes.io/part-of: forge
+    spec:
+      serviceAccountName: partner-router
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: partner-router
+            app.kubernetes.io/part-of: forge
+      containers:
+      - name: partner-router
+        image: registry.PLACEHOLDER/forge/partner-bank-router:TAG
+        ports:
+        - name: https
+          containerPort: 8099
+        - name: health
+          containerPort: 8181
+        env:
+        - name: FORGE_ENV
+          value: production
+        - name: HEALTH_ADDR
+          value: :8181
+        - name: PARTNER_ROUTER_ADDR
+          value: :8099
+        - name: TLS_CERT_FILE
+          value: /tls/tls.crt
+        - name: TLS_KEY_FILE
+          value: /tls/tls.key
+        - name: TLS_CA_FILE
+          value: /tls/ca.crt
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://otel-collector.forge-observability.svc.cluster.local:4318
+        - name: KAFKA_BROKERS
+          value: PLACEHOLDER-kafka-bootstrap.forge-data.svc.cluster.local:9093
+        - name: DATABASE_URL_FILE
+          value: /secrets/DATABASE_URL
+        - name: PAYMENTS_PUBLISHER
+          value: kafka
+        - name: PARTNER_CALLERS_FILE
+          value: /config/callers.json
+        - name: PARTNER_COSTS_BPS
+          value: sponsor=0
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 10
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 2
+          failureThreshold: 60
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: callers
+          mountPath: /config
+          readOnly: true
+        - name: tls
+          mountPath: /tls
+          readOnly: true
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: callers
+        configMap:
+          name: partner-router-callers
+      - name: tls
+        secret:
+          secretName: partner-router-tls
+      - name: secrets
+        secret:
+          secretName: partner-router-secrets
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: partner-router
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+spec:
+  selector:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+  ports:
+  - name: https
+    port: 8099
+    targetPort: https
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: partner-router
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: partner-router
+      app.kubernetes.io/part-of: forge
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: partner-router
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: partner-router
+    app.kubernetes.io/part-of: forge
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: partner-router
+      app.kubernetes.io/part-of: forge
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: onboarding
+    ports:
+    - protocol: TCP
+      port: 8099
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-observability
+    ports:
+    - protocol: TCP
+      port: 4318
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-data
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 9093
+    - protocol: TCP
+      port: 7233
+    - protocol: TCP
+      port: 3001
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443

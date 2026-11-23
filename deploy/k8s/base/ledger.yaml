@@ -1,0 +1,348 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ledger
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-callers
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+data:
+  callers.json: |
+    {
+      "svc-acquiring": [
+        "CreateAccounts",
+        "CreateTransfers"
+      ],
+      "svc-consolidated-view": [
+        "GetBalances",
+        "ListAccounts"
+      ],
+      "svc-core-bridge": [
+        "GetBalances",
+        "ListAccounts"
+      ],
+      "svc-deposits": [
+        "CreateAccounts",
+        "CreateTransfers",
+        "GetBalances"
+      ],
+      "svc-fx": [
+        "CreateAccounts",
+        "CreateTransfers",
+        "GetBalances",
+        "PostPending",
+        "VoidPending"
+      ],
+      "svc-lending": [
+        "CreateAccounts",
+        "CreateTransfers",
+        "GetBalances"
+      ],
+      "svc-onboarding": [
+        "CreateAccounts"
+      ],
+      "svc-payments": [
+        "CreateAccounts",
+        "CreateTransfers",
+        "PostPending",
+        "VoidPending"
+      ],
+      "svc-reconciliation": [
+        "GetBalances",
+        "ListAccounts"
+      ],
+      "svc-treasury-risk": [
+        "GetBalances",
+        "ListAccounts"
+      ]
+    }
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ledger-tls
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+spec:
+  secretName: ledger-tls
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  uris:
+  - spiffe://forge/svc/svc-ledger
+  dnsNames:
+  - ledger.forge.svc.cluster.local
+  usages:
+  - server auth
+  - client auth
+  - digital signature
+  issuerRef:
+    name: forge-service-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ledger
+      app.kubernetes.io/part-of: forge
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ledger
+        app.kubernetes.io/part-of: forge
+    spec:
+      serviceAccountName: ledger
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: ledger
+            app.kubernetes.io/part-of: forge
+      containers:
+      - name: ledger
+        image: registry.PLACEHOLDER/forge/ledger-gateway-bank:TAG
+        ports:
+        - name: https
+          containerPort: 8070
+        - name: health
+          containerPort: 8181
+        env:
+        - name: FORGE_ENV
+          value: production
+        - name: HEALTH_ADDR
+          value: :8181
+        - name: LEDGER_LISTEN
+          value: :8070
+        - name: TLS_CERT_FILE
+          value: /tls/tls.crt
+        - name: TLS_KEY_FILE
+          value: /tls/tls.key
+        - name: TLS_CA_FILE
+          value: /tls/ca.crt
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://otel-collector.forge-observability.svc.cluster.local:4318
+        - name: KAFKA_BROKERS
+          value: PLACEHOLDER-kafka-bootstrap.forge-data.svc.cluster.local:9093
+        - name: DATABASE_URL_FILE
+          value: /secrets/DATABASE_URL
+        - name: TB_ADDRESSES
+          value: PLACEHOLDER-tigerbeetle-0.forge-data:3001,tigerbeetle-1.forge-data:3001,tigerbeetle-2.forge-data:3001
+        - name: PAYMENTS_PUBLISHER
+          value: kafka
+        - name: TB_CLUSTER_ID
+          value: '1'
+        - name: LEDGER_PUBLISHER
+          value: kafka
+        - name: LEDGER_CALLERS_FILE
+          value: /config/callers.json
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 10
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: health
+          periodSeconds: 2
+          failureThreshold: 60
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: Unconfined
+        volumeMounts:
+        - name: callers
+          mountPath: /config
+          readOnly: true
+        - name: tls
+          mountPath: /tls
+          readOnly: true
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: callers
+        configMap:
+          name: ledger-callers
+      - name: tls
+        secret:
+          secretName: ledger-tls
+      - name: secrets
+        secret:
+          secretName: ledger-secrets
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledger
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+spec:
+  selector:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+  ports:
+  - name: https
+    port: 8070
+    targetPort: https
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ledger
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ledger
+      app.kubernetes.io/part-of: forge
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ledger
+  namespace: forge
+  labels:
+    app.kubernetes.io/name: ledger
+    app.kubernetes.io/part-of: forge
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ledger
+      app.kubernetes.io/part-of: forge
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: acquiring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: consolidated
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: deposits
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: fx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: lending
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: onboarding
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: payments
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: recon
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: treasury
+    ports:
+    - protocol: TCP
+      port: 8070
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-observability
+    ports:
+    - protocol: TCP
+      port: 4318
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: forge-data
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 9093
+    - protocol: TCP
+      port: 7233
+    - protocol: TCP
+      port: 3001
