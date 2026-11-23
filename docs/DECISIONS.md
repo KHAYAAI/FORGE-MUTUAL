@@ -6,6 +6,10 @@ a revision at the next documentation pass.
 
 ## Taken
 
+**2026-11-23: host the preview on Fly.io and production on AWS (ADR-0002, a direction, not final).**
+Taken by the owner, Tebogo Mvelase, in session. Fly.io holds synthetic data only; real customer data goes to AWS,
+after due diligence and the Prudential Authority notice. Detail, limits and open questions: `docs/HOSTING.md`.
+
 **2026-11-18: plan for a mutual bank; keep the bank route open (ADR-0020, a direction, not final).**
 Taken by the owner, Tebogo Mvelase, in session. The software supports both through `pkg/banklayer.Profile` and
 `FORGE_LEGAL_FORM` (default `mutual`); the membership module is built for the mutual. ADR-0020 closes only after legal

@@ -40,8 +40,8 @@ Each is a `PLACEHOLDER` in the manifests (46 today). None can be filled until th
 6. **The ledger's seccomp profile.** TigerBeetle's client needs `io_uring`; the ledger runs `Unconfined`, the only
    exception the checker allows. Replace it with a custom profile that permits `io_uring_setup`, `io_uring_enter` and
    `io_uring_register` only.
-7. **Images.** The services' Dockerfiles exist for the ledger only; the others need building and pushing, and the
-   two web apps (`apps/web`, `apps/backoffice`) need Deployments of their own.
+7. **Images.** `deploy/docker/service.Dockerfile` builds every Go service (the stack builds them all); they still need
+   pushing to a registry, and the two web apps (`apps/web`, `apps/backoffice`) need Deployments of their own.
 8. **A rate source.** The FX service reads static rates in the stack; production needs a market-data feed
    (VERIFY, `docs/QUESTIONS.md`).
 9. **Observability backend.** Services export traces to `otel-collector.forge-observability:4318`; the collector, a

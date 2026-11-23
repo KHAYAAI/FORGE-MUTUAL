@@ -19,6 +19,10 @@ on an external party, none fully met. The 10 open rows all wait on a person, cap
 37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
+### Hosting
+
+Fly.io for the synthetic-data preview, AWS (Cape Town proposed) for production: [`docs/HOSTING.md`](docs/HOSTING.md).
+
 ### The model
 
 How the bank is shaped by Erebor (technology) and Investec (service), and where it differs: [`docs/BANK_MODEL.md`](docs/BANK_MODEL.md).
