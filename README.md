@@ -16,13 +16,17 @@ production infrastructure and an independent security review. Assessed 2026-11-1
 
 **Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
 on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 54 draft policies, none approved;
-36 seats, 1 named (founder Tebogo Mvelase), 35 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
+37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 28 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
+
+### The model
+
+How the bank is shaped by Erebor (technology) and Investec (service), and where it differs: [`docs/BANK_MODEL.md`](docs/BANK_MODEL.md).
 
 ### Governance and people
 
 The board, committees, executive chart, three lines of defence and every seat the bank needs are drawn in
-[`docs/governance/STRUCTURE.md`](docs/governance/STRUCTURE.md). The roster of 35 seats with what each needs is
+[`docs/governance/STRUCTURE.md`](docs/governance/STRUCTURE.md). The roster of 37 seats with what each needs is
 [`docs/governance/ROLES.md`](docs/governance/ROLES.md); everything still needed (people, decisions, money,
 registrations, providers, documents) is the checklist in [`docs/governance/README.md`](docs/governance/README.md).
 
@@ -199,7 +203,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
 
 **Blocked by people** (`docs/DECISIONS.md`, `docs/QUESTIONS.md`, `docs/THRESHOLDS.md`)
 
-- Threshold owners: the 21 placeholder thresholds each need a named owner who confirms them. None is named.
+- Threshold owners: the 28 placeholder thresholds each need a named owner who confirms them. None is named.
 - Sanctions list source and licence: undecided. Screening runs on a one-name fixture.
 - Identity provider: decided on 2026-11-03 (WorkOS AuthKit), but the account does not exist and nothing has run against
   it. The apps sign in with development sign-in only.

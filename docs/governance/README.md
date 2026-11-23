@@ -7,7 +7,7 @@
 | File | What it is |
 |---|---|
 | [`STRUCTURE.md`](STRUCTURE.md) | Diagrams: board and committees, executive chart, three lines of defence, policy hierarchy, approval matrix, hiring by stage |
-| [`ROLES.md`](ROLES.md) / [`roles.csv`](roles.csv) | All 36 seats, who holds each (Tebogo Mvelase as founder and CEO; everyone else **VACANT**), what each seat needs, and which seats may never be shared |
+| [`ROLES.md`](ROLES.md) / [`roles.csv`](roles.csv) | All 37 seats, who holds each (Tebogo Mvelase as founder and CEO; everyone else **VACANT**), what each seat needs, and which seats may never be shared |
 | [`POLICY_FRAMEWORK.md`](POLICY_FRAMEWORK.md) / [`policies.csv`](policies.csv) | All 54 policies, their owner, approver, review cycle and the register rows they answer |
 | [`../regulatory/policies/`](../regulatory/policies/) | The policy drafts themselves, each with a sign-off block |
 | [`LEGAL_FORMS.md`](LEGAL_FORMS.md) | Mutual bank (planned) and bank (kept open) side by side, with both licence paths |
