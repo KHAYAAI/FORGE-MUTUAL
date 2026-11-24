@@ -122,7 +122,7 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
   tested against a processor simulator; wired to the customer app (`/cards`) but not switched on (its navigation link appears only while it is on).
 - [x] **Third-party offers** (`services/platform/partner-offers`): introduces investment and crypto-asset products that a licensed
   provider supplies. **Every product is provided, licensed and monitored by a third party, never by Forge**, and the code states
-  it in every offer. Wired to the customer app (`/invest`, with a consent step) and to a compliance screen in the back office (`/partners`), but **switched off**; no provider chosen. The navigation links appear only while the product is on.
+  it in every offer. Wired to the customer app (`/invest`, with a consent step) and to a compliance screen in the back office (`/partners`), but **switched off**; no provider chosen. The navigation links appear only while the product is on. Built behind that switch: a signed, consent-checked sender of the customer's name to the provider, an automatic licence re-check against a regulator register extract (suspends on mismatch, never trusts a stale file), and a referral-fee ledger entry booked only against a bank statement line, within the cap the customer was told, by two people. The real regulator register source and a real provider are not yet available.
 - [ ] **Owner/External.** For card issuing: a programme manager or sponsor, a processor, and the regulator's view.
 - [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
   reconciliation of acquirer payouts.
