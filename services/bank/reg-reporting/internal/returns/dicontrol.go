@@ -23,6 +23,7 @@ type NilForm struct {
 // NilForms are the DI forms that apply but have nothing in them for Forge. Each reason holds because the ledger has no
 // account code for that kind of asset or activity: if one appears, the chart check below fails and the nil cannot be declared.
 var NilForms = map[string]NilForm{
+	"DI 402": {"Counterparty risk", "no forward, swap, forward-rate agreement or other derivative contract: the ledger has no code for one; spot FX settles through the AD partner and is on DI 100", false},
 	"DI 420": {"Market risk (position risk)", "no trading book: the ledger has no trading account code", false},
 	"DI 430": {"Trading risk", "no trading book: the ledger has no trading account code", false},
 	"DI 520": {"Assets bought in", "no asset bought in to protect an advance: the ledger has no code for one", false},

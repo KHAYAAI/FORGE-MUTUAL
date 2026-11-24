@@ -96,6 +96,13 @@ func Shortfalls(r Result) map[string]Cents {
 		if r.Values["DI600.11.8"] > 0 && len(out) == 0 {
 			out["days the open-position limit was exceeded"] = r.Values["DI600.11.8"]
 		}
+	case "DI 700":
+		if r.Values["DI700.8"] < 0 {
+			out["capital over investments in property, shares and subsidiaries (s.55)"] = -r.Values["DI700.8"]
+		}
+		if r.Values["DI700.16"] < 0 {
+			out["associates against 10% of liabilities to the public (s.56)"] = -r.Values["DI700.16"]
+		}
 	case "DI 310":
 		if gap := r.Values["DI310.11"] - r.Values["DI310.12"]; gap > 0 {
 			out["liquid assets"] = gap

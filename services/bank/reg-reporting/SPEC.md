@@ -57,7 +57,7 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
 - **DI 310** (`di310.go`), minimum reserve balance and liquid assets: only the instruments the Act names count, so a sponsor balance is
   not a liquid asset and the platform as built reports a shortfall. `Shortfalls` reports capital, liquid-asset and reserve shortfalls,
   and the DI 099 declaration refuses to go out unqualified while any exists.
-- **Nil returns** (`dicontrol.go`): DI 420, 430, 520, 525, 701, 702, 910 and 920 are filed as nil, and only when every ledger position
+- **Nil returns** (`dicontrol.go`): DI 402, 420, 430, 520, 525, 701, 702, 910 and 920 are filed as nil, and only when every ledger position
   maps to a known DI 100 line (an unknown code could be exactly what the nil denies). DI 525 also needs a named person, because the
   ledger cannot show that no borrower is a local government.
 - **Not applicable:** DI 099A, 401 and 403 (no off-shore or foreign operations, no subsidiaries).
@@ -71,8 +71,9 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
 - **DI 510 and DI 505** (`di510.go`): exposures per legal entity above 10% of capital, and the check that a transaction crossed the
   prescribed percentage. Balances with the sponsor and partner banks are exposures to those banks.
 - **DI 410** (`di410.go`): repricing gap and the 12-month income effect of a 1% move by the standard gap method.
-- **Still to build:** DI 402 (counterparty risk), DI 500 (credit risk), DI 700 (restrictions on investments and loans) and DI 900
-  (institutional and maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
+- **DI 700** (`di700.go`): the section 55 and 56 limits; a breach is a shortfall that qualifies DI 099.
+- **Still to build:** DI 500 (credit risk, with the asset-quality and sector distribution of loans) and DI 900 (institutional and
+  maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
