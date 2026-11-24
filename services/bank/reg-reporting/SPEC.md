@@ -51,13 +51,19 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
   computed; the maturity split, averages, yields, risk-weight columns and cost of funds are not (`UnbuiltColumns`). Judgements in the
   mapping (balances with the sponsor as interbank placements, FX fees as foreign-exchange earnings, DI 200 item 45 as 46 + 49 + 50 so
   items 47 and 48 are not counted twice, the signs of items 58 to 63) are stated in the code and need the auditor's view.
+- **DI 400** (`di400.go`), capital adequacy: Division I weights the quarter's average DI 100 assets and undrawn facilities by the J2
+  table (judgements: banks 20% if South African or OECD, mortgages 100%); Division II excludes profit not appropriated by formal board
+  resolution, as the form's footnote requires; secondary capital is capped at primary; line 44 is the risk-asset ratio.
+- **DI 310** (`di310.go`), minimum reserve balance and liquid assets: only the instruments the Act names count, so a sponsor balance is
+  not a liquid asset and the platform as built reports a shortfall. `Shortfalls` reports capital, liquid-asset and reserve shortfalls,
+  and the DI 099 declaration refuses to go out unqualified while any exists.
 - **Nil returns** (`dicontrol.go`): DI 420, 430, 520, 525, 701, 702, 910 and 920 are filed as nil, and only when every ledger position
   maps to a known DI 100 line (an unknown code could be exactly what the nil denies). DI 525 also needs a named person, because the
   ledger cannot show that no borrower is a local government.
 - **Not applicable:** DI 099A, 401 and 403 (no off-shore or foreign operations, no subsidiaries).
 - **DI 099 control sheet:** two different officers (chief executive and chief accounting officer), only clean returns for the period,
   the form-specific paragraphs only for forms in the set, and every qualification stated.
-- **Still to build:** DI 110, 300, 310, 400, 402, 410, 500, 505, 510, 600, 700, 900 and 930. BA returns stay on this repository's own
+- **Still to build:** DI 110, 300, 402, 410, 500, 505, 510, 600, 700, 900 and 930. BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started

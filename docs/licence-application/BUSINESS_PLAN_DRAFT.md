@@ -159,6 +159,13 @@ $270M against R1.5bn at year 3). One consistent model must replace both.
 3. **Capital.** The minimum for a mutual bank is understood to be R10M (VERIFY) and for a bank R250M (VERIFY), but the concept document puts the funding need at about
    **$15M to $20M before profit in the base case**. The minimum is not the need.
 
+4. **Liquid assets and the reserve balance.** Building DI 310 from the official form showed that a balance with a sponsor or partner bank is
+   **not** a liquid asset under the Mutual Banks Act (only Reserve Bank notes and coin, gold, Reserve Bank clearing balances, Treasury bills,
+   government, Reserve Bank and Land Bank securities count). As a registered mutual bank Forge would need, on the form's figures (VERIFY the
+   current rates), about **5% of adjusted liabilities in liquid assets plus a 2.5% average reserve balance with the Reserve Bank**, which earn
+   little or nothing. The model must hold them and price their cost; today's ledger has no account for any of them, and the returns code reports
+   the shortfall.
+
 **GAP, to be built with the CFO and an accountant:** a consistent three-to-five-year model (balance sheet, income statement, capital and liquidity, with customer, deposit,
 lending and cost drivers), a sponsor-bank revenue share, stress scenarios, and the pro forma returns (DI 100, 110, 200, 300, 400, 430, 700) regenerated from that model
 (`make proforma`). DI 100 and DI 200 now use the forms' own line numbers (`docs/regulatory/returns/`); the transcription needs a second person's check.

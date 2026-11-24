@@ -128,6 +128,13 @@ func Declare(period string, results []Result, nils []NilReturn, qualified map[st
 		}
 		d.Qualified[f] = why
 	}
+	for _, r := range results {
+		for what, short := range Shortfalls(r) {
+			if d.Qualified[r.Form] == "" {
+				return Declaration{}, fmt.Errorf("%w: %s shows %s %d below the minimum, so the declaration must be qualified with the deficiency", ErrIncomplete, r.Form, what, short)
+			}
+		}
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "DI 099 DECLARATION IN RESPECT OF STATUTORY RETURNS SUBMITTED, period ended %s\n\n", period)
 	b.WriteString("1. GENERAL: the information in the statements and returns is to the best of our knowledge and belief correct; they have been compiled in accordance with the requirements for mutual banks; and they reflect the management accounts as presented to the management and board.\n")
