@@ -67,7 +67,8 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
   1993 currency columns (euro under "other"); the aggregate open position is the larger of longs and shorts, limited to 10% of capital.
 - **DI 300** (`di300.go`) ladders the DI 100 lines by contractual maturity: deposits by notice period, loans from the lending schedule
   (which must add up to DI 100), the rest "other"; line 19 (the ALCO behavioural model) is not built.
-- **Still to build:** DI 402, 410, 500, 505, 510, 700, 900 and 930. BA returns stay on this repository's own
+- **DI 930** (`di930.go`): the predominant rate per category (most accounts, ties to the larger balance) with its effective date.
+- **Still to build:** DI 402, 410, 500, 505, 510, 700 and 900. BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
