@@ -1,0 +1,230 @@
+section,line,label,sum
+LIABILITIES,1,DEPOSITS (total of items 2 and 27),+2 +27
+LIABILITIES,2,"DEPOSITS DENOMINATED IN RAND AND FINANCIAL RAND (total of items 3, 6, 9, 10, 15 and 23)",+3 +6 +9 +10 +15 +23
+LIABILITIES,3,Bank group funding (total of items 4 and 5),+4 +5
+LIABILITIES,4,Bank group funding: NCD's,
+LIABILITIES,5,Bank group funding: other deposits,
+LIABILITIES,6,Inter-bank funding (total of items 7 and 8),+7 +8
+LIABILITIES,7,Inter-bank funding: NCD's,
+LIABILITIES,8,Inter-bank funding: other deposits,
+LIABILITIES,9,Monetary authorities: Reserve Bank and Corporation for Public Deposits,
+LIABILITIES,10,Government deposits (total of items 11 to 14),+11..14
+LIABILITIES,11,Central Government of the Republic,
+LIABILITIES,12,Provincial Administrations,
+LIABILITIES,13,Governments of independent states,
+LIABILITIES,14,Governments of self-governing territories,
+LIABILITIES,15,Other domestic parties (total of items 16 to 22),+16..22
+LIABILITIES,16,Local governments and regional service councils,
+LIABILITIES,17,"Public enterprises/corporations (including Transnet, Sapos and Telkom)",
+LIABILITIES,18,Insurers and pension funds,
+LIABILITIES,19,Other companies and close corporations,
+LIABILITIES,20,Unincorporated businesses,
+LIABILITIES,21,Individuals,
+LIABILITIES,22,Non-profit organisations and other,
+LIABILITIES,23,Deposits by non-residents (total of items 24 to 26),+24..26
+LIABILITIES,24,Non-residents: governments,
+LIABILITIES,25,Non-residents: banks,
+LIABILITIES,26,Non-residents: other,
+LIABILITIES,27,DEPOSITS DENOMINATED IN FOREIGN CURRENCY (total of items 28 to 35),+28..35
+LIABILITIES,28,Bank group deposits,
+LIABILITIES,29,Inter-bank deposits,
+LIABILITIES,30,Reserve Bank and Corporation for Public Deposits,
+LIABILITIES,31,Government deposits,
+LIABILITIES,32,Other domestic parties,
+LIABILITIES,33,Non-residents: governments,
+LIABILITIES,34,Non-residents: banks,
+LIABILITIES,35,Non-residents: other,
+LIABILITIES,36,"LOANS AND ADVANCES (total of items 37, 38, 39, 45 and 53)",+37 +38 +39 +45 +53
+LIABILITIES,37,BANK GROUP FUNDING,
+LIABILITIES,38,INTER-BANK FUNDING,
+LIABILITIES,39,LOANS RECEIVED UNDER REPURCHASE AGREEMENTS (total of items 40 to 44),+40..44
+LIABILITIES,40,Repo: Reserve Bank and Corporation for Public Deposits,
+LIABILITIES,41,Repo: South African banks and mutual banks,
+LIABILITIES,42,Repo: insurers and pension funds,
+LIABILITIES,43,Repo: other residents,
+LIABILITIES,44,Repo: non-residents,
+LIABILITIES,45,FOREIGN FUNDING (total of items 46 to 52),+46..52
+LIABILITIES,46,Foreign funding: Reserve Bank and Corporation for Public Deposits,
+LIABILITIES,47,Foreign funding: South African banks and mutual banks,
+LIABILITIES,48,Foreign funding: other residents,
+LIABILITIES,49,Non-residents on-lent: re-channelled from Public Investment Commissioners,
+LIABILITIES,50,Non-residents on-lent: re-channelled from other SA banks/mutual banks,
+LIABILITIES,51,Non-residents on-lent: other on-lending,
+LIABILITIES,52,Other foreign funding by non-residents,
+LIABILITIES,53,OTHER LOANS AND ADVANCES DENOMINATED IN RAND (total of items 54 to 57),+54..57
+LIABILITIES,54,"Central Government, provinces, self-governing territories and independent states",
+LIABILITIES,55,Reserve Bank and Corporation for Public Deposits,
+LIABILITIES,56,Other residents,
+LIABILITIES,57,Non-residents,
+LIABILITIES,58,OTHER LIABILITIES TO THE PUBLIC (total of items 59 to 62),+59..62
+LIABILITIES,59,Fifty per cent of credits in transit,
+LIABILITIES,60,Bills payable by or promissory notes of the reporting mutual bank,
+LIABILITIES,61,Other liabilities to residents,
+LIABILITIES,62,Other liabilities to non-residents,
+LIABILITIES,63,"TOTAL LIABILITIES TO THE PUBLIC (total of items 1, 36 and 58)",+1 +36 +58
+LIABILITIES,64,"OUTSTANDING LIABILITIES ON BEHALF OF CLIENTS, per contra item 218",
+LIABILITIES,65,"OTHER LIABILITIES, INCLUDING IMPAIRMENTS (total of items 66 to 68)",+66..68
+LIABILITIES,66,"Balances due to head office and other branches in the Republic, self-governing territories and independent states",
+LIABILITIES,67,Other liabilities - to residents,
+LIABILITIES,68,Other liabilities - to non-residents,
+LIABILITIES,69,CAPITAL AND RESERVES (total of items 70 to 78 less item 79),+70..78 -79
+LIABILITIES,70,Primary share capital held by domestic parties: banks and mutual banks,
+LIABILITIES,71,Primary share capital: insurers and pension funds,
+LIABILITIES,72,Primary share capital: other financial institutions,
+LIABILITIES,73,Primary share capital: public enterprises/corporations,
+LIABILITIES,74,Primary share capital: other companies (including bank controlling companies),
+LIABILITIES,75,Primary share capital: households and other,
+LIABILITIES,76,Primary share capital held by non-residents,
+LIABILITIES,77,Primary reserve funds,
+LIABILITIES,78,Secondary share capital (including debentures) and reserve funds,
+LIABILITIES,79,Less: Impairments (section 48(5) of the Act),
+LIABILITIES,80,TOTAL CAPITAL AND LIABILITIES,+63 +64 +65 +69
+OFFBALANCE,82,Indemnities and guarantees,
+OFFBALANCE,83,Irrevocable letters of credit and unutilised facilities,
+OFFBALANCE,84,Underwriting exposures,
+OFFBALANCE,85,Other contingent liabilities and risk exposures,
+OFFBALANCE,86,Aggregate net open position in foreign currencies,
+OFFBALANCE,87,Acceptances facilities granted but not utilised,
+OFFBALANCE,88,Overdraft facilities for which limits have been loaded on mutual bank's computer system: total limit (utilised and unutilised),
+OFFBALANCE,89,Revolving credit accounts: total limit (utilised and unutilised),
+OFFBALANCE,90,Credit card accounts: total limit (utilised and unutilised),
+OFFBALANCE,91,Memo: state-aided home-ownership scheme savings accounts,
+OFFBALANCE,92,Memo: housing loans received from the Central Government,
+OFFBALANCE,93,Memo: housing loans from public sector financial institutions,
+OFFBALANCE,94,"Memo: housing loans other, e.g. SA Housing Trust",
+OFFBALANCE,95,Tax-free deposits: paid-up indefinite period deposits,
+OFFBALANCE,96,Tax-free deposits: paid-up fixed period deposits,
+OFFBALANCE,97,Tax-free deposits: subscription deposits,
+ASSETS,98,"CENTRAL BANK MONEY AND GOLD (total of items 99, 102 and 103)",+99 +102 +103
+ASSETS,99,South African bank notes and subsidiary coin (total of items 100 and 101),+100 +101
+ASSETS,100,Subsidiary coin,
+ASSETS,101,Bank notes,
+ASSETS,102,Gold coin and bullion,
+ASSETS,103,Domestic currency deposits with Reserve Bank (total of items 104 to 106),+104..106
+ASSETS,104,Cash reserve deposits: interest bearing,
+ASSETS,105,Cash reserve deposits: non-interest bearing,
+ASSETS,106,Other deposits,
+ASSETS,107,"DEPOSITS, LOANS AND ADVANCES (total of items 108, 114, 120, 121, 125, 128, 136, 140, 150, 161, 164 and 173 less 183)",+108 +114 +120 +121 +125 +128 +136 +140 +150 +161 +164 +173 -183
+ASSETS,108,"SA Bank group funding, including NCD's (total of items 109 to 113)",+109..113
+ASSETS,109,Group NCDs up to 31 days,
+ASSETS,110,Group NCDs over 31 days up to 6 months,
+ASSETS,111,Group NCDs over 6 months,
+ASSETS,112,Other deposits with banks within the same group,
+ASSETS,113,Loans and advances to banks within the same group,
+ASSETS,114,"SA inter-bank funding, including NCD's (total of items 115 to 119)",+115..119
+ASSETS,115,Bank NCDs up to 31 days,
+ASSETS,116,Bank NCDs over 31 days up to 6 months,
+ASSETS,117,Bank NCDs over 6 months,
+ASSETS,118,Other deposits with SA banks,
+ASSETS,119,Loans and advances to SA banks,
+ASSETS,120,"Deposits with and loans and advances to foreign banks, denominated in rand",
+ASSETS,121,Loans granted under resale agreements (total of items 122 to 124),+122..124
+ASSETS,122,To Reserve Bank and Corporation for Public Deposits,
+ASSETS,123,To other banks,
+ASSETS,124,To other parties,
+ASSETS,125,"Instalment debtors, suspensive sales and leases (total of items 126 and 127)",+126 +127
+ASSETS,126,Discounts and advances in respect of instalment sales,
+ASSETS,127,Leasing transactions,
+ASSETS,128,Mortgage advances (total of items 129 to 135),+129..135
+ASSETS,129,Farm mortgages: non-incorporated farming,
+ASSETS,130,Farm mortgages: other farming,
+ASSETS,131,Mortgages to companies and close corporations,
+ASSETS,132,Mortgages to public enterprises/corporations,
+ASSETS,133,Mortgages to unincorporated businesses,
+ASSETS,134,Mortgages to individuals,
+ASSETS,135,Mortgages to non-profit institutions and other,
+ASSETS,136,Credit card debtors (total of items 137 to 139),+137..139
+ASSETS,137,Credit cards: companies and close corporations,
+ASSETS,138,Credit cards: individuals,
+ASSETS,139,Credit cards: non-profit organisations and other,
+ASSETS,140,"Acceptances, commercial paper, bills, promissory notes and similar acknowledgements of debt discounted (total of items 141 and 146)",+141 +146
+ASSETS,141,"Liquid bills, notes and acceptances discounted or purchased (total of items 142 to 145)",+142..145
+ASSETS,142,Treasury bills,
+ASSETS,143,Land Bank bills,
+ASSETS,144,Liquid bankers' acceptances and bills,
+ASSETS,145,Other liquid bills,
+ASSETS,146,Non-liquid acceptances and bills discounted or purchased (total of items 147 to 149),+147..149
+ASSETS,147,Land Bank,
+ASSETS,148,"Non-liquid bankers' acceptances and bills, including own acceptances",
+ASSETS,149,Other such instruments,
+ASSETS,150,Foreign currency loans and advances (total of items 151 to 160),+151..160
+ASSETS,151,Foreign currency notes and coin,
+ASSETS,152,Deposits with and advances to Reserve Bank,
+ASSETS,153,Deposits with and advances to SA banks and mutual banks,
+ASSETS,154,Other advances to South African residents,
+ASSETS,155,Deposits with and advances to non-resident banks,
+ASSETS,156,Other advances to non-residents,
+ASSETS,157,On-lent foreign borrowing: governments,
+ASSETS,158,On-lent foreign borrowing: other public sector borrowers,
+ASSETS,159,On-lent foreign borrowing: other clients,
+ASSETS,160,On-lent foreign borrowing: banks and mutual banks,
+ASSETS,161,Redeemable preference shares (total of items 162 and 163),+162 +163
+ASSETS,162,Issued by banks and mutual banks,
+ASSETS,163,Other,
+ASSETS,164,Other overdrafts and loans: public sector (total of items 165 to 172),+165..172
+ASSETS,165,Central Government of the Republic,
+ASSETS,166,Governments of independent states,
+ASSETS,167,Governments of self-governing territories,
+ASSETS,168,Provincial Administrations,
+ASSETS,169,Local authorities and regional services councils,
+ASSETS,170,Land Bank,
+ASSETS,171,"Public enterprises/corporations (including Transnet, Sapos and Telkom)",
+ASSETS,172,Foreign governments and public sector bodies,
+ASSETS,173,Other private sector loans and advances (total of items 174 to 182),+174..182
+ASSETS,174,Overdrafts: companies and close corporations,
+ASSETS,175,Overdrafts: unincorporated businesses,
+ASSETS,176,Overdrafts: individuals,
+ASSETS,177,Overdrafts: non-profit seeking institutions and other,
+ASSETS,178,Factoring: total,
+ASSETS,179,Other loans and advances: companies and close corporations,
+ASSETS,180,Other loans and advances: unincorporated businesses,
+ASSETS,181,Other loans and advances: individuals,
+ASSETS,182,Other loans and advances: non-profit seeking institutions and other,
+ASSETS,183,Less: specific provisions i.r.o. loans and advances,
+ASSETS,184,"INVESTMENTS (total of items 185, 193, 199, 202, 205 and 208 less 211)",+185 +193 +199 +202 +205 +208 -211
+ASSETS,185,Interest bearing Central Government securities (total of items 186 to 192),+186..192
+ASSETS,186,Government stock: unexpired maturity up to 3 years,
+ASSETS,187,Government stock: unexpired maturity more than 3 years,
+ASSETS,188,Government loan levies,
+ASSETS,189,Non-marketable securities of the Government of the Republic,
+ASSETS,190,Securities of governments of the independent states,
+ASSETS,191,Securities of governments of self-governing territories,
+ASSETS,192,Securities of Central Government bodies,
+ASSETS,193,Other public sector interest bearing securities (total of items 194 to 198),+194..198
+ASSETS,194,Securities issued by the Reserve Bank,
+ASSETS,195,Securities issued by the Land Bank,
+ASSETS,196,Securities issued by public enterprises/corporations,
+ASSETS,197,Securities of local authorities and regional services councils,
+ASSETS,198,Securities of other public sector bodies guaranteed by the Central Government,
+ASSETS,199,Debentures and other interest bearing security investments (total of items 200 and 201),+200 +201
+ASSETS,200,Debentures of banks and mutual banks,
+ASSETS,201,Other debentures,
+ASSETS,202,Equity holdings in subsidiaries and associates (total of items 203 and 204),+203 +204
+ASSETS,203,Banking subsidiaries,
+ASSETS,204,Other subsidiary companies and associates,
+ASSETS,205,Other listed equities (total of items 206 and 207),+206 +207
+ASSETS,206,Listed equities: banks and mutual banks,
+ASSETS,207,Listed equities: other companies,
+ASSETS,208,Other investments (total of items 209 and 210),+209 +210
+ASSETS,209,Other investments: banks and mutual banks,
+ASSETS,210,Other investments: other companies,
+ASSETS,211,Less: specific provisions in respect of investments,
+ASSETS,212,FIXED ASSETS (total of items 213 to 216),+213..216
+ASSETS,213,Premises of mutual bank,
+ASSETS,214,Other fixed property,
+ASSETS,215,"Computer equipment, including peripherals",
+ASSETS,216,"Other, including vehicles, equipment, furniture and fittings",
+ASSETS,217,OTHER ASSETS (total of items 218 to 222),+218..222
+ASSETS,218,Clients' liabilities per contra (total of memorandum items 226 to 229),
+ASSETS,219,Remittances in transit,
+ASSETS,220,Deferred tax,
+ASSETS,221,Other balances due by head office and branches,
+ASSETS,222,Other,
+ASSETS,223,TOTAL ASSETS,+98 +107 +184 +212 +217
+MEMO,224,"Memo: nominal value of Government stock, unexpired maturity up to 3 years",
+MEMO,225,"Memo: nominal value of Government stock, more than 3 years",
+MEMO,226,Memo: acceptances outstanding,
+MEMO,227,Memo: commercial paper endorsed,
+MEMO,228,Memo: bills endorsed,
+MEMO,229,Memo: promissory notes and similar acknowledgements of debt endorsed,
+MEMO,230,"Memo: assets acquired, bought in or repossessed to protect an advance or investment included under line item 222",

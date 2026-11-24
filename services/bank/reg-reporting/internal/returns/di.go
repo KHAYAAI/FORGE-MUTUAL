@@ -339,8 +339,9 @@ func FormTable(s Spec, r Result) string {
 	for _, l := range lines {
 		total[l.No] = len(l.Sum) > 0
 	}
-	for i, l := range s.Lines {
-		no := i + 1
+	for _, l := range s.Lines {
+		var no int
+		fmt.Sscanf(l.Ref[strings.Index(l.Ref, ".")+1:], "%d", &no)
 		label := l.Label
 		if total[no] {
 			label = "**" + label + "**"

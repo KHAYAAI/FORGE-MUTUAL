@@ -73,7 +73,9 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
 - **DI 410** (`di410.go`): repricing gap and the 12-month income effect of a 1% move by the standard gap method.
 - **DI 700** (`di700.go`): the section 55 and 56 limits; a breach is a shortfall that qualifies DI 099.
 - **DI 500** (`di500.go`): overdue loans and their ageing, assets by profitability (the instructions' rule), loans by sector.
-- **Still to build:** DI 900 (institutional and maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
+- **DI 900** (`di900.go`): 229 lines by institutional sector, reconciled to DI 100 (line 80 = line 223); only line totals are computed.
+- **All 27 DI forms are covered.** Still open for every form: a second person's check of the transcription, and the data feeds
+  (report builders) that read the services into these inputs. BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
