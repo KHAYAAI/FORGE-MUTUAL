@@ -63,7 +63,9 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
 - **Not applicable:** DI 099A, 401 and 403 (no off-shore or foreign operations, no subsidiaries).
 - **DI 099 control sheet:** two different officers (chief executive and chief accounting officer), only clean returns for the period,
   the form-specific paragraphs only for forms in the set, and every qualification stated.
-- **Still to build:** DI 110, 300, 402, 410, 500, 505, 510, 600, 700, 900 and 930. BA returns stay on this repository's own
+- **DI 110** (`di110.go`) feeds DI 400 line 2: undrawn facilities and the open FX position. **DI 600** (`di600.go`) is in US cents, on the
+  1993 currency columns (euro under "other"); the aggregate open position is the larger of longs and shorts, limited to 10% of capital.
+- **Still to build:** DI 300, 402, 410, 500, 505, 510, 700, 900 and 930. BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started

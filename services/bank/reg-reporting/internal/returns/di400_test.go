@@ -7,9 +7,10 @@ import (
 )
 
 func di400Inputs() DI400Inputs {
+	off, _ := DI110("2027-Q4", DI110Inputs{UndrawnUnderOneYear: 50_000_00, UndrawnOneYearAndOver: 100_000_00}, time.Now())
 	return DI400Inputs{
-		AverageAssets:       map[int]Cents{40: 1_000_000_00, 47: 400_000_00, 74: 10_000_00, 36: 0},
-		UndrawnUnderOneYear: 50_000_00, UndrawnOneYearAndOver: 100_000_00,
+		AverageAssets:   map[int]Cents{40: 1_000_000_00, 47: 400_000_00, 74: 10_000_00, 36: 0},
+		OffBalance:      off,
 		CapitalRatioBps: 1000, PhaseInBps: 10000,
 		MemberShares: 80_000_00, AppropriatedReserves: 5_000_00, GeneralProvisions: 2_000_00,
 	}
@@ -87,5 +88,25 @@ func TestDI400RefusesWhatItCannotWeight(t *testing.T) {
 				t.Fatalf("DI 100 asset line %d %q has no risk weighting", l.No, l.Label)
 			}
 		}
+	}
+}
+
+func TestDI110FeedsDI400AndTheOpenFXPositionIsWeightedInFull(t *testing.T) {
+	off, err := DI110("2027-Q4", DI110Inputs{UndrawnUnderOneYear: 50_000_00, UndrawnOneYearAndOver: 100_000_00, NetOpenFX: 30_000_00}, time.Now())
+	if err != nil || len(off.Breaks) != 0 || off.Values["DI110.11.1"] != 180_000_00 || off.Values["DI110.11.8"] != 30_000_00 || off.Values["DI110.11.7"] != 100_000_00 {
+		t.Fatalf("%v %v", off.Breaks, err)
+	}
+	in := di400Inputs()
+	in.OffBalance = off
+	r, _ := DI400("2027-Q4", in, time.Now())
+	if r.Values["DI400.2.6"] != 30_000_00 || r.Values["DI400.9.9"] != 690_000_00 {
+		t.Fatalf("2.6=%d 9.9=%d", r.Values["DI400.2.6"], r.Values["DI400.9.9"])
+	}
+	in.OffBalance = Result{}
+	if _, err := DI400("q", in, time.Now()); !errors.Is(err, ErrIncomplete) {
+		t.Fatal("DI 400 needs the DI 110")
+	}
+	if _, err := DI110("q", DI110Inputs{NetOpenFX: -1}, time.Now()); !errors.Is(err, ErrIncomplete) {
+		t.Fatal("negative amounts are refused")
 	}
 }

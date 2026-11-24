@@ -40,8 +40,8 @@ var DI100Weight = map[int]int{
 type DI400Inputs struct {
 	// AverageAssets are the quarter's average DI 100 asset leaf lines (line number to rand cents), net of specific provisions.
 	AverageAssets map[int]Cents
-	// Undrawn irrevocable facilities, from lending: under one year original maturity take 0%; one year and over to non-banks take 50%.
-	UndrawnUnderOneYear, UndrawnOneYearAndOver Cents
+	// OffBalance is the quarter's average DI 110 (line 11 feeds line 2, weighting column by weighting column).
+	OffBalance Result
 	// CapitalRatioBps is line 10 (the form shows 10%, VERIFY the current figure); PhaseInBps is line 12 (10000 = 100%).
 	CapitalRatioBps, PhaseInBps int64
 	// Capital at quarter end: member shares (line 16), reserves the board has appropriated by formal resolution (line 20), general
@@ -73,8 +73,12 @@ func DI400(period string, in DI400Inputs, at time.Time) (Result, error) {
 		}
 		r.Values[cell(1, col)] += in.AverageAssets[l]
 	}
-	set(cell(2, 1), in.UndrawnUnderOneYear) // all irrevocable unutilised facilities under one year: 0%
-	set(cell(2, 5), in.UndrawnOneYearAndOver)
+	if in.OffBalance.Form != "DI 110" {
+		return Result{}, fmt.Errorf("%w: DI 400 line 2 needs the DI 110", ErrIncomplete)
+	}
+	for col := 1; col <= 8; col++ { // DI 400 columns 1 to 8 are DI 110 columns 3 to 10
+		set(cell(2, col), in.OffBalance.Values[fmt.Sprintf("DI110.11.%d", col+2)])
+	}
 	var weighted, total Cents
 	for col := 1; col <= 8; col++ {
 		v3 := r.Values[cell(1, col)] + r.Values[cell(2, col)]
