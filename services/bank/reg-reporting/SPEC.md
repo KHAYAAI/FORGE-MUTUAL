@@ -70,7 +70,9 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
 - **DI 930** (`di930.go`): the predominant rate per category (most accounts, ties to the larger balance) with its effective date.
 - **DI 510 and DI 505** (`di510.go`): exposures per legal entity above 10% of capital, and the check that a transaction crossed the
   prescribed percentage. Balances with the sponsor and partner banks are exposures to those banks.
-- **Still to build:** DI 402, 410, 500, 700 and 900. BA returns stay on this repository's own
+- **DI 410** (`di410.go`): repricing gap and the 12-month income effect of a 1% move by the standard gap method.
+- **Still to build:** DI 402 (counterparty risk), DI 500 (credit risk), DI 700 (restrictions on investments and loans) and DI 900
+  (institutional and maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
