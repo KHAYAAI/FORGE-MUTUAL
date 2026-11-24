@@ -269,6 +269,192 @@ paths:
           $ref: "#/components/responses/Error"
         "409":
           $ref: "#/components/responses/Error"
+  /v1/partners/providers:
+    get:
+      summary: "Third-party providers. Requires the compliance role. Not offered (404) unless third-party offers are switched on."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerProviderList"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: "Register a provider. The registrant cannot verify its licence."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                provider_id:
+                  type: string
+                name:
+                  type: string
+                licence_type:
+                  type: string
+                regulator:
+                  type: string
+                licence_number:
+                  type: string
+                licence_source_url:
+                  type: string
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerProvider"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/providers/{provider}/verify:
+    post:
+      summary: "Verify a provider's licence on the regulator's own register; someone other than the registrant. The verifier is the signed-in person."
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                licence_expires_at:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerProvider"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/providers/{provider}/suspend:
+    post:
+      summary: "Suspend a provider: every offer of it disappears at once."
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerProvider"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/offers:
+    get:
+      summary: "Every offer, drafts included, with the statement customers would see."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerOfferList"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: "Write an offer. It is always saved as a DRAFT: someone else must switch it on."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                offer_id:
+                  type: string
+                provider_id:
+                  type: string
+                category:
+                  type: string
+                title:
+                  type: string
+                summary:
+                  type: string
+                handoff_url:
+                  type: string
+                fee_disclosure:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerOffer"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/offers/{offer}/status:
+    post:
+      summary: "Switch an offer on or withdraw it. Switching on needs a verified provider and a different person from the writer."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                status:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerOfferStatus"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     CaseId:
@@ -293,6 +479,86 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
   schemas:
+    PartnerProvider:
+      type: object
+      required: [provider_id, status]
+      properties:
+        provider_id:
+          type: string
+        name:
+          type: string
+        licence_type:
+          type: string
+        regulator:
+          type: string
+        licence_number:
+          type: string
+        status:
+          type: string
+        licence_verified_at:
+          type: string
+        licence_verified_by:
+          type: string
+        licence_expires_at:
+          type: string
+    PartnerProviderList:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerProvider"
+    PartnerOffer:
+      type: object
+      required: [offer_id, statement]
+      properties:
+        offer_id:
+          type: string
+        provider_id:
+          type: string
+        provider_name:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        statement:
+          type: string
+        statement_hash:
+          type: string
+        fee_disclosure:
+          type: string
+    PartnerAdminOffer:
+      type: object
+      required: [offer, status]
+      properties:
+        offer:
+          $ref: "#/components/schemas/PartnerOffer"
+        status:
+          type: string
+        handoff_url:
+          type: string
+        updated_by:
+          type: string
+        visible_now:
+          type: boolean
+    PartnerOfferList:
+      type: object
+      required: [offers]
+      properties:
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerAdminOffer"
+    PartnerOfferStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
     KycReview:
       type: object
       required: [review_id, status]

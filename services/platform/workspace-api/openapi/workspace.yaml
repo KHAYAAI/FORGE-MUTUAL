@@ -1347,6 +1347,75 @@ paths:
                 $ref: "#/components/schemas/Referral"
         "404":
           $ref: "#/components/responses/Error"
+  /v1/offers/{offer}/consent:
+    get:
+      summary: "Whether the party has consented to share their details with this offer's provider."
+      description: "Only for an offer the party can currently see; others look absent. Lists exactly what would be shared."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: "Consent to share details with this offer's provider."
+      description: "Needs an Idempotency-Key, agrees true and the statement_hash of the statement the customer read. Recorded in the consent service against that statement."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                agrees:
+                  type: boolean
+                statement_hash:
+                  type: string
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/offers/{offer}/consent/withdraw:
+    post:
+      summary: "Withdraw that consent. Withdrawing again is harmless."
+      description: "Takes effect on the next referral."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
   /v1/referrals:
     get:
       summary: "The party's referrals to third-party providers."
@@ -1394,6 +1463,20 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
   schemas:
+    OfferConsent:
+      type: object
+      required: [granted, shares]
+      properties:
+        granted:
+          type: boolean
+        consent_id:
+          type: string
+        provider_name:
+          type: string
+        shares:
+          type: array
+          items:
+            type: string
     Card:
       type: object
       required: [card_id, last4, status]
@@ -1497,6 +1580,8 @@ components:
         statement_hash:
           type: string
         fee_disclosure:
+          type: string
+        provider_id:
           type: string
     OfferList:
       type: object

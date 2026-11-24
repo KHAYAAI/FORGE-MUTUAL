@@ -17,6 +17,12 @@ const LINKS = [
   { href: "/payouts/new", label: "Payouts" },
 ];
 
+// Products the bank can switch on or off. A link to one appears only while its route answers 200, so a product that is off is not advertised.
+const OPTIONAL = [
+  { href: "/cards", label: "Cards", probe: "/api/v1/cards" },
+  { href: "/invest", label: "Invest", probe: "/api/v1/offers" },
+];
+
 export default function Nav() {
   const router = useRouter();
   const pathname = usePathname();
@@ -36,6 +42,19 @@ export default function Nav() {
     };
   }, [pathname]);
 
+  const [on, setOn] = useState<Record<string, boolean>>({});
+  const isCustomer = who?.signedIn === true && who.customer;
+  useEffect(() => {
+    if (!isCustomer) return setOn({});
+    let live = true;
+    Promise.all(OPTIONAL.map((o) => fetch(o.probe, { cache: "no-store" }).then((r) => [o.href, r.ok] as const).catch(() => [o.href, false] as const))).then(
+      (r) => live && setOn(Object.fromEntries(r)),
+    );
+    return () => {
+      live = false;
+    };
+  }, [isCustomer, pathname]);
+
   async function signOut() {
     await fetch("/api/session", { method: "DELETE" });
     setWho({ signedIn: false });
@@ -50,7 +69,7 @@ export default function Nav() {
         </Link>
         {who?.signedIn ? (
           <nav aria-label="Main" className="flex flex-wrap items-center gap-1 text-base">
-            {(who.customer ? LINKS : [{ href: "/apply", label: "Apply" }]).map((l) => (
+            {(who.customer ? [...LINKS, ...OPTIONAL.filter((o) => on[o.href])] : [{ href: "/apply", label: "Apply" }]).map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

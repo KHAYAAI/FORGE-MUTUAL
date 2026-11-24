@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1/offersv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/treasury/v1/treasuryv1connect"
 	"net/http"
 	"strconv"
@@ -63,8 +64,9 @@ type Services struct {
 	Payments   paymentsv1connect.PaymentsServiceClient
 	Recon      reconv1connect.ReconServiceClient
 	Onboarding onboardingv1connect.OnboardingServiceClient
-	Credit     lendingv1connect.CreditDeskServiceClient // nil: lending is not offered
-	Treasury   treasuryv1connect.TreasuryServiceClient  // nil: no prudential report
+	Credit     lendingv1connect.CreditDeskServiceClient  // nil: lending is not offered
+	Treasury   treasuryv1connect.TreasuryServiceClient   // nil: no prudential report
+	Partners   offersv1connect.PartnerAdminServiceClient // nil: third-party offers are not offered
 }
 
 // API serves the back-office routes.
@@ -91,6 +93,13 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/risk/prudential", a.staff(a.prudentialReport))
 	mux.HandleFunc("GET /v1/risk/trial-balance", a.staff(a.trialBalance))
 	mux.HandleFunc("GET /v1/risk/single-customer-view.csv", a.staff(needRole(RoleOperations, a.singleCustomerView)))
+	mux.HandleFunc("GET /v1/partners/providers", a.staff(needRole(RoleCompliance, a.listProviders)))
+	mux.HandleFunc("POST /v1/partners/providers", a.staff(needRole(RoleCompliance, a.registerProvider)))
+	mux.HandleFunc("POST /v1/partners/providers/{provider}/verify", a.staff(needRole(RoleCompliance, a.verifyLicence)))
+	mux.HandleFunc("POST /v1/partners/providers/{provider}/suspend", a.staff(needRole(RoleCompliance, a.suspendProvider)))
+	mux.HandleFunc("GET /v1/partners/offers", a.staff(needRole(RoleCompliance, a.listPartnerOffers)))
+	mux.HandleFunc("POST /v1/partners/offers", a.staff(needRole(RoleCompliance, a.upsertPartnerOffer)))
+	mux.HandleFunc("POST /v1/partners/offers/{offer}/status", a.staff(needRole(RoleCompliance, a.setPartnerOfferStatus)))
 	mux.HandleFunc("GET /v1/credit/applications", a.staff(needRole(RoleCredit, a.listCreditApplications)))
 	mux.HandleFunc("POST /v1/credit/applications/{facility}/decision", a.staff(needRole(RoleCredit, a.decideCredit)))
 	return mux

@@ -7,7 +7,7 @@ Status: built and tested against Postgres and a ledger fake (11 tests, including
 recovery from an unreachable ledger), and wired into the local stack with a processor simulator. **Not usable in
 production**: no card processor or programme manager is chosen (VERIFY-PROCESSOR), production refuses the simulator, and
 `FORGE_APPROVAL_CARDS` must name the approving decision (`pkg/licence`). **Wired to the customer app, but not switched on**: the workspace API has the card routes and the web app a `/cards` page, but `CARDS_URL`
-is unset (so the routes answer "not offered"), no navigation link points to the page, and the stack runs with the processor simulator. Only workspace-api may call it
+is unset (so the routes answer "not offered"), the navigation link appears only while the route answers 200, and the stack runs with the processor simulator. Only workspace-api may call it
 (`deploy/compose/config/callers/cards.json`).
 
 ## Rules
@@ -45,6 +45,6 @@ service may create accounts, create transfers, post and void pending transfers, 
   sponsor pool.
 - Physical cards, PIN, 3-D Secure and tokenised wallets (Apple Pay, Google Pay): the processor's.
 - Foreign-currency purchases (declined today), cash withdrawals, chargebacks and disputes, card fees and interchange.
-- A back-office view of cards, and a navigation link to `/cards` (add it when cards are switched on).
+- A back-office view of cards. The customer navigation link to `/cards` is built: it appears only while the cards route answers 200.
 - Card limits and blocked categories are placeholders (`docs/THRESHOLDS.md`, thresholds 29 and 30).
 - Confirmation from the sponsor bank and the Prudential Authority that Forge may issue cards at all.

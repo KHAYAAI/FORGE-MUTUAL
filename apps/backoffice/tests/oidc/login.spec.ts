@@ -23,7 +23,7 @@ test("a compliance person signs in, sees their roles, and the API receives the t
   await expect(page.getByTestId("staff-name")).toHaveText("Naledi Mokoena");
   await expect(page.getByTestId("staff-roles")).toHaveText("compliance");
 
-  const last = await (await request.get(`${UPSTREAM}/__last`)).json();
+  const last = await (await request.get(`${UPSTREAM}/__last?prefix=/v1/cases`)).json();
   expect(last.path).toContain("/v1/cases");
   expect(last.authorization).toMatch(/^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   expect(last.xForgeStaff).toBeNull();

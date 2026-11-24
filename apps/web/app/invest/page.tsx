@@ -8,6 +8,7 @@ import type { components } from "@/lib/api/schema";
 
 type Offer = components["schemas"]["Offer"];
 type Referral = components["schemas"]["Referral"];
+type Consent = components["schemas"]["OfferConsent"];
 
 const key = () => crypto.randomUUID();
 const CATEGORY: Record<string, string> = { INVESTMENTS: "Investments", CRYPTO_ASSETS: "Crypto assets" };
@@ -78,6 +79,28 @@ export default function InvestPage() {
 
 function OfferCard({ offer, onContinue }: { offer: Offer; onContinue: (o: Offer) => Promise<void> }) {
   const [ack, setAck] = useState(false);
+  const [consent, setConsent] = useState<Consent | null>(null);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  useEffect(() => {
+    void api.GET("/v1/offers/{offer}/consent", { params: { path: { offer: offer.offer_id } } }).then((r) => setConsent(r.data ?? null));
+  }, [offer.offer_id]);
+
+  async function giveConsent() {
+    setConsentError(null);
+    const res = await api.POST("/v1/offers/{offer}/consent", {
+      params: { path: { offer: offer.offer_id }, header: { "Idempotency-Key": key() } },
+      body: { agrees: true, statement_hash: offer.statement_hash },
+    });
+    if (!res.response.ok || !res.data) return setConsentError(errorText(res.error, `Request failed (${res.response.status}).`));
+    setConsent(res.data);
+  }
+
+  async function withdrawConsent() {
+    setConsentError(null);
+    const res = await api.POST("/v1/offers/{offer}/consent/withdraw", { params: { path: { offer: offer.offer_id } } });
+    if (!res.response.ok || !res.data) return setConsentError(errorText(res.error, `Request failed (${res.response.status}).`));
+    setConsent(res.data);
+  }
   return (
     <li className="rounded-[2rem] bg-stone-100 p-8" aria-label={offer.title}>
       <p className="text-sm text-stone-500">
@@ -95,9 +118,39 @@ function OfferCard({ offer, onContinue }: { offer: Offer; onContinue: (o: Offer)
           does not.
         </span>
       </label>
+      <div className="mt-4 rounded-xl border border-stone-300 bg-white p-4 text-sm" role="group" aria-label={`Sharing your details with ${offer.provider_name}`}>
+        <p className="font-medium">Sharing your details</p>
+        <p className="mt-1">
+          If you continue, Forge may share the following with {offer.provider_name}, so it can start its own checks on you:
+        </p>
+        <ul className="mt-1 list-disc pl-5">
+          {(consent?.shares ?? []).map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+        <p className="mt-1 text-stone-600">You can withdraw this at any time. It does not affect your Forge account.</p>
+        {consentError ? <Notice tone="error">{consentError}</Notice> : null}
+        {consent?.granted ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="font-medium">You agreed to share these details with {offer.provider_name}.</p>
+            <button type="button" onClick={withdrawConsent} className="rounded-full border border-stone-900 px-4 py-2">
+              Withdraw my consent
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={!ack || !consent}
+            onClick={giveConsent}
+            className="mt-3 rounded-full border border-stone-900 px-4 py-2 disabled:opacity-40"
+          >
+            I agree to share these details
+          </button>
+        )}
+      </div>
       <button
         type="button"
-        disabled={!ack}
+        disabled={!ack || !consent?.granted}
         onClick={() => onContinue(offer)}
         className="mt-4 rounded-full bg-stone-900 px-6 py-3 text-white hover:bg-black disabled:opacity-40"
       >

@@ -29,7 +29,10 @@ data:
         "Check"
       ],
       "svc-workspace": [
-        "List"
+        "Check",
+        "Grant",
+        "List",
+        "Revoke"
       ]
     }
 ---

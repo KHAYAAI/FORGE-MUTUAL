@@ -3,13 +3,17 @@
 import http from "node:http";
 
 let last = null;
+const byPath = new Map(); // the last request for each path, so a test can ask about one call whatever else the page also fetched
 
 http
   .createServer((req, res) => {
     if (req.url === "/__health") return res.end("ok");
-    if (req.url === "/__last") {
+    if (req.url?.startsWith("/__last")) {
       res.setHeader("content-type", "application/json");
-      return res.end(JSON.stringify(last));
+      const prefix = new URL(req.url, "http://x").searchParams.get("prefix");
+      if (!prefix) return res.end(JSON.stringify(last));
+      const hit = [...byPath.entries()].filter(([p]) => p.startsWith(prefix)).map(([, v]) => v).at(-1) ?? null;
+      return res.end(JSON.stringify(hit));
     }
     if (req.url?.startsWith("/v1/")) {
       last = {
@@ -18,6 +22,7 @@ http
         xForgeStaff: req.headers["x-forge-staff"] ?? null,
         xForgeRoles: req.headers["x-forge-roles"] ?? null,
       };
+      byPath.set(req.url, last);
       res.setHeader("content-type", "application/json");
       return res.end(JSON.stringify({ cases: [], breaks: [], reasons: [], break_active: false }));
     }

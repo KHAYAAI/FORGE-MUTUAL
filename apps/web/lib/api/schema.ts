@@ -1064,6 +1064,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/offers/{offer}/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the party has consented to share their details with this offer's provider.
+         * @description Only for an offer the party can currently see; others look absent. Lists exactly what would be shared.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /**
+         * Consent to share details with this offer's provider.
+         * @description Needs an Idempotency-Key, agrees true and the statement_hash of the statement the customer read. Recorded in the consent service against that statement.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        agrees?: boolean;
+                        statement_hash?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offers/{offer}/consent/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw that consent. Withdrawing again is harmless.
+         * @description Takes effect on the next referral.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/referrals": {
         parameters: {
             query?: never;
@@ -1108,6 +1228,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        OfferConsent: {
+            granted: boolean;
+            consent_id?: string;
+            provider_name?: string;
+            shares: string[];
+        };
         Card: {
             card_id: string;
             account_id?: string;
@@ -1157,6 +1283,7 @@ export interface components {
             statement: string;
             statement_hash: string;
             fee_disclosure?: string;
+            provider_id?: string;
         };
         OfferList: {
             offers: components["schemas"]["Offer"][];

@@ -19,6 +19,15 @@ metadata:
 data:
   callers.json: |
     {
+      "svc-backoffice-api": [
+        "ListAdminOffers",
+        "ListProviders",
+        "RegisterProvider",
+        "SetOfferStatus",
+        "SuspendProvider",
+        "UpsertOffer",
+        "VerifyLicence"
+      ],
       "svc-workspace": [
         "CreateReferral",
         "ListOffers",
@@ -242,6 +251,9 @@ spec:
   - Egress
   ingress:
   - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: backoffice
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: workspace

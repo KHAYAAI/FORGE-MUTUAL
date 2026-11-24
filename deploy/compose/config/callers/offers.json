@@ -1,4 +1,13 @@
 {
+  "svc-backoffice-api": [
+    "ListAdminOffers",
+    "ListProviders",
+    "RegisterProvider",
+    "SetOfferStatus",
+    "SuspendProvider",
+    "UpsertOffer",
+    "VerifyLicence"
+  ],
   "svc-workspace": [
     "CreateReferral",
     "ListOffers",
