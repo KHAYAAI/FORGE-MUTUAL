@@ -75,7 +75,7 @@ func TestTheCatalogueAndTheCodeAgree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	built := map[string]bool{"DI 099": true, "DI 100": true, "DI 200": true, "DI 400": true, "DI 310": true, "DI 110": true, "DI 600": true, "DI 300": true, "DI 930": true, "DI 505": true, "DI 510": true, "DI 410": true, "DI 700": true}
+	built := map[string]bool{"DI 099": true, "DI 100": true, "DI 200": true, "DI 400": true, "DI 310": true, "DI 110": true, "DI 600": true, "DI 300": true, "DI 930": true, "DI 505": true, "DI 510": true, "DI 410": true, "DI 700": true, "DI 500": true}
 	seen := map[string]bool{}
 	di := 0
 	for _, r := range rows[1:] {

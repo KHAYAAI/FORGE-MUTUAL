@@ -72,8 +72,8 @@ lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats ea
   prescribed percentage. Balances with the sponsor and partner banks are exposures to those banks.
 - **DI 410** (`di410.go`): repricing gap and the 12-month income effect of a 1% move by the standard gap method.
 - **DI 700** (`di700.go`): the section 55 and 56 limits; a breach is a shortfall that qualifies DI 099.
-- **Still to build:** DI 500 (credit risk, with the asset-quality and sector distribution of loans) and DI 900 (institutional and
-  maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
+- **DI 500** (`di500.go`): overdue loans and their ageing, assets by profitability (the instructions' rule), loans by sector.
+- **Still to build:** DI 900 (institutional and maturity breakdown, a statistical return of 8 pages). BA returns stay on this repository's own
   references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
