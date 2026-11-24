@@ -116,7 +116,7 @@ members), and a statement of how the bank differs from existing mutual and co-op
 ## 7. Governance, board and key persons
 
 The target governance is in `docs/governance/STRUCTURE.md`, `ROLES.md` and `POLICY_FRAMEWORK.md`: a board with committees (audit, risk and capital, nominations and
-remuneration), three lines of defence, 55 draft policies and 37 defined seats.
+remuneration), three lines of defence, 58 draft policies and 37 defined seats.
 
 | Item | State |
 |---|---|
@@ -196,7 +196,7 @@ subordinated or other capital instrument that the Prudential Authority accepts f
   Credit Act (for any lending), and deposit insurance (CODI) disclosure. Counsel has not reviewed any of it.
 - **Controls built into the software:** reconciliation against the sponsor, one ledger writer, an append-only audit log, default-deny rules, maker-checker approvals and
   consent for personal data. Evidence is the test gate and the register.
-- **Status:** all 55 policies are drafts; none is approved because no body exists to approve them.
+- **Status:** all 58 policies are drafts; none is approved because no body exists to approve them.
 
 ## 11. Systems, security and outsourcing
 

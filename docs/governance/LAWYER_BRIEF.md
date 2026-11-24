@@ -46,7 +46,7 @@
    customers must acknowledge; whether Forge may receive a referral fee from a licensed provider (and any cap or disclosure the law requires);
    whether introducing customers to financial-services or crypto-asset providers is itself regulated activity; and POPIA for sending a
    consenting customer's **name** to the provider (operator or responsible party, cross-border, retention, what withdrawing consent must do).
-8. **Review the governance pack:** the structure (`STRUCTURE.md`), the 37 seats (`ROLES.md`), and the 55 draft policies
+8. **Review the governance pack:** the structure (`STRUCTURE.md`), the 37 seats (`ROLES.md`), and the 58 draft policies
    (`POLICY_FRAMEWORK.md`). Do they meet the Banks Act or Mutual Banks Act regulations, King IV, Joint Standards 1
    and 2, Directive 3/2018 and the Guidance Notes?
 9. **Regulatory register:** check the 114 requirements (`docs/regulatory/register.csv`) and add the laws not yet read:
@@ -103,7 +103,7 @@ The firm names are from general knowledge. Check each firm's current team and co
 > Africa. Nothing is registered or licensed yet. We plan to begin on a sponsor bank's licence and to apply for registration as a mutual bank, keeping a
 > Banks Act registration as an alternative.
 >
-> We have built the banking platform and drafted a governance pack: a board and committee structure, 37 roles, 55 draft policies and a register of 114
+> We have built the banking platform and drafted a governance pack: a board and committee structure, 37 roles, 58 draft policies and a register of 114
 > regulatory requirements. We have also prepared draft versions of a mutual-bank constitution and a business plan, and a pitch for a sponsor bank.
 > They are working drafts, written to give counsel something to correct; we do not treat any of them as advice.
 >

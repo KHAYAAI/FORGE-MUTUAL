@@ -29,7 +29,7 @@ decision with you and with the regulator, and none is assumed in this approach.
    rules are data owned by named people; every decision goes to an append-only audit log; customers are re-screened daily and a match opens a critical
    case and freezes the customer. **The screening list is a development fixture of one name.** The sanctions-list source and licence are undecided
    (`docs/SANCTIONS_SOURCES.md`), so this control is built but not live-grade.
-3. **A governance pack with an honest status:** structure, 37 seats, 55 draft policies and a 114-line regulatory register. **None of the policies is
+3. **A governance pack with an honest status:** structure, 37 seats, 58 draft policies and a 114-line regulatory register. **None of the policies is
    approved and 36 of the 37 seats are vacant.** We expect you to find gaps; we would rather you find them than a regulator.
 4. **A way out.** `BankLayer` isolates every route-specific detail so that moving to our own licence later is a migration, not a rebuild (**the
    migration runbook is not yet written**).
