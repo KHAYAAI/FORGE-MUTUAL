@@ -60,7 +60,7 @@ flowchart TB
     B4 --> B5["BA application forms;<br/>pre-application meeting with PA"]
   end
   M5 & B5 --> LIC["PA registration (FSCA concurrence)<br/>then CODI, FIC, SARB, PASA"]
-  LIC --> MIG["Move customers from the sponsor to Forge's books<br/>(docs/runbooks/banklayer-migration.md)"]
+  LIC --> MIG["Move customers from the sponsor to Forge's books<br/>(runbook not yet written)"]
 ```
 
 ## What changes in the governance pack

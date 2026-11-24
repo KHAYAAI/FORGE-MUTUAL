@@ -29,12 +29,12 @@
 
 ## A1 · Legal form and constitution
 
-**Owner:** Head of Legal (R26) with the lawyer. Mutual bank constitution or company articles; see docs/governance/LEGAL_FORMS.md
+**Owner:** Head of Legal (R26) with the lawyer. Mutual bank constitution or company articles; draft in docs/licence-application/CONSTITUTION_DRAFT.md; see docs/governance/LEGAL_FORMS.md
 
 | Requirement | Type | Status | Evidence | Gap or next step |
 |---|---|---|---|---|
-| **LIC-01** Bank = public company under Companies Act 71 of 2008; mutual bank = juristic person under Mutual Banks Act, ow | Decision | Partial | [CONTEXT.md](../../docs/CONTEXT.md)<br>[licence-application-plan.md](../../docs/regulatory/policies/licence-application-plan.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[legalform.go](../../pkg/banklayer/legalform.go)<br>[LEGAL_FORMS.md](../../docs/governance/LEGAL_FORMS.md) | Owner's direction 2026-11-18: mutual bank planned, bank kept open; both encoded as data. Legal advice needed before ADR-0020 closes |
-| **LIC-07** At least seven founders with signed articles; depositor-members vote at general meetings; mutuality concept st | Document | Partial | [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)<br>[shareholder-and-significant-ownership-policy.md](../../docs/regulatory/policies/shareholder-and-significant-ownership-policy.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[membership](../../services/bank/membership/internal/membership) | Member register, shares, one-member-one-vote and the seven-founder check built and tested; constitution not drafted; module not wired to a service or the ledger |
+| **LIC-01** Bank = public company under Companies Act 71 of 2008; mutual bank = juristic person under Mutual Banks Act, ow | Decision | Partial | [CONTEXT.md](../../docs/CONTEXT.md)<br>[licence-application-plan.md](../../docs/regulatory/policies/licence-application-plan.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[legalform.go](../../pkg/banklayer/legalform.go)<br>[LEGAL_FORMS.md](../../docs/governance/LEGAL_FORMS.md)<br>[CONSTITUTION_DRAFT.md](../../docs/licence-application/CONSTITUTION_DRAFT.md) | Owner's direction 2026-11-18: mutual bank planned, bank kept open; both encoded as data. Draft constitution for the lawyer written 2026-11-24 (not legal advice; Act provisions marked ACT). Legal advice needed before ADR-0020 closes |
+| **LIC-07** At least seven founders with signed articles; depositor-members vote at general meetings; mutuality concept st | Document | Partial | [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)<br>[shareholder-and-significant-ownership-policy.md](../../docs/regulatory/policies/shareholder-and-significant-ownership-policy.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[membership](../../services/bank/membership/internal/membership)<br>[CONSTITUTION_DRAFT.md](../../docs/licence-application/CONSTITUTION_DRAFT.md) | Member register, shares, one-member-one-vote and the seven-founder check built and tested; draft constitution for the lawyer written (20 decisions listed, Act provisions to be added); only one founder named; module not wired to a service or |
 
 ## A2 · Name and naming authorisation
 
@@ -59,7 +59,7 @@
 | Requirement | Type | Status | Evidence | Gap or next step |
 |---|---|---|---|---|
 | **LIC-05** Significant shareholders fit and proper; >15% acquisition needs permission (Banks Act s.37, s.42); Form BA 125 | Document | Partial | [shareholder-and-significant-ownership-policy.md](../../docs/regulatory/policies/shareholder-and-significant-ownership-policy.md)<br>[fit-and-proper-procedure.md](../../docs/regulatory/policies/fit-and-proper-procedure.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md) | Draft written, not approved; seat holders VACANT (docs/governance/roles.csv). Shareholder register and fit-and-proper files not started |
-| **LIC-07** At least seven founders with signed articles; depositor-members vote at general meetings; mutuality concept st | Document | Partial | [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)<br>[shareholder-and-significant-ownership-policy.md](../../docs/regulatory/policies/shareholder-and-significant-ownership-policy.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[membership](../../services/bank/membership/internal/membership) | Member register, shares, one-member-one-vote and the seven-founder check built and tested; constitution not drafted; module not wired to a service or the ledger |
+| **LIC-07** At least seven founders with signed articles; depositor-members vote at general meetings; mutuality concept st | Document | Partial | [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)<br>[shareholder-and-significant-ownership-policy.md](../../docs/regulatory/policies/shareholder-and-significant-ownership-policy.md)<br>[STRUCTURE.md](../../docs/governance/STRUCTURE.md)<br>[membership](../../services/bank/membership/internal/membership)<br>[CONSTITUTION_DRAFT.md](../../docs/licence-application/CONSTITUTION_DRAFT.md) | Member register, shares, one-member-one-vote and the seven-founder check built and tested; draft constitution for the lawyer written (20 decisions listed, Act provisions to be added); only one founder named; module not wired to a service or |
 
 ## B1 · Board and executive officers
 
@@ -88,11 +88,11 @@
 
 ## C1 · Business plan and public-interest motivation
 
-**Owner:** Founder and CFO. Outline only; see docs/regulatory/policies/business-plan-outline.md
+**Owner:** Founder and CFO. Draft in docs/licence-application/BUSINESS_PLAN_DRAFT.md; outline in docs/regulatory/policies/business-plan-outline.md
 
 | Requirement | Type | Status | Evidence | Gap or next step |
 |---|---|---|---|---|
-| **LIC-15** Business plan, public-interest motivation, rationale, group structure chart, dividend policy, memorandum (or a | Document | Partial | [CONTEXT.md](../../docs/CONTEXT.md) | CONTEXT.md is the base for the business plan; others not started |
+| **LIC-15** Business plan, public-interest motivation, rationale, group structure chart, dividend policy, memorandum (or a | Document | Partial | [CONTEXT.md](../../docs/CONTEXT.md)<br>[BUSINESS_PLAN_DRAFT.md](../../docs/licence-application/BUSINESS_PLAN_DRAFT.md)<br>[CONSTITUTION_DRAFT.md](../../docs/licence-application/CONSTITUTION_DRAFT.md) | Draft business plan, public-interest motivation, group chart and dividend policy written 2026-11-24 from CONTEXT; projections, capital plan, board, auditor and fees are gaps; the illustrative pro forma and CONTEXT economics disagree and mus |
 
 ## C2 · Financial projections and pro forma returns
 

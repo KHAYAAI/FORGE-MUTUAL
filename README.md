@@ -41,6 +41,9 @@ How the bank is shaped by Erebor (technology) and Investec (service), and where 
 
 [`docs/licence-application/PACK.md`](docs/licence-application/PACK.md) is generated (`make licence-pack`) from the regulatory register: 18 sections, 59
 requirements, each with its owner, evidence and gap. It is an index of what the application needs, not the application.
+Two working drafts sit beside it, both for the lawyer and the founder to correct and neither approved: a
+[draft constitution](docs/licence-application/CONSTITUTION_DRAFT.md) (20 decisions listed; the Act's own provisions still to be added) and a
+[draft business plan](docs/licence-application/BUSINESS_PLAN_DRAFT.md) (projections, capital plan, board and auditor are gaps).
 
 ### Governance and people
 
