@@ -166,6 +166,10 @@ $270M against R1.5bn at year 3). One consistent model must replace both.
    little or nothing. The model must hold them and price their cost; today's ledger has no account for any of them, and the returns code reports
    the shortfall.
 
+5. **Concentration on the sponsor bank.** DI 510 counts a balance with a bank as an exposure to that bank. With all customer money placed at
+   one sponsor, that single exposure is many times ten per cent of capital. The model must test it against the large-exposure limits that apply
+   to a registered mutual bank (VERIFY the limits with the lawyer) and plan how placements are spread.
+
 **GAP, to be built with the CFO and an accountant:** a consistent three-to-five-year model (balance sheet, income statement, capital and liquidity, with customer, deposit,
 lending and cost drivers), a sponsor-bank revenue share, stress scenarios, and the pro forma returns (DI 100, 110, 200, 300, 400, 430, 700) regenerated from that model
 (`make proforma`). DI 100 and DI 200 now use the forms' own line numbers (`docs/regulatory/returns/`); the transcription needs a second person's check.
