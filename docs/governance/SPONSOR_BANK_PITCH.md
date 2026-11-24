@@ -21,7 +21,7 @@ payments, FX, treasury, working-capital credit and card acceptance, through soft
 2. Controls you can inspect: your customers are screened against sanctions daily and a match is frozen; limits and
    monitoring rules are data owned by named people; every decision is in an append-only audit log; payments stop on
    any open reconciliation break (`docs/THRESHOLDS.md`).
-3. A governance pack: structure, 37 seats, 54 draft policies and a 114-line regulatory register, with an honest status
+3. A governance pack: structure, 37 seats, 55 draft policies and a 114-line regulatory register, with an honest status
    on each (`docs/governance/`). We expect you to find gaps; we would rather you find them than a regulator.
 4. A way out of the arrangement: `BankLayer` isolates every route-specific detail, so moving to our own licence later
    is a migration runbook, not a rebuild.
@@ -50,7 +50,7 @@ view on which of our products you will carry (savings, credit and card acceptanc
 
 | They will ask for | Where it is | Ready? |
 |---|---|---|
-| Business plan and projections | `docs/regulatory/policies/business-plan-outline.md`, `docs/regulatory/proforma/` | Outline and illustrative figures only |
+| Business plan and projections | `docs/licence-application/BUSINESS_PLAN_DRAFT.md` (outline: `docs/regulatory/policies/business-plan-outline.md`) | Draft plan with no real projections; **do not share `docs/regulatory/proforma/` as a forecast** (illustrative, and it disagrees with `CONTEXT.md` economics) |
 | Directors and key people | `docs/governance/ROLES.md`, `FIT_AND_PROPER_PACK.md` | Founder only; MLRO and risk and compliance heads **vacant** |
 | Policies (AML, risk, outsourcing, security) | `docs/regulatory/policies/` | Drafts, none approved |
 | RMCP (FICA risk management and compliance programme) | `docs/regulatory/policies/rmcp.md` | Draft |

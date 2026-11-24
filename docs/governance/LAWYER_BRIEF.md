@@ -12,7 +12,7 @@
    capital, founder and board rules, member-share treatment and any amendments since 1993 (`LEGAL_FORMS.md`).
 2. **Sponsor model:** what Forge may do before it holds a licence, under a sponsor bank's licence, and what the sponsor
    contract must cover. Can Forge call itself anything containing "bank" or "mutual" before authorisation?
-3. **Review the governance pack:** the structure (`STRUCTURE.md`), the 35 seats (`ROLES.md`), and the 52 draft policies
+3. **Review the governance pack:** the structure (`STRUCTURE.md`), the 37 seats (`ROLES.md`), and the 55 draft policies
    (`POLICY_FRAMEWORK.md`). Do they meet the Banks Act or Mutual Banks Act regulations, King IV, Joint Standards 1
    and 2, Directive 3/2018 and the Guidance Notes?
 4. **Regulatory register:** check the 114 requirements (`docs/regulatory/register.csv`) and add the laws not yet read:
@@ -65,8 +65,8 @@ The firm names are from general knowledge. Check each firm's current team and co
 > I am the founder of Forge Mutual, a proposed technology-led mutual bank in South Africa. We plan to begin on a sponsor
 > bank's licence and apply for registration as a mutual bank, keeping a Banks Act registration as an alternative.
 >
-> We have built the banking platform and a draft governance pack: the board and committee structure, a roster of 35
-> roles, 52 draft policies and a register of 114 regulatory requirements. We are looking for counsel to:
+> We have built the banking platform and a draft governance pack: the board and committee structure, a roster of 37
+> roles, 55 draft policies and a register of 114 regulatory requirements. We are looking for counsel to:
 > (1) advise on the legal form and the sponsor model; (2) review the governance pack and register; and (3) quote for
 > the licence application.
 >
