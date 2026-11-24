@@ -119,10 +119,10 @@ and affordability rule are placeholders 17 to 21 in `docs/THRESHOLDS.md`.
   reason), the NCA pre-agreement statement (generated, acknowledged by hash), and write-offs (two people, after a default notice, 90 days
   past due). Not built: a real bureau, collections beyond retrying, recoveries after a write-off.
 - [x] **Card issuing:** virtual debit cards with real-time approval against the ledger (`services/bank/card-service`),
-  tested against a processor simulator; wired to the customer app (`/cards`) but not switched on.
+  tested against a processor simulator; wired to the customer app (`/cards`) but not switched on (its navigation link appears only while it is on).
 - [x] **Third-party offers** (`services/platform/partner-offers`): introduces investment and crypto-asset products that a licensed
   provider supplies. **Every product is provided, licensed and monitored by a third party, never by Forge**, and the code states
-  it in every offer. Wired to the customer app (`/invest`) but **switched off**; no provider chosen.
+  it in every offer. Wired to the customer app (`/invest`, with a consent step) and to a compliance screen in the back office (`/partners`), but **switched off**; no provider chosen. The navigation links appear only while the product is on.
 - [ ] **Owner/External.** For card issuing: a programme manager or sponsor, a processor, and the regulator's view.
 - [ ] **Owner/External.** For card payments: an acquiring bank (VERIFY-ACQUIRER) and its adapter; chargebacks;
   reconciliation of acquirer payouts.
