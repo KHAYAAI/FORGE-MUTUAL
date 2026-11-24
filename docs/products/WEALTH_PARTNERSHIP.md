@@ -60,7 +60,7 @@ conversations; the sponsor bank may have a preferred partner.
 | Item | Status |
 |---|---|
 | A referral register, the customer's page and a compliance back-office screen | The register, the rules, the workspace routes, the customer page `/invest` with its consent step, and the compliance screen `/partners` are built |
-| A consent purpose "share with an investment partner" in the consent service | Used by `partner-offers` as purpose `share_with_partner`, scope `referral:<provider_id>`; the screen that asks is not built |
+| A consent purpose "share with an investment partner" in the consent service | Used by `partner-offers` as purpose `share_with_partner`, scope `referral:<provider_id>`; the customer screen (`/invest`) asks, and the sender sends only the listed fields (today the customer's name) |
 | An API link to a chosen partner | Not built; depends on the partner |
 | A referral-fee ledger entry (income) | Not built; use FEE income (2002) |
 

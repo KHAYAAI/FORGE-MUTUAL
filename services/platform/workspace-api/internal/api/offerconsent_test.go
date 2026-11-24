@@ -39,7 +39,7 @@ func (f *fakeShareConsent) Revoke(_ context.Context, r *connect.Request[consentv
 type fakeOffersWithProvider struct{ fakeOffers }
 
 func (f *fakeOffersWithProvider) ListOffers(_ context.Context, _ *connect.Request[offersv1.ListOffersRequest]) (*connect.Response[offersv1.ListOffersResponse], error) {
-	return connect.NewResponse(&offersv1.ListOffersResponse{Offers: []*offersv1.Offer{{OfferId: "o1", ProviderId: "acme", ProviderName: "Acme Wealth", Statement: statement, StatementHash: "h1"}}}), nil
+	return connect.NewResponse(&offersv1.ListOffersResponse{Offers: []*offersv1.Offer{{OfferId: "o1", ProviderId: "acme", ProviderName: "Acme Wealth", Statement: statement, StatementHash: "h1", Shares: []string{"your name"}}}}), nil
 }
 
 // The customer can see, give and withdraw consent for a provider they were shown; it needs the current statement and an explicit agreement;
@@ -50,6 +50,9 @@ func TestTheCustomerGivesAndWithdrawsConsentForAProviderTheyWereShown(t *testing
 	w := doCall(h, "GET", "/v1/offers/o1/consent", "", nil)
 	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"granted":false`)) || !bytes.Contains(w.Body.Bytes(), []byte("your name")) || !bytes.Contains(w.Body.Bytes(), []byte("Acme Wealth")) {
 		t.Fatalf("before: %d %s", w.Code, w.Body)
+	}
+	if bytes.Contains(w.Body.Bytes(), []byte("email")) || bytes.Contains(w.Body.Bytes(), []byte("phone")) {
+		t.Fatalf("the customer is told only what the offers service will send, which is their name: %s", w.Body)
 	}
 	if w := doCall(h, "GET", "/v1/offers/not-shown/consent", "", nil); w.Code != http.StatusNotFound {
 		t.Fatalf("an offer the customer was not shown: %d", w.Code)

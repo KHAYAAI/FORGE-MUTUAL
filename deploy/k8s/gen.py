@@ -102,6 +102,9 @@ def manifests(name, s, svcs):
         if k.endswith("_CALLERS_FILE"):
             add(k, "/config/callers.json")
             continue
+        if k.endswith("_SIGNING_DIR"):
+            add(k, "/secrets")  # provider signing keys are <provider_id>.key entries of the service's own secret
+            continue
         if k.endswith("_FILE"):
             add(k, f"/secrets/{os.path.basename(str(v))}")
             continue

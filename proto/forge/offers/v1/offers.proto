@@ -35,6 +35,11 @@ service PartnerAdminService {
   rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
   // Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
   rpc ListAdminOffers(ListAdminOffersRequest) returns (ListAdminOffersResponse);
+  // Every referral with whether the customer's details were sent, and the referral fees recorded against it.
+  rpc ListAdminReferrals(ListAdminReferralsRequest) returns (ListAdminReferralsResponse);
+  // Books a referral fee the provider paid, as income, against the bank receipt. Two people: the first call proposes it, a call from a DIFFERENT
+  // person with the same referral, amount and bank reference books it. Never more than the offer's cap; once per bank reference.
+  rpc RecordReferralFee(RecordReferralFeeRequest) returns (RecordReferralFeeResponse);
 }
 
 message Offer {
@@ -49,6 +54,8 @@ message Offer {
   string statement = 9;      // the mandatory third-party statement, generated; show it in full
   string statement_hash = 10; // sent back in CreateReferral to prove this exact text was acknowledged
   string fee_disclosure = 11;
+  string referral_fee_cap_minor = 13; // the most Forge may be paid for introducing a customer to this product; "0" means nothing
+  repeated string shares = 14;        // exactly what Forge sends the provider if the customer consents: the same list the sender uses
   string provider_id = 12;   // for the consent a referral needs (purpose share_with_partner, scope referral:<provider_id>)
 }
 
@@ -85,6 +92,7 @@ message RegisterProviderRequest {
   string licence_number = 5;
   string licence_source_url = 6; // the regulator's register entry, https
   string actor = 7;
+  string delivery_url = 8;       // where Forge sends a referred customer's details (https, the provider's own domain); empty: nothing is sent
 }
 message Provider {
   string provider_id = 1;
@@ -96,6 +104,8 @@ message Provider {
   string licence_verified_at = 7;
   string licence_verified_by = 8;
   string licence_expires_at = 9;
+  string licence_checked_at = 10;  // the last automatic check against the regulator's register extract
+  bool delivery_configured = 11;   // Forge can send this provider referred customers' details
 }
 message RegisterProviderResponse { Provider provider = 1; }
 
@@ -120,8 +130,9 @@ message UpsertOfferRequest {
   string title = 4;
   string summary = 5;
   string handoff_url = 6;      // https, on the provider's own domain
-  string fee_disclosure = 7;   // required: what, if anything, Forge is paid
+  string fee_disclosure = 7;   // optional note on how a fee is worked out; the statement's fee sentence is generated from the cap
   string actor = 8;
+  string referral_fee_cap_minor = 9; // required: the most Forge may be paid per referral, rand cents; "0" means Forge is paid nothing
 }
 message UpsertOfferResponse { Offer offer = 1; }
 
@@ -146,3 +157,41 @@ message AdminOffer {
 
 message ListAdminOffersRequest {}
 message ListAdminOffersResponse { repeated AdminOffer offers = 1; }
+
+message AdminReferral {
+  string referral_id = 1;
+  string offer_id = 2;
+  string offer_title = 3;
+  string provider_id = 4;
+  string provider_name = 5;
+  string party_id = 6;
+  string created_at = 7;
+  string delivery_status = 8;     // PENDING, SENT, FAILED, CANCELLED or NOT_CONFIGURED
+  string delivery_detail = 9;     // why, for FAILED and CANCELLED; never the details themselves
+  string delivered_at = 10;
+  string fee_cap_minor = 11;
+  string fees_recorded_minor = 12;
+}
+
+message ListAdminReferralsRequest {}
+message ListAdminReferralsResponse { repeated AdminReferral referrals = 1; }
+
+message RecordReferralFeeRequest {
+  string referral_id = 1;
+  string amount_minor = 2;        // rand cents
+  string bank_reference = 3;      // the line on the sponsor bank statement the provider's payment arrived on; each is booked once
+  string officer = 4;             // the person making this call; the second call must come from someone else
+  reserved 5;
+}
+message ReferralFee {
+  string referral_id = 1;
+  string amount_minor = 2;
+  string bank_reference = 3;
+  string recorded_by = 4;
+  string approved_by = 5;
+  string recorded_at = 6;
+}
+message RecordReferralFeeResponse {
+  ReferralFee fee = 1;                 // set once booked
+  bool awaiting_second_person = 2;     // proposed, not yet booked
+}

@@ -43,8 +43,9 @@ recorded here.
 | 29 | Card limits: per transaction and per day | default R10 000 and R25 000; ceilings R50 000 and R100 000 (`CARDS_DEFAULT_*`, `CARDS_MAX_*`) | `services/bank/card-service/cmd/card-service/main.go` | Risk owner and Head of Product | _unassigned_ | Placeholder: set from fraud loss data and the programme manager's rules |
 | 30 | Card blocked merchant categories and open cards per party | MCC 7995, 7801, 7802; 5 open cards (`CARDS_BLOCKED_MCC`, `CARDS_MAX_PER_PARTY`) | `services/bank/card-service/cmd/card-service/main.go` | CCO and Head of Product | _unassigned_ | Placeholder: confirm gambling categories with compliance; decide the policy on crypto-exchange merchants |
 | 31 | Write-off timing and credit bureau rules | write off at 90 days past due after a default notice (`LENDING_WRITE_OFF_AFTER_DAYS`); adverse bureau record needs a written reason of 30+ characters | `services/bank/lending-service/internal/lending/writeoff.go`, `lending.go` | Risk owner (credit) and CFO | _unassigned_ | Placeholder: set from the credit policy and IFRS 9 staging; confirm NCA timing with the lawyer |
+| 32 | Referral fee ceiling and delivery/register timing | largest fee an offer may allow R5 000 per introduction (`PARTNER_OFFERS_MAX_FEE`); register extract trusted for 48h (`LICENCE_REGISTER_MAX_AGE`); provider hidden if not confirmed in 35 days (`LICENCE_RECHECK_MAX_AGE`); delivery gives up after 6 attempts | `services/platform/partner-offers/internal/offers/offers.go`, `delivery.go`, `cmd/partner-offers/main.go` | CCO and CFO | _unassigned_ | Placeholder: set with the lawyer's view on referral fees and the real register's refresh rate |
 
-Thresholds 17 to 21 belong to products that `pkg/licence` keeps off in production until a decision approves them
+Thresholds 17 to 21 and 32 belong to products that `pkg/licence` keeps off in production until a decision approves them
 (`FORGE_APPROVAL_<PRODUCT>=DEC-nnnn`).
 
 **Not thresholds, but also owned:** the outbound reserve window of 7 days (the ledger's maximum pending timeout),

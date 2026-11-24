@@ -305,6 +305,9 @@ paths:
                   type: string
                 licence_source_url:
                   type: string
+                delivery_url:
+                  type: string
+                  description: "https address the customer's consented details are sent to; empty means nothing is sent"
       responses:
         "201":
           description: OK
@@ -412,8 +415,12 @@ paths:
                   type: string
                 handoff_url:
                   type: string
+                referral_fee_cap_minor:
+                  type: string
+                  description: "The most Forge may be paid for introducing a customer, in rand cents; \"0\" for nothing. The statement the customer acknowledges is generated from this."
                 fee_disclosure:
                   type: string
+                  description: "An optional extra sentence added to the generated fee line"
       responses:
         "200":
           description: OK
@@ -421,6 +428,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerOffer"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/referrals:
+    get:
+      summary: "Every referral, whether the customer's details reached the provider, and the fees booked. Compliance or operations."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerReferralList"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/partners/referrals/{referral}/fee:
+    post:
+      summary: "Enter (first person) or confirm (a different person) a referral fee received, against its bank statement line. Operations."
+      parameters:
+        - name: referral
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                amount_minor:
+                  type: string
+                bank_reference:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerFeeResult"
         "403":
           $ref: "#/components/responses/Error"
         "404":
@@ -501,6 +554,11 @@ components:
           type: string
         licence_expires_at:
           type: string
+        licence_checked_at:
+          type: string
+          description: "When the regulator's register last confirmed the licence automatically"
+        delivery_configured:
+          type: boolean
     PartnerProviderList:
       type: object
       required: [providers]
@@ -531,6 +589,12 @@ components:
           type: string
         fee_disclosure:
           type: string
+        referral_fee_cap_minor:
+          type: string
+        shares:
+          type: array
+          items:
+            type: string
     PartnerAdminOffer:
       type: object
       required: [offer, status]
@@ -553,6 +617,63 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PartnerAdminOffer"
+    PartnerReferral:
+      type: object
+      required: [referral_id, delivery_status]
+      properties:
+        referral_id:
+          type: string
+        offer_id:
+          type: string
+        offer_title:
+          type: string
+        provider_id:
+          type: string
+        provider_name:
+          type: string
+        party_id:
+          type: string
+        created_at:
+          type: string
+        delivery_status:
+          type: string
+          description: "PENDING, SENT, FAILED, CANCELLED or NOT_CONFIGURED"
+        delivery_detail:
+          type: string
+        delivered_at:
+          type: string
+        fee_cap_minor:
+          type: string
+        fees_recorded_minor:
+          type: string
+    PartnerReferralList:
+      type: object
+      required: [referrals]
+      properties:
+        referrals:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerReferral"
+    PartnerFeeResult:
+      type: object
+      properties:
+        fee:
+          type: object
+          properties:
+            referral_id:
+              type: string
+            amount_minor:
+              type: string
+            bank_reference:
+              type: string
+            recorded_by:
+              type: string
+            approved_by:
+              type: string
+            recorded_at:
+              type: string
+        awaiting_second_person:
+          type: boolean
     PartnerOfferStatus:
       type: object
       required: [status]

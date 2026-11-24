@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -25,6 +26,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/khayaai/forge-mutual/pkg/api/forge/ledger/v1/ledgerv1connect"
 
 	offersv1 "github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1"
 	"github.com/khayaai/forge-mutual/pkg/licence"
@@ -52,10 +55,18 @@ type Consents interface {
 	Allowed(ctx context.Context, party, purpose, scope string) (consentID string, ok bool, err error)
 }
 
+// Names gives a party's legal name.
+type Names interface {
+	Name(ctx context.Context, party string) (string, error)
+}
+
 // Parties reports whether a party may act. Only ACTIVE parties are introduced to anyone.
 type Parties interface {
 	Active(ctx context.Context, party string) (bool, error)
 }
+
+// DefaultMaxFeeCap is the largest per-referral fee an offer may allow when MaxFeeCap is unset: R5 000.00 (PLACEHOLDER, threshold 32).
+const DefaultMaxFeeCap = 500_000
 
 // LicenceMaxAge is how old a licence check may be before the provider's offers disappear. A licence can be suspended any
 // day, so a check older than a year proves little (PROPOSED; compliance may choose a shorter time).
@@ -96,6 +107,22 @@ type Service struct {
 	Enabled bool
 	Log     *slog.Logger
 	Now     func() time.Time
+
+	// Ledger and the two accounts a referral fee moves between (set by EnsureFeeAccounts). Without a ledger no fee can be booked.
+	Ledger                 ledgerv1connect.LedgerServiceClient
+	SponsorPool, FeeIncome string
+	// Names gives a customer's name for sending to a provider they were introduced to. Without it nothing is sent.
+	Names Names
+	// HTTP sends details to providers; nil uses a client that refuses private addresses and redirects. SecretsDir holds <provider_id>.key.
+	HTTP       *http.Client
+	SecretsDir string
+	// Register confirms licences against the regulator's register extract. RegisterMaxAge, when above zero, hides a provider with no
+	// successful check that recent. RegisterRenews lets a successful check renew the human verification (see register.go).
+	Register       Register
+	RegisterMaxAge time.Duration
+	RegisterRenews bool
+	// MaxFeeCap is the largest per-referral fee an offer may allow, rand cents (PLACEHOLDER, threshold 32).
+	MaxFeeCap int64
 }
 
 func (s *Service) now() time.Time {
@@ -128,12 +155,13 @@ func wrap(err error) error {
 // provider and offer as stored.
 type provider struct {
 	ID, Name, LicenceType, Regulator, Number, SourceURL, Status, RegisteredBy string
-	VerifiedAt, ExpiresAt                                                     *time.Time
-	VerifiedBy                                                                string
+	VerifiedAt, ExpiresAt, CheckedAt                                          *time.Time
+	VerifiedBy, DeliveryURL                                                   string
 }
 
 type offerRow struct {
 	ID, ProviderID, Category, Title, Summary, URL, Fee, Status, UpdatedBy string
+	FeeCap                                                                int64 // the most Forge may be paid per referral, rand cents; 0 means nothing
 }
 
 // Statement builds the mandatory third-party statement. It is the same words for every product, with only the provider's
@@ -147,9 +175,29 @@ func Statement(p provider, o offerRow) string {
 	b.WriteString("It is not a Forge Mutual product, it is not a deposit with Forge Mutual, and it is not covered by any deposit insurance through us.\n\n")
 	b.WriteString(categoryWarning[o.Category] + "\n\n")
 	fmt.Fprintf(&b, "You deal directly with %s, under its terms, and it will check who you are itself. Complaints about the product go to %s. Complaints about how Forge introduced it go to Forge.\n\n", p.Name, p.Name)
-	fmt.Fprintf(&b, "Fees: %s", o.Fee)
+	b.WriteString(feeSentence(p, o))
 	return b.String()
 }
+
+// feeSentence is generated from the cap the ledger enforces, so what the customer is told Forge may be paid is never more than Forge can book.
+func feeSentence(p provider, o offerRow) string {
+	var s string
+	if o.FeeCap <= 0 {
+		s = "Fees: Forge Mutual receives no fee for introducing you."
+	} else {
+		s = fmt.Sprintf("Fees: if you take up this product, Forge Mutual may receive a referral fee of up to R%d.%02d from %s. It is paid by %s and does not add to what you pay.",
+			o.FeeCap/100, o.FeeCap%100, p.Name, p.Name)
+	}
+	if n := strings.TrimSpace(o.Fee); n != "" {
+		s += " " + n
+	}
+	return s
+}
+
+// SharedFields is exactly what Forge sends a provider when a customer who consented is introduced. It is the one list: the consent screen
+// shows it, the sender sends only these, and a test holds the sender to it. Forge holds a customer's name, not their contact details in
+// a form it can read (those are sealed for sending notices), so the provider asks for contact details itself on its own site.
+var SharedFields = []string{"your name"}
 
 // StatementHash identifies the exact text a customer acknowledged.
 func StatementHash(statement string) string {
@@ -164,6 +212,15 @@ func Visible(now time.Time, providerStatus string, verifiedAt, expiresAt *time.T
 		return false
 	}
 	return expiresAt == nil || now.Before(*expiresAt)
+}
+
+// visible is Visible plus the register rule: when a register source is configured, an automatic check within RegisterMaxAge is also needed, so
+// a provider the register stops confirming disappears without waiting for the yearly human check.
+func (s *Service) visible(p provider, o offerRow) bool {
+	if !Visible(s.now(), p.Status, p.VerifiedAt, p.ExpiresAt, o.Status) {
+		return false
+	}
+	return s.RegisterMaxAge <= 0 || (p.CheckedAt != nil && s.now().Sub(*p.CheckedAt) <= s.RegisterMaxAge)
 }
 
 // httpsURL accepts only an https address on a named host: no credentials, no IP address, no localhost.
@@ -188,7 +245,8 @@ func tsPtr(t *time.Time) string {
 
 func (p provider) proto() *offersv1.Provider {
 	return &offersv1.Provider{ProviderId: p.ID, Name: p.Name, LicenceType: p.LicenceType, Regulator: p.Regulator, LicenceNumber: p.Number,
-		Status: p.Status, LicenceVerifiedAt: tsPtr(p.VerifiedAt), LicenceVerifiedBy: p.VerifiedBy, LicenceExpiresAt: tsPtr(p.ExpiresAt)}
+		Status: p.Status, LicenceVerifiedAt: tsPtr(p.VerifiedAt), LicenceVerifiedBy: p.VerifiedBy, LicenceExpiresAt: tsPtr(p.ExpiresAt),
+		LicenceCheckedAt: tsPtr(p.CheckedAt), DeliveryConfigured: p.DeliveryURL != ""}
 }
 
 func (s *Service) loadProvider(ctx context.Context, q interface {
@@ -197,8 +255,8 @@ func (s *Service) loadProvider(ctx context.Context, q interface {
 	var p provider
 	var by *string
 	err := q.QueryRow(ctx, `select provider_id, name, licence_type, regulator, licence_number, licence_source_url, status, registered_by,
-		licence_verified_at, licence_verified_by, licence_expires_at from provider where provider_id = $1`, id).
-		Scan(&p.ID, &p.Name, &p.LicenceType, &p.Regulator, &p.Number, &p.SourceURL, &p.Status, &p.RegisteredBy, &p.VerifiedAt, &by, &p.ExpiresAt)
+		licence_verified_at, licence_verified_by, licence_expires_at, delivery_url, licence_checked_at from provider where provider_id = $1`, id).
+		Scan(&p.ID, &p.Name, &p.LicenceType, &p.Regulator, &p.Number, &p.SourceURL, &p.Status, &p.RegisteredBy, &p.VerifiedAt, &by, &p.ExpiresAt, &p.DeliveryURL, &p.CheckedAt)
 	if by != nil {
 		p.VerifiedBy = *by
 	}

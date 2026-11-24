@@ -478,6 +478,10 @@ services:
       PARTNER_OFFERS_ENABLED: "false"
       CONSENT_URL: ${STACK_SCHEME:-http}://127.0.0.1:8082
       PARTY_URL: ${STACK_SCHEME:-http}://127.0.0.1:8081
+      # Referral fees are booked here (only when the layer is on). Details are sent to a provider only with a signing key
+      # <provider_id>.key in the secrets directory, and licences are re-checked only when LICENCE_REGISTER_FILE names an extract.
+      LEDGER_URL: ${STACK_SCHEME:-http}://127.0.0.1:8070
+      PARTNER_OFFERS_SIGNING_DIR: /stack/secrets/partners
     volumes: ["./config/callers:/stack/callers:ro", "./.pki:/stack/pki:ro", "./.secrets:/stack/secrets:ro"]
 
   rails:

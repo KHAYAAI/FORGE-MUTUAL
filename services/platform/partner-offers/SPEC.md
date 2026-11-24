@@ -3,7 +3,7 @@
 Entity: platform. Introduces customers to investment and crypto-asset products that a **licensed third party** provides.
 API: `proto/forge/offers/v1/offers.proto` (`PartnerOffersService` for customers, `PartnerAdminService` for compliance).
 
-Status: built and tested against Postgres (5 tests). **Switched off**: nothing runs unless `PARTNER_OFFERS_ENABLED=true`,
+Status: built and tested against Postgres (details sender, register check and fee entry included; mutation-checked). **Switched off**: nothing runs unless `PARTNER_OFFERS_ENABLED=true`,
 production also needs `FORGE_APPROVAL_PARTNER_OFFERS` to name an approving decision (`pkg/licence`), and no provider is
 chosen. It is wired to the customer app (workspace-api routes `/v1/offers`, `/v1/offers/{offer}/consent`, `/v1/offers/{offer}/referrals`, `/v1/referrals`, and a web
 page `/invest` that shows the statement in full, needs the customer to tick an acknowledgement and give a consent to share their details), and to the
@@ -33,14 +33,32 @@ advise on it, hold the customer's money or assets in it, or guarantee it. The co
   provider's own **https** address, which carries a referral id and nothing about them. Forge takes no money and gives no advice.
 - Handoff and source addresses must be https on a named domain: no IP addresses, no localhost, no embedded credentials.
 
+## Sending the customer's details, licence re-checks and referral fees
+
+**Sending** (`delivery.go`). Creating a referral also queues a delivery row (`referral_delivery`). A worker (every minute) sends only what the customer was
+shown and agreed to: `SharedFields` is the single list that both the consent screen and the sender use, so what is on screen and what is sent cannot drift
+apart. Today that is **the customer's name** only (contact details are sealed in notifications and Forge does not read them). Before every send it
+re-checks that the provider is still ACTIVE and has a delivery address, that the customer's consent still stands (withdrawn means CANCELLED) and that the
+customer is still ACTIVE. The body is JSON, signed with HMAC-SHA256 using the provider's key from `PARTNER_OFFERS_SIGNING_DIR/<provider_id>.key`
+(`X-Forge-Signature: sha256=<hex>`), sent only over https to a public address (no redirects, no private addresses). Only the hash of what was sent is
+kept. Retries wait 1m, 5m, 30m, 2h, 12h and stop after 6 attempts (FAILED); a 4xx other than 429 is final. Withdrawing consent stops anything unsent; it cannot recall what was sent.
+
+**Licence re-checks** (`register.go`). With `LICENCE_REGISTER_FILE` set, a job (every 6 hours) compares each ACTIVE provider with an extract of the regulator's
+register (CSV `regulator,licence_type,licence_number,name,status,expires_on`). A match refreshes `licence_checked_at`; a licence that is absent, under another
+name, not active or expired **suspends the provider automatically** (reason and audit trail recorded; only a person can reinstate it). A missing, stale
+(older than `LICENCE_REGISTER_MAX_AGE`, default 48h) or unreadable extract changes nothing and is never trusted. With a register configured, a provider
+the register has not confirmed within `LICENCE_RECHECK_MAX_AGE` (default 35 days) is hidden. `LICENCE_REGISTER_RENEWS=true` lets a confirmation renew the human
+verification so the 12-month rule does not need a person each year; otherwise people still re-verify yearly.
+
+**Referral fees** (`fees.go`). The most Forge may receive per introduction (`referral_fee_cap_minor`, default ceiling R5 000, threshold 32) is set on the offer and
+the fee sentence in the statement is generated from it, so the customer is told the true maximum. A fee is booked only against a **bank statement reference**, once,
+and never beyond the cap, by **two different people** (the first enters it, a different signed-in person confirms it; the confirmation re-checks the cap). The
+ledger entry is Dr sponsor pool (3003) / Cr referral fee income (2002), transfer code 30, key `referral-fee:<bank reference>`. With no ledger connected no fee is booked.
+
 ## Not done
 
 - A provider chosen, a contract, and a due-diligence file (`docs/regulatory/policies/provider-due-diligence-procedure.md`).
 - Confirmation from the lawyer that the statement wording, the risk warnings and any referral fee are lawful (VERIFY), and from
   the sponsor bank and the Prudential Authority that a bank may make such introductions at all.
-- The actual transfer of the customer's details to a provider: the consent is recorded, but a referral today carries only a referral id. The
-  consent states what would be shared (name, email address and phone number held by Forge). A referral-fee ledger entry. Automatic
-  re-checking of licences against the regulator's register.
-- Re-checking licences automatically against the regulator's register: today a person does it, and the 12-month rule hides
-  anything not re-checked.
-- Reporting to the provider, and complaint routing to it.
+- Reporting from the provider back to us, and complaint routing to it.
+- A real provider's receiving endpoint and signing key, and the real regulator register source: the extract format below is an assumption (VERIFY).

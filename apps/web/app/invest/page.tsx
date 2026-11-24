@@ -128,7 +128,10 @@ function OfferCard({ offer, onContinue }: { offer: Offer; onContinue: (o: Offer)
             <li key={x}>{x}</li>
           ))}
         </ul>
-        <p className="mt-1 text-stone-600">You can withdraw this at any time. It does not affect your Forge account.</p>
+        <p className="mt-1 text-stone-600">
+          You can withdraw this at any time. It does not affect your Forge account. Withdrawing stops anything not yet sent, but cannot take back details already
+          sent to {offer.provider_name}.
+        </p>
         {consentError ? <Notice tone="error">{consentError}</Notice> : null}
         {consent?.granted ? (
           <div className="mt-3 flex flex-wrap items-center gap-3">

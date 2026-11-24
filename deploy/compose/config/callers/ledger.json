@@ -37,6 +37,10 @@
   "svc-onboarding": [
     "CreateAccounts"
   ],
+  "svc-partner-offers": [
+    "CreateAccounts",
+    "CreateTransfers"
+  ],
   "svc-payments": [
     "CreateAccounts",
     "CreateTransfers",

@@ -9,17 +9,18 @@ export default function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const staff = useStaff(pathname);
-  // The Partners link appears only for compliance, and only when third-party offers are switched on (the route answers 200).
+  // The Partners link appears only for compliance or operations, and only when third-party offers are switched on (the route answers 200).
   const [partners, setPartners] = useState(false);
   const compliance = hasRole(staff ?? null, "compliance");
+  const operations = hasRole(staff ?? null, "operations");
   useEffect(() => {
-    if (!compliance) return setPartners(false);
+    if (!compliance && !operations) return setPartners(false);
     let live = true;
-    fetch("/api/v1/partners/providers", { cache: "no-store" }).then((r) => live && setPartners(r.ok)).catch(() => live && setPartners(false));
+    fetch(compliance ? "/api/v1/partners/providers" : "/api/v1/partners/referrals", { cache: "no-store" }).then((r) => live && setPartners(r.ok)).catch(() => live && setPartners(false));
     return () => {
       live = false;
     };
-  }, [compliance, pathname]);
+  }, [compliance, operations, pathname]);
 
   async function signOut() {
     await fetch("/api/session", { method: "DELETE" });
