@@ -89,3 +89,12 @@ create table if not exists default_notice (
   cleared_at    timestamptz
 );
 create unique index if not exists default_notice_open on default_notice (facility_id) where cleared_at is null;
+
+-- Write-offs: a facility at least 90 days past due after a default notice, written off by two people. The debt is still owed in law;
+-- it is no longer carried as an asset.
+alter table facility add column if not exists written_off_minor bigint not null default 0;
+alter table facility add column if not exists written_off_by text not null default '';
+alter table facility add column if not exists written_off_at timestamptz;
+alter table facility add column if not exists write_off_reason text not null default '';
+alter table facility drop constraint if exists facility_status_check;
+alter table facility add constraint facility_status_check check (status in ('ASSESSED','APPROVED','DECLINED','ACTIVE','SETTLED','CANCELLED','WRITTEN_OFF'));

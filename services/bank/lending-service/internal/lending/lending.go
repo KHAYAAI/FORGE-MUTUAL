@@ -79,6 +79,7 @@ const (
 	codeDisbursement   = 66
 	codeRepayment      = 67
 	codeInterestCharge = 68
+	codeWriteOff       = 91 // ADJUSTMENT: a write-off needs two people, enforced in WriteOffFacility
 	namespace          = "4f2a9c7e-1d3b-5e60-8a14-7b9e0c2d5f31"
 )
 
@@ -96,13 +97,29 @@ type Service struct {
 	Licence  licence.Gate
 	Entity   string
 	Income   string // INTEREST_INCOME, set by EnsureSystemAccounts
-	Now      func() time.Time
+	WriteOff string // WRITE_OFF, set by EnsureSystemAccounts
+	// Bureau, when set, is asked about every applicant, with their consent, and a failure refuses the application (fail closed).
+	Bureau   Bureau
+	Consents Consents
+	// RequireBureau refuses every application when no bureau is configured. Production sets it: credit is never assessed blind.
+	RequireBureau bool
+	// RequirePreAgreement makes AcceptOffer refuse unless the customer acknowledged the current pre-agreement statement.
+	RequirePreAgreement bool
+	// WriteOffAfterDays is how many days past due a facility must be before it may be written off (PROPOSED 90; threshold 31).
+	WriteOffAfterDays int
+	// CreditProviderReg is Forge's National Credit Regulator registration number; empty means not registered, and says so.
+	CreditProviderReg string
+	Now               func() time.Time
 }
 
 // EnsureSystemAccounts creates (or finds) the INTEREST_INCOME account.
 func (s *Service) EnsureSystemAccounts(ctx context.Context) error {
 	id, err := systemaccounts.Ensure(ctx, s.Ledger, s.Entity, "ZAR", 2008, "system:interest-income:ZAR:v1")
+	if err != nil {
+		return err
+	}
 	s.Income = id
+	s.WriteOff, err = systemaccounts.Ensure(ctx, s.Ledger, s.Entity, "ZAR", 2006, "system:write-off:ZAR:v1")
 	return err
 }
 
@@ -228,16 +245,36 @@ func (s *Service) ApplyForCredit(ctx context.Context, req *connect.Request[lendi
 	if f, err := s.facility(ctx, m.PartyId, id); err == nil {
 		return connect.NewResponse(&lendingv1.ApplyForCreditResponse{Facility: f}), nil
 	}
+	var br BureauResult
+	if s.Bureau == nil && s.RequireBureau {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("credit cannot be assessed without a credit bureau check, and none is connected"))
+	}
+	if s.Bureau != nil {
+		// A credit enquiry needs the customer's consent, and no answer from the bureau means no assessment: fail closed.
+		ok, err := s.Consents.Allowed(ctx, m.PartyId, BureauPurpose, "enquiry")
+		if err != nil {
+			return nil, connect.NewError(connect.CodeUnavailable, err)
+		}
+		if !ok {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("we need your consent to check your credit record before we can assess this application"))
+		}
+		if br, err = s.Bureau.Check(ctx, m.PartyId); err != nil {
+			return nil, connect.NewError(connect.CodeUnavailable, errors.New("we could not check your credit record just now; please try again"))
+		}
+	}
 	inflow, _, err := s.inflow90d(ctx, m.PartyId, m.CurrentAccountId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
-	a := &lendingv1.Assessment{
+	a := &lendingv1.Assessment{BureauReference: br.Reference, BureauScore: int32(br.Score), BureauAdverse: br.Adverse,
 		Inflow_90DMinor: fmt.Sprint(inflow), MonthlyInflowMinor: fmt.Sprint(inflow / 3),
 		SuggestedMaxMinor: fmt.Sprint(credit.SuggestedMax(p.ID, inflow)),
 	}
 	if inflow == 0 {
 		a.Notes = append(a.Notes, "No money received into the account in the last 90 days.")
+	}
+	if br.Adverse {
+		a.Notes = append(a.Notes, "The credit bureau shows an adverse record: approving needs a written reason.")
 	}
 	if amount > credit.SuggestedMax(p.ID, inflow) {
 		a.Notes = append(a.Notes, "The amount is more than the affordability rule suggests.")
@@ -272,7 +309,7 @@ func (s *Service) facility(ctx context.Context, party, id string) (*lendingv1.Fa
 func (s *Service) facilities(ctx context.Context, where string, args ...any) ([]*lendingv1.Facility, error) {
 	rows, err := s.Pool.Query(ctx, `select facility_id, party_id, product_id, status, requested_minor, approved_minor, rate_bps,
 		term_months, fee_bps, sweep_bps, current_account_id, loan_account_id, purpose, applied_at, decided_at, decision_note,
-		assessment, fee_owed_minor, days_past_due from facility `+where+` order by applied_at desc limit 200`, args...)
+		assessment, fee_owed_minor, days_past_due, written_off_minor from facility `+where+` order by applied_at desc limit 200`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +323,7 @@ func (s *Service) facilities(ctx context.Context, where string, args ...any) ([]
 	for rows.Next() {
 		var (
 			f                          lendingv1.Facility
-			req, approved, feeOwed     int64
+			req, approved, feeOwed, wo int64
 			rate, term, fee, sweep, dp int32
 			loan                       string
 			applied                    time.Time
@@ -294,11 +331,11 @@ func (s *Service) facilities(ctx context.Context, where string, args ...any) ([]
 			raw                        []byte
 		)
 		if err := rows.Scan(&f.FacilityId, &f.PartyId, &f.ProductId, &f.Status, &req, &approved, &rate, &term, &fee, &sweep,
-			&f.CurrentAccountId, &loan, &f.Purpose, &applied, &decided, &f.DecisionNote, &raw, &feeOwed, &dp); err != nil {
+			&f.CurrentAccountId, &loan, &f.Purpose, &applied, &decided, &f.DecisionNote, &raw, &feeOwed, &dp, &wo); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		f.RequestedMinor, f.ApprovedMinor = fmt.Sprint(req), fmt.Sprint(approved)
+		f.RequestedMinor, f.ApprovedMinor, f.WrittenOffMinor = fmt.Sprint(req), fmt.Sprint(approved), fmt.Sprint(wo)
 		f.RateBps, f.TermMonths, f.FeeBps, f.SweepBps, f.DaysPastDue = uint32(rate), uint32(term), uint32(fee), uint32(sweep), uint32(dp)
 		f.AppliedAt = applied.UTC().Format(time.RFC3339)
 		if decided != nil {
@@ -441,8 +478,9 @@ func (s *Service) DecideCreditApplication(ctx context.Context, req *connect.Requ
 		var status, product, appliedBy string
 		var requested int64
 		var rate int32
-		err := tx.QueryRow(ctx, `select status, product_id, applied_by, requested_minor, rate_bps from facility where facility_id = $1 for update`,
-			m.FacilityId).Scan(&status, &product, &appliedBy, &requested, &rate)
+		var rawAssessment []byte
+		err := tx.QueryRow(ctx, `select status, product_id, applied_by, requested_minor, rate_bps, assessment from facility where facility_id = $1 for update`,
+			m.FacilityId).Scan(&status, &product, &appliedBy, &requested, &rate, &rawAssessment)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return connect.NewError(connect.CodeNotFound, errors.New("no such application"))
 		}
@@ -459,6 +497,11 @@ func (s *Service) DecideCreditApplication(ctx context.Context, req *connect.Requ
 			_, err := tx.Exec(ctx, `update facility set status = 'DECLINED', decided_by = $2, decided_at = $3, decision_note = $4
 				where facility_id = $1`, m.FacilityId, m.Officer, s.now(), strings.TrimSpace(m.Note))
 			return err
+		}
+		var as lendingv1.Assessment
+		_ = json.Unmarshal(rawAssessment, &as)
+		if as.BureauAdverse && len(strings.TrimSpace(m.Note)) < 30 {
+			return invalid("this application has an adverse credit record: give a written reason of at least 30 characters to approve it")
 		}
 		approved := requested
 		if m.ApprovedMinor != "" {
@@ -533,6 +576,11 @@ func (s *Service) AcceptOffer(ctx context.Context, req *connect.Request[lendingv
 	}
 	if !m.AcceptsTerms {
 		return nil, invalid("the quotation and terms must be accepted")
+	}
+	if cur, err := s.facility(ctx, m.PartyId, m.FacilityId); err == nil && cur.Status == "APPROVED" && (s.RequirePreAgreement || m.PreAgreementHash != "") {
+		if m.PreAgreementHash != StatementHash(s.PreAgreement(cur)) {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("you must read and acknowledge the current pre-agreement statement before you accept"))
+		}
 	}
 	err := pgx.BeginFunc(ctx, s.Pool, func(tx pgx.Tx) error {
 		var status, product, current, loan string

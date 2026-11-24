@@ -87,13 +87,14 @@ func (a *API) acceptOffer(w http.ResponseWriter, r *http.Request, s Session) {
 		return
 	}
 	var req struct {
-		AcceptsTerms bool `json:"accepts_terms"`
+		AcceptsTerms     bool   `json:"accepts_terms"`
+		PreAgreementHash string `json:"pre_agreement_hash"`
 	}
 	if !decode(w, r, &req) {
 		return
 	}
 	res, err := a.Services.Lending.AcceptOffer(r.Context(), connect.NewRequest(&lendingv1.AcceptOfferRequest{
-		PartyId: s.Party, FacilityId: r.PathValue("facility"), Actor: s.Actor, AcceptsTerms: req.AcceptsTerms,
+		PartyId: s.Party, FacilityId: r.PathValue("facility"), Actor: s.Actor, AcceptsTerms: req.AcceptsTerms, PreAgreementHash: req.PreAgreementHash,
 	}))
 	if err != nil {
 		writeErr(w, err)

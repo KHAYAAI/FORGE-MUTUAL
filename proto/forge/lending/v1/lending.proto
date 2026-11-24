@@ -22,12 +22,17 @@ service LendingService {
   rpc Repay(RepayRequest) returns (RepayResponse);
   // A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
   rpc GetStatement(GetStatementRequest) returns (GetStatementResponse);
+  // The pre-agreement statement and quotation (NCA s.92), generated from the approved terms. The customer acknowledges it by
+  // its hash when accepting. DRAFT wording: the lawyer must confirm the prescribed form before credit is offered.
+  rpc GetPreAgreement(GetPreAgreementRequest) returns (GetPreAgreementResponse);
 }
 
 // Staff side: the credit queue. Called by backoffice-api for a person with the credit role.
 service CreditDeskService {
   rpc ListCreditApplications(ListCreditApplicationsRequest) returns (ListCreditApplicationsResponse);
   rpc DecideCreditApplication(DecideCreditApplicationRequest) returns (DecideCreditApplicationResponse);
+  // Writes off a facility that is at least 90 days past due after a default notice. Two people, neither the applicant.
+  rpc WriteOffFacility(WriteOffFacilityRequest) returns (WriteOffFacilityResponse);
 }
 
 message LoanProduct {
@@ -50,6 +55,9 @@ message Assessment {
   string monthly_inflow_minor = 2;   // a third of that
   string suggested_max_minor = 3;    // what the placeholder affordability rule allows (docs/THRESHOLDS.md)
   repeated string notes = 4;
+  string bureau_reference = 5;   // the credit bureau's reference for this enquiry
+  int32 bureau_score = 6;
+  bool bureau_adverse = 7;       // an adverse record: a credit officer must give a written reason to approve
 }
 
 message Instalment {
@@ -63,7 +71,7 @@ message Instalment {
 message Facility {
   string facility_id = 1;
   string product_id = 2;
-  string status = 3;   // ASSESSED, APPROVED, DECLINED, ACTIVE, SETTLED, CANCELLED
+  string status = 3;   // ASSESSED, APPROVED, DECLINED, ACTIVE, SETTLED, CANCELLED, WRITTEN_OFF
   string requested_minor = 4;
   string approved_minor = 5;
   uint32 rate_bps = 6;
@@ -83,6 +91,7 @@ message Facility {
   string purpose = 20;
   uint32 days_past_due = 21;
   DefaultNotice default_notice = 22; // set while a default notice is outstanding
+  string written_off_minor = 23;   // what was written off; still owed in law, no longer carried as an asset
 }
 
 // A default notice (NCA s.129): the customer is told they are in arrears and of their options before any enforcement.
@@ -140,6 +149,7 @@ message AcceptOfferRequest {
   string facility_id = 2;
   string actor = 3;
   bool accepts_terms = 4;          // the customer has read the quotation and the terms
+  string pre_agreement_hash = 5;   // the hash of the pre-agreement statement they were shown (GetPreAgreement)
 }
 
 message AcceptOfferResponse { Facility facility = 1; }
@@ -180,3 +190,22 @@ message DecideCreditApplicationRequest {
 }
 
 message DecideCreditApplicationResponse { Facility facility = 1; }
+
+message GetPreAgreementRequest {
+  string party_id = 1;
+  string facility_id = 2;
+}
+
+message GetPreAgreementResponse {
+  string statement = 1;       // show in full
+  string statement_hash = 2;  // send back in AcceptOffer
+}
+
+message WriteOffFacilityRequest {
+  string facility_id = 1;
+  string officer = 2;    // proposes
+  string approver = 3;   // a different person approves
+  string reason = 4;     // required
+}
+
+message WriteOffFacilityResponse { Facility facility = 1; }

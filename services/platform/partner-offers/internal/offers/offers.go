@@ -61,6 +61,13 @@ type Parties interface {
 // day, so a check older than a year proves little (PROPOSED; compliance may choose a shorter time).
 const LicenceMaxAge = 365 * 24 * time.Hour
 
+// The consent a referral needs. The consent service accepts only lower-case letters, digits, dots and underscores in a purpose, so the
+// provider goes in the scope: purpose "share_with_partner", scope "referral:<provider_id>".
+const ConsentPurpose = "share_with_partner"
+
+// ConsentScope is the scope of the consent to share details with one provider.
+func ConsentScope(providerID string) string { return "referral:" + providerID }
+
 // Categories, and the licence each needs.
 var categoryLicence = map[string]string{"INVESTMENTS": "FSP", "CRYPTO_ASSETS": "CASP"}
 

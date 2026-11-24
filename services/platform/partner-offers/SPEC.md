@@ -4,8 +4,11 @@ Entity: platform. Introduces customers to investment and crypto-asset products t
 API: `proto/forge/offers/v1/offers.proto` (`PartnerOffersService` for customers, `PartnerAdminService` for compliance).
 
 Status: built and tested against Postgres (5 tests). **Switched off**: nothing runs unless `PARTNER_OFFERS_ENABLED=true`,
-production also needs `FORGE_APPROVAL_PARTNER_OFFERS` to name an approving decision (`pkg/licence`), no provider is
-chosen, and nothing in the customer app calls it (the caller list `deploy/compose/config/callers/partner-offers.json` is empty).
+production also needs `FORGE_APPROVAL_PARTNER_OFFERS` to name an approving decision (`pkg/licence`), and no provider is
+chosen. It is wired to the customer app (workspace-api routes `/v1/offers`, `/v1/offers/{offer}/consent`, `/v1/offers/{offer}/referrals`, `/v1/referrals`, and a web
+page `/invest` that shows the statement in full, needs the customer to tick an acknowledgement and give a consent to share their details), and to the
+back office (a compliance screen at `/partners`), but `PARTNER_OFFERS_URL` is unset, so the routes answer "not offered" and the navigation links
+(`Invest` for customers, `Partners` for compliance) do not appear: each shows only while its route answers 200. Only workspace-api may call it (`deploy/compose/config/callers/offers.json`).
 
 ## The rule
 
@@ -26,7 +29,7 @@ advise on it, hold the customer's money or assets in it, or guarantee it. The co
 - **Two people**: the person who registers a provider cannot verify its licence, and the person who wrote an offer cannot switch
   it on. Any edit sends the offer back to DRAFT. Every provider change is logged (`provider_event`).
 - A referral also needs the party to be **ACTIVE** (a frozen party is introduced to no one) and the party's **consent** to share
-  their details with that provider (`share_with_partner:<provider>` in the consent service). The customer then continues on the
+  their details with that provider (purpose `share_with_partner`, scope `referral:<provider_id>` in the consent service). The customer then continues on the
   provider's own **https** address, which carries a referral id and nothing about them. Forge takes no money and gives no advice.
 - Handoff and source addresses must be https on a named domain: no IP addresses, no localhost, no embedded credentials.
 
@@ -35,7 +38,9 @@ advise on it, hold the customer's money or assets in it, or guarantee it. The co
 - A provider chosen, a contract, and a due-diligence file (`docs/regulatory/policies/provider-due-diligence-procedure.md`).
 - Confirmation from the lawyer that the statement wording, the risk warnings and any referral fee are lawful (VERIFY), and from
   the sponsor bank and the Prudential Authority that a bank may make such introductions at all.
-- Reaching it from the customer app and the back office; the consent purpose set-up; a referral-fee ledger entry.
+- The actual transfer of the customer's details to a provider: the consent is recorded, but a referral today carries only a referral id. The
+  consent states what would be shared (name, email address and phone number held by Forge). A referral-fee ledger entry. Automatic
+  re-checking of licences against the regulator's register.
 - Re-checking licences automatically against the regulator's register: today a person does it, and the 12-month rule hides
   anything not re-checked.
 - Reporting to the provider, and complaint routing to it.

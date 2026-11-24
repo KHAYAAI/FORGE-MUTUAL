@@ -28,8 +28,23 @@ capital. The terms and the affordability rule are placeholders (thresholds 18 to
    - Revenue-based: a fixed fee; each payment received after acceptance is swept at the agreed share, split between
      fee and principal in proportion, until both are paid. The sweep cursor moves only after the sweep is posted.
 
+## Credit controls
+
+- **Credit bureau check.** Every application asks the bureau (`BUREAU`), with the customer's consent (`credit_bureau_check`, scope
+  `enquiry`). No consent means no enquiry; no answer from the bureau means no assessment (fail closed); an adverse record needs a
+  written reason of at least 30 characters to approve. Production refuses the simulator and, with no real bureau, refuses applications.
+- **Pre-agreement statement and quotation (NCA s.92).** `GetPreAgreement` generates it from the approved terms; the customer acknowledges
+  its hash in `AcceptOffer`, and a changed statement invalidates the acknowledgement. It says plainly that Forge is not yet registered as
+  a credit provider until `NCR_REGISTRATION` is set.
+- **Write-off** (`WriteOffFacility`, credit desk). An active facility at least 90 days past due (`LENDING_WRITE_OFF_AFTER_DAYS`; threshold 31),
+  after a default notice has been issued, written off by two different people, neither the applicant. The loan account is credited and
+  WRITE_OFF (2006) debited with transfer code 91, once; the status becomes WRITTEN_OFF, collection stops, and it shows on the statement.
+
 ## Not done
 
-- No credit bureau check, no NCA pre-agreement statement document, no collections process beyond retrying, no
-  write-off (WRITE_OFF exists in the ledger, with dual control upstream, but is not wired here).
+- No collections process beyond retrying and default notices, and no recoveries after a write-off (a written-off debt is still owed in law).
+- A real credit bureau: only the simulator is built (VERIFY-BUREAU), and production refuses it and refuses every application until a real
+  adapter exists. The pre-agreement wording is a draft that the lawyer must confirm against NCA s.92 and its regulations.
+- The customer app does not yet fetch the pre-agreement statement or send its hash; `LENDING_REQUIRE_PRE_AGREEMENT` is on in production,
+  so the web app must do this before credit is switched on there.
 - Overdraft interest is charged without regard to the limit; a facility can exceed its limit by its interest.

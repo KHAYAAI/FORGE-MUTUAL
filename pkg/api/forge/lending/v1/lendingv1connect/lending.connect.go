@@ -60,12 +60,18 @@ const (
 	// LendingServiceGetStatementProcedure is the fully-qualified name of the LendingService's
 	// GetStatement RPC.
 	LendingServiceGetStatementProcedure = "/forge.lending.v1.LendingService/GetStatement"
+	// LendingServiceGetPreAgreementProcedure is the fully-qualified name of the LendingService's
+	// GetPreAgreement RPC.
+	LendingServiceGetPreAgreementProcedure = "/forge.lending.v1.LendingService/GetPreAgreement"
 	// CreditDeskServiceListCreditApplicationsProcedure is the fully-qualified name of the
 	// CreditDeskService's ListCreditApplications RPC.
 	CreditDeskServiceListCreditApplicationsProcedure = "/forge.lending.v1.CreditDeskService/ListCreditApplications"
 	// CreditDeskServiceDecideCreditApplicationProcedure is the fully-qualified name of the
 	// CreditDeskService's DecideCreditApplication RPC.
 	CreditDeskServiceDecideCreditApplicationProcedure = "/forge.lending.v1.CreditDeskService/DecideCreditApplication"
+	// CreditDeskServiceWriteOffFacilityProcedure is the fully-qualified name of the CreditDeskService's
+	// WriteOffFacility RPC.
+	CreditDeskServiceWriteOffFacilityProcedure = "/forge.lending.v1.CreditDeskService/WriteOffFacility"
 )
 
 // LendingServiceClient is a client for the forge.lending.v1.LendingService service.
@@ -82,6 +88,9 @@ type LendingServiceClient interface {
 	Repay(context.Context, *connect.Request[v1.RepayRequest]) (*connect.Response[v1.RepayResponse], error)
 	// A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
 	GetStatement(context.Context, *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error)
+	// The pre-agreement statement and quotation (NCA s.92), generated from the approved terms. The customer acknowledges it by
+	// its hash when accepting. DRAFT wording: the lawyer must confirm the prescribed form before credit is offered.
+	GetPreAgreement(context.Context, *connect.Request[v1.GetPreAgreementRequest]) (*connect.Response[v1.GetPreAgreementResponse], error)
 }
 
 // NewLendingServiceClient constructs a client for the forge.lending.v1.LendingService service. By
@@ -137,6 +146,12 @@ func NewLendingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(lendingServiceMethods.ByName("GetStatement")),
 			connect.WithClientOptions(opts...),
 		),
+		getPreAgreement: connect.NewClient[v1.GetPreAgreementRequest, v1.GetPreAgreementResponse](
+			httpClient,
+			baseURL+LendingServiceGetPreAgreementProcedure,
+			connect.WithSchema(lendingServiceMethods.ByName("GetPreAgreement")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -149,6 +164,7 @@ type lendingServiceClient struct {
 	draw             *connect.Client[v1.DrawRequest, v1.DrawResponse]
 	repay            *connect.Client[v1.RepayRequest, v1.RepayResponse]
 	getStatement     *connect.Client[v1.GetStatementRequest, v1.GetStatementResponse]
+	getPreAgreement  *connect.Client[v1.GetPreAgreementRequest, v1.GetPreAgreementResponse]
 }
 
 // ListLoanProducts calls forge.lending.v1.LendingService.ListLoanProducts.
@@ -186,6 +202,11 @@ func (c *lendingServiceClient) GetStatement(ctx context.Context, req *connect.Re
 	return c.getStatement.CallUnary(ctx, req)
 }
 
+// GetPreAgreement calls forge.lending.v1.LendingService.GetPreAgreement.
+func (c *lendingServiceClient) GetPreAgreement(ctx context.Context, req *connect.Request[v1.GetPreAgreementRequest]) (*connect.Response[v1.GetPreAgreementResponse], error) {
+	return c.getPreAgreement.CallUnary(ctx, req)
+}
+
 // LendingServiceHandler is an implementation of the forge.lending.v1.LendingService service.
 type LendingServiceHandler interface {
 	ListLoanProducts(context.Context, *connect.Request[v1.ListLoanProductsRequest]) (*connect.Response[v1.ListLoanProductsResponse], error)
@@ -200,6 +221,9 @@ type LendingServiceHandler interface {
 	Repay(context.Context, *connect.Request[v1.RepayRequest]) (*connect.Response[v1.RepayResponse], error)
 	// A statement of the facility for a calendar month (NCA s.108): what happened, and what is owed at the end.
 	GetStatement(context.Context, *connect.Request[v1.GetStatementRequest]) (*connect.Response[v1.GetStatementResponse], error)
+	// The pre-agreement statement and quotation (NCA s.92), generated from the approved terms. The customer acknowledges it by
+	// its hash when accepting. DRAFT wording: the lawyer must confirm the prescribed form before credit is offered.
+	GetPreAgreement(context.Context, *connect.Request[v1.GetPreAgreementRequest]) (*connect.Response[v1.GetPreAgreementResponse], error)
 }
 
 // NewLendingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -251,6 +275,12 @@ func NewLendingServiceHandler(svc LendingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(lendingServiceMethods.ByName("GetStatement")),
 		connect.WithHandlerOptions(opts...),
 	)
+	lendingServiceGetPreAgreementHandler := connect.NewUnaryHandler(
+		LendingServiceGetPreAgreementProcedure,
+		svc.GetPreAgreement,
+		connect.WithSchema(lendingServiceMethods.ByName("GetPreAgreement")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.lending.v1.LendingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LendingServiceListLoanProductsProcedure:
@@ -267,6 +297,8 @@ func NewLendingServiceHandler(svc LendingServiceHandler, opts ...connect.Handler
 			lendingServiceRepayHandler.ServeHTTP(w, r)
 		case LendingServiceGetStatementProcedure:
 			lendingServiceGetStatementHandler.ServeHTTP(w, r)
+		case LendingServiceGetPreAgreementProcedure:
+			lendingServiceGetPreAgreementHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -304,10 +336,16 @@ func (UnimplementedLendingServiceHandler) GetStatement(context.Context, *connect
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.LendingService.GetStatement is not implemented"))
 }
 
+func (UnimplementedLendingServiceHandler) GetPreAgreement(context.Context, *connect.Request[v1.GetPreAgreementRequest]) (*connect.Response[v1.GetPreAgreementResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.LendingService.GetPreAgreement is not implemented"))
+}
+
 // CreditDeskServiceClient is a client for the forge.lending.v1.CreditDeskService service.
 type CreditDeskServiceClient interface {
 	ListCreditApplications(context.Context, *connect.Request[v1.ListCreditApplicationsRequest]) (*connect.Response[v1.ListCreditApplicationsResponse], error)
 	DecideCreditApplication(context.Context, *connect.Request[v1.DecideCreditApplicationRequest]) (*connect.Response[v1.DecideCreditApplicationResponse], error)
+	// Writes off a facility that is at least 90 days past due after a default notice. Two people, neither the applicant.
+	WriteOffFacility(context.Context, *connect.Request[v1.WriteOffFacilityRequest]) (*connect.Response[v1.WriteOffFacilityResponse], error)
 }
 
 // NewCreditDeskServiceClient constructs a client for the forge.lending.v1.CreditDeskService
@@ -333,6 +371,12 @@ func NewCreditDeskServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(creditDeskServiceMethods.ByName("DecideCreditApplication")),
 			connect.WithClientOptions(opts...),
 		),
+		writeOffFacility: connect.NewClient[v1.WriteOffFacilityRequest, v1.WriteOffFacilityResponse](
+			httpClient,
+			baseURL+CreditDeskServiceWriteOffFacilityProcedure,
+			connect.WithSchema(creditDeskServiceMethods.ByName("WriteOffFacility")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -340,6 +384,7 @@ func NewCreditDeskServiceClient(httpClient connect.HTTPClient, baseURL string, o
 type creditDeskServiceClient struct {
 	listCreditApplications  *connect.Client[v1.ListCreditApplicationsRequest, v1.ListCreditApplicationsResponse]
 	decideCreditApplication *connect.Client[v1.DecideCreditApplicationRequest, v1.DecideCreditApplicationResponse]
+	writeOffFacility        *connect.Client[v1.WriteOffFacilityRequest, v1.WriteOffFacilityResponse]
 }
 
 // ListCreditApplications calls forge.lending.v1.CreditDeskService.ListCreditApplications.
@@ -352,10 +397,17 @@ func (c *creditDeskServiceClient) DecideCreditApplication(ctx context.Context, r
 	return c.decideCreditApplication.CallUnary(ctx, req)
 }
 
+// WriteOffFacility calls forge.lending.v1.CreditDeskService.WriteOffFacility.
+func (c *creditDeskServiceClient) WriteOffFacility(ctx context.Context, req *connect.Request[v1.WriteOffFacilityRequest]) (*connect.Response[v1.WriteOffFacilityResponse], error) {
+	return c.writeOffFacility.CallUnary(ctx, req)
+}
+
 // CreditDeskServiceHandler is an implementation of the forge.lending.v1.CreditDeskService service.
 type CreditDeskServiceHandler interface {
 	ListCreditApplications(context.Context, *connect.Request[v1.ListCreditApplicationsRequest]) (*connect.Response[v1.ListCreditApplicationsResponse], error)
 	DecideCreditApplication(context.Context, *connect.Request[v1.DecideCreditApplicationRequest]) (*connect.Response[v1.DecideCreditApplicationResponse], error)
+	// Writes off a facility that is at least 90 days past due after a default notice. Two people, neither the applicant.
+	WriteOffFacility(context.Context, *connect.Request[v1.WriteOffFacilityRequest]) (*connect.Response[v1.WriteOffFacilityResponse], error)
 }
 
 // NewCreditDeskServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -377,12 +429,20 @@ func NewCreditDeskServiceHandler(svc CreditDeskServiceHandler, opts ...connect.H
 		connect.WithSchema(creditDeskServiceMethods.ByName("DecideCreditApplication")),
 		connect.WithHandlerOptions(opts...),
 	)
+	creditDeskServiceWriteOffFacilityHandler := connect.NewUnaryHandler(
+		CreditDeskServiceWriteOffFacilityProcedure,
+		svc.WriteOffFacility,
+		connect.WithSchema(creditDeskServiceMethods.ByName("WriteOffFacility")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.lending.v1.CreditDeskService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CreditDeskServiceListCreditApplicationsProcedure:
 			creditDeskServiceListCreditApplicationsHandler.ServeHTTP(w, r)
 		case CreditDeskServiceDecideCreditApplicationProcedure:
 			creditDeskServiceDecideCreditApplicationHandler.ServeHTTP(w, r)
+		case CreditDeskServiceWriteOffFacilityProcedure:
+			creditDeskServiceWriteOffFacilityHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -398,4 +458,8 @@ func (UnimplementedCreditDeskServiceHandler) ListCreditApplications(context.Cont
 
 func (UnimplementedCreditDeskServiceHandler) DecideCreditApplication(context.Context, *connect.Request[v1.DecideCreditApplicationRequest]) (*connect.Response[v1.DecideCreditApplicationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.CreditDeskService.DecideCreditApplication is not implemented"))
+}
+
+func (UnimplementedCreditDeskServiceHandler) WriteOffFacility(context.Context, *connect.Request[v1.WriteOffFacilityRequest]) (*connect.Response[v1.WriteOffFacilityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.lending.v1.CreditDeskService.WriteOffFacility is not implemented"))
 }

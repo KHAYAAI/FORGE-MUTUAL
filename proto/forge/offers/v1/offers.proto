@@ -13,7 +13,7 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;off
 // licence has not been verified in the last 12 months is not shown at all.
 //
 // Status: built, tested, OFF by default (PARTNER_OFFERS_ENABLED) and off in production until FORGE_APPROVAL_PARTNER_OFFERS
-// names the approving decision (pkg/licence). Not reachable from the customer app. No provider is chosen.
+// names the approving decision (pkg/licence). Wired to the customer app through workspace-api but not configured, so off. No provider is chosen.
 service PartnerOffersService {
   // ListOffers returns the offers a party may see, each with its mandatory statement. Hidden: any offer whose provider is
   // not active, whose licence is unverified, stale or expired, or whose own status is not active.
@@ -33,6 +33,8 @@ service PartnerAdminService {
   rpc UpsertOffer(UpsertOfferRequest) returns (UpsertOfferResponse);
   rpc SetOfferStatus(SetOfferStatusRequest) returns (SetOfferStatusResponse);
   rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  // Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
+  rpc ListAdminOffers(ListAdminOffersRequest) returns (ListAdminOffersResponse);
 }
 
 message Offer {
@@ -47,6 +49,7 @@ message Offer {
   string statement = 9;      // the mandatory third-party statement, generated; show it in full
   string statement_hash = 10; // sent back in CreateReferral to prove this exact text was acknowledged
   string fee_disclosure = 11;
+  string provider_id = 12;   // for the consent a referral needs (purpose share_with_partner, scope referral:<provider_id>)
 }
 
 message ListOffersRequest {
@@ -131,3 +134,15 @@ message SetOfferStatusResponse { string status = 1; }
 
 message ListProvidersRequest {}
 message ListProvidersResponse { repeated Provider providers = 1; }
+
+message AdminOffer {
+  Offer offer = 1;            // with the generated statement and its hash
+  string status = 2;          // DRAFT, ACTIVE or WITHDRAWN
+  string handoff_url = 3;
+  string updated_by = 4;
+  string updated_at = 5;
+  bool visible_now = 6;       // would a customer see it right now (provider verified within 12 months, offer active)
+}
+
+message ListAdminOffersRequest {}
+message ListAdminOffersResponse { repeated AdminOffer offers = 1; }

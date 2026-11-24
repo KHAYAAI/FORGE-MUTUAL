@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/cases/v1/casesv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/lending/v1/lendingv1connect"
+	"github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1/offersv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/onboarding/v1/onboardingv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/payments/v1/paymentsv1connect"
 	"github.com/khayaai/forge-mutual/pkg/api/forge/recon/v1/reconv1connect"
@@ -66,6 +67,7 @@ func run(log *slog.Logger) error {
 			Recon:      reconv1connect.NewReconServiceClient(outbound, urls["RECON_URL"], caller()),
 			Onboarding: onboardingv1connect.NewOnboardingServiceClient(outbound, urls["ONBOARDING_URL"], caller()),
 			Credit:     creditClient(outbound, caller()),
+			Partners:   partnersClient(outbound, caller()),
 			Treasury:   treasuryClient(outbound, caller()),
 		},
 	}
@@ -121,6 +123,14 @@ func oidcConfig() oidc.Config {
 		// Production refuses to start without it (internal/auth).
 		RequireAMR: oidc.ParseAMRList(os.Getenv("OIDC_REQUIRE_AMR")),
 	}
+}
+
+// partnersClient is the third-party offers admin client, or nil when PARTNER_OFFERS_URL is not set (not offered). Not set in the stack.
+func partnersClient(h connect.HTTPClient, opt connect.ClientOption) offersv1connect.PartnerAdminServiceClient {
+	if u := os.Getenv("PARTNER_OFFERS_URL"); u != "" {
+		return offersv1connect.NewPartnerAdminServiceClient(h, u, opt)
+	}
+	return nil
 }
 
 // creditClient is the credit desk client, or nil when LENDING_URL is not set (lending is not offered).

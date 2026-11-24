@@ -62,6 +62,9 @@ const (
 	// PartnerAdminServiceListProvidersProcedure is the fully-qualified name of the
 	// PartnerAdminService's ListProviders RPC.
 	PartnerAdminServiceListProvidersProcedure = "/forge.offers.v1.PartnerAdminService/ListProviders"
+	// PartnerAdminServiceListAdminOffersProcedure is the fully-qualified name of the
+	// PartnerAdminService's ListAdminOffers RPC.
+	PartnerAdminServiceListAdminOffersProcedure = "/forge.offers.v1.PartnerAdminService/ListAdminOffers"
 )
 
 // PartnerOffersServiceClient is a client for the forge.offers.v1.PartnerOffersService service.
@@ -204,6 +207,8 @@ type PartnerAdminServiceClient interface {
 	UpsertOffer(context.Context, *connect.Request[v1.UpsertOfferRequest]) (*connect.Response[v1.UpsertOfferResponse], error)
 	SetOfferStatus(context.Context, *connect.Request[v1.SetOfferStatusRequest]) (*connect.Response[v1.SetOfferStatusResponse], error)
 	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	// Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
+	ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error)
 }
 
 // NewPartnerAdminServiceClient constructs a client for the forge.offers.v1.PartnerAdminService
@@ -253,6 +258,12 @@ func NewPartnerAdminServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(partnerAdminServiceMethods.ByName("ListProviders")),
 			connect.WithClientOptions(opts...),
 		),
+		listAdminOffers: connect.NewClient[v1.ListAdminOffersRequest, v1.ListAdminOffersResponse](
+			httpClient,
+			baseURL+PartnerAdminServiceListAdminOffersProcedure,
+			connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminOffers")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -264,6 +275,7 @@ type partnerAdminServiceClient struct {
 	upsertOffer      *connect.Client[v1.UpsertOfferRequest, v1.UpsertOfferResponse]
 	setOfferStatus   *connect.Client[v1.SetOfferStatusRequest, v1.SetOfferStatusResponse]
 	listProviders    *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
+	listAdminOffers  *connect.Client[v1.ListAdminOffersRequest, v1.ListAdminOffersResponse]
 }
 
 // RegisterProvider calls forge.offers.v1.PartnerAdminService.RegisterProvider.
@@ -296,6 +308,11 @@ func (c *partnerAdminServiceClient) ListProviders(ctx context.Context, req *conn
 	return c.listProviders.CallUnary(ctx, req)
 }
 
+// ListAdminOffers calls forge.offers.v1.PartnerAdminService.ListAdminOffers.
+func (c *partnerAdminServiceClient) ListAdminOffers(ctx context.Context, req *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error) {
+	return c.listAdminOffers.CallUnary(ctx, req)
+}
+
 // PartnerAdminServiceHandler is an implementation of the forge.offers.v1.PartnerAdminService
 // service.
 type PartnerAdminServiceHandler interface {
@@ -306,6 +323,8 @@ type PartnerAdminServiceHandler interface {
 	UpsertOffer(context.Context, *connect.Request[v1.UpsertOfferRequest]) (*connect.Response[v1.UpsertOfferResponse], error)
 	SetOfferStatus(context.Context, *connect.Request[v1.SetOfferStatusRequest]) (*connect.Response[v1.SetOfferStatusResponse], error)
 	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	// Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
+	ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error)
 }
 
 // NewPartnerAdminServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -351,6 +370,12 @@ func NewPartnerAdminServiceHandler(svc PartnerAdminServiceHandler, opts ...conne
 		connect.WithSchema(partnerAdminServiceMethods.ByName("ListProviders")),
 		connect.WithHandlerOptions(opts...),
 	)
+	partnerAdminServiceListAdminOffersHandler := connect.NewUnaryHandler(
+		PartnerAdminServiceListAdminOffersProcedure,
+		svc.ListAdminOffers,
+		connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminOffers")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.offers.v1.PartnerAdminService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PartnerAdminServiceRegisterProviderProcedure:
@@ -365,6 +390,8 @@ func NewPartnerAdminServiceHandler(svc PartnerAdminServiceHandler, opts ...conne
 			partnerAdminServiceSetOfferStatusHandler.ServeHTTP(w, r)
 		case PartnerAdminServiceListProvidersProcedure:
 			partnerAdminServiceListProvidersHandler.ServeHTTP(w, r)
+		case PartnerAdminServiceListAdminOffersProcedure:
+			partnerAdminServiceListAdminOffersHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -396,4 +423,8 @@ func (UnimplementedPartnerAdminServiceHandler) SetOfferStatus(context.Context, *
 
 func (UnimplementedPartnerAdminServiceHandler) ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.offers.v1.PartnerAdminService.ListProviders is not implemented"))
+}
+
+func (UnimplementedPartnerAdminServiceHandler) ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.offers.v1.PartnerAdminService.ListAdminOffers is not implemented"))
 }

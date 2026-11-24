@@ -85,8 +85,8 @@ Honest list of what the two banks do that Forge does not yet:
    record, queue and reporting it needs are not built.
 2. **Card issuing: built, not usable.** `services/bank/card-service` issues virtual debit cards on a customer's account
    and approves each purchase against the ledger in real time (holds, limits, clearing, reversal, refund), tested against
-   a processor simulator. It needs a card programme manager or sponsor, a processor, and the sponsor's and regulator's
-   agreement before it can be switched on, and it is not yet reachable from the customer app.
+   a processor simulator, and wired to the customer app (`/cards`) but switched off. It needs a card programme manager or sponsor,
+   a processor, and the sponsor's and regulator's agreement before it can be switched on.
 3. **Investments and wealth: a referral partnership, not a product.** `docs/products/WEALTH_PARTNERSHIP.md` sets out the
    introducer model, consent and a recommendation to wait until after the pilot. **The introducer layer is built and switched off**
    (`services/platform/partner-offers`): every product is provided, licensed and monitored by a third party and the code

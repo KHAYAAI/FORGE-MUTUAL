@@ -23,7 +23,7 @@ test("signing in through the identity provider shows the person, and the API rec
   await signInAs(page, "Thandi Dube");
   await expect(page.getByTestId("signed-in-as")).toHaveText("Thandi Dube");
 
-  const last = await (await request.get(`${UPSTREAM}/__last`)).json();
+  const last = await (await request.get(`${UPSTREAM}/__last?prefix=/v1/accounts`)).json();
   expect(last.path).toContain("/v1/accounts");
   expect(last.authorization).toMatch(/^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   expect(last.xForgeParty).toBeNull();

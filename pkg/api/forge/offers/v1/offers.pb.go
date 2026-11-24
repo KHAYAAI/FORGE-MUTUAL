@@ -34,6 +34,7 @@ type Offer struct {
 	Statement     string                 `protobuf:"bytes,9,opt,name=statement,proto3" json:"statement,omitempty"`                               // the mandatory third-party statement, generated; show it in full
 	StatementHash string                 `protobuf:"bytes,10,opt,name=statement_hash,json=statementHash,proto3" json:"statement_hash,omitempty"` // sent back in CreateReferral to prove this exact text was acknowledged
 	FeeDisclosure string                 `protobuf:"bytes,11,opt,name=fee_disclosure,json=feeDisclosure,proto3" json:"fee_disclosure,omitempty"`
+	ProviderId    string                 `protobuf:"bytes,12,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"` // for the consent a referral needs (purpose share_with_partner, scope referral:<provider_id>)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -141,6 +142,13 @@ func (x *Offer) GetStatementHash() string {
 func (x *Offer) GetFeeDisclosure() string {
 	if x != nil {
 		return x.FeeDisclosure
+	}
+	return ""
+}
+
+func (x *Offer) GetProviderId() string {
+	if x != nil {
+		return x.ProviderId
 	}
 	return ""
 }
@@ -1305,11 +1313,175 @@ func (x *ListProvidersResponse) GetProviders() []*Provider {
 	return nil
 }
 
+type AdminOffer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Offer         *Offer                 `protobuf:"bytes,1,opt,name=offer,proto3" json:"offer,omitempty"`   // with the generated statement and its hash
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // DRAFT, ACTIVE or WITHDRAWN
+	HandoffUrl    string                 `protobuf:"bytes,3,opt,name=handoff_url,json=handoffUrl,proto3" json:"handoff_url,omitempty"`
+	UpdatedBy     string                 `protobuf:"bytes,4,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	VisibleNow    bool                   `protobuf:"varint,6,opt,name=visible_now,json=visibleNow,proto3" json:"visible_now,omitempty"` // would a customer see it right now (provider verified within 12 months, offer active)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminOffer) Reset() {
+	*x = AdminOffer{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminOffer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminOffer) ProtoMessage() {}
+
+func (x *AdminOffer) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminOffer.ProtoReflect.Descriptor instead.
+func (*AdminOffer) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *AdminOffer) GetOffer() *Offer {
+	if x != nil {
+		return x.Offer
+	}
+	return nil
+}
+
+func (x *AdminOffer) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *AdminOffer) GetHandoffUrl() string {
+	if x != nil {
+		return x.HandoffUrl
+	}
+	return ""
+}
+
+func (x *AdminOffer) GetUpdatedBy() string {
+	if x != nil {
+		return x.UpdatedBy
+	}
+	return ""
+}
+
+func (x *AdminOffer) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *AdminOffer) GetVisibleNow() bool {
+	if x != nil {
+		return x.VisibleNow
+	}
+	return false
+}
+
+type ListAdminOffersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAdminOffersRequest) Reset() {
+	*x = ListAdminOffersRequest{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminOffersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminOffersRequest) ProtoMessage() {}
+
+func (x *ListAdminOffersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminOffersRequest.ProtoReflect.Descriptor instead.
+func (*ListAdminOffersRequest) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{22}
+}
+
+type ListAdminOffersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Offers        []*AdminOffer          `protobuf:"bytes,1,rep,name=offers,proto3" json:"offers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAdminOffersResponse) Reset() {
+	*x = ListAdminOffersResponse{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminOffersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminOffersResponse) ProtoMessage() {}
+
+func (x *ListAdminOffersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminOffersResponse.ProtoReflect.Descriptor instead.
+func (*ListAdminOffersResponse) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListAdminOffersResponse) GetOffers() []*AdminOffer {
+	if x != nil {
+		return x.Offers
+	}
+	return nil
+}
+
 var File_forge_offers_v1_offers_proto protoreflect.FileDescriptor
 
 const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\n" +
-	"\x1cforge/offers/v1/offers.proto\x12\x0fforge.offers.v1\"\xe7\x02\n" +
+	"\x1cforge/offers/v1/offers.proto\x12\x0fforge.offers.v1\"\x88\x03\n" +
 	"\x05Offer\x12\x19\n" +
 	"\boffer_id\x18\x01 \x01(\tR\aofferId\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x14\n" +
@@ -1322,7 +1494,9 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\tstatement\x18\t \x01(\tR\tstatement\x12%\n" +
 	"\x0estatement_hash\x18\n" +
 	" \x01(\tR\rstatementHash\x12%\n" +
-	"\x0efee_disclosure\x18\v \x01(\tR\rfeeDisclosure\"J\n" +
+	"\x0efee_disclosure\x18\v \x01(\tR\rfeeDisclosure\x12\x1f\n" +
+	"\vprovider_id\x18\f \x01(\tR\n" +
+	"providerId\"J\n" +
 	"\x11ListOffersRequest\x12\x19\n" +
 	"\bparty_id\x18\x01 \x01(\tR\apartyId\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\"D\n" +
@@ -1406,19 +1580,35 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status\"\x16\n" +
 	"\x14ListProvidersRequest\"P\n" +
 	"\x15ListProvidersResponse\x127\n" +
-	"\tproviders\x18\x01 \x03(\v2\x19.forge.offers.v1.ProviderR\tproviders2\xb0\x02\n" +
+	"\tproviders\x18\x01 \x03(\v2\x19.forge.offers.v1.ProviderR\tproviders\"\xd2\x01\n" +
+	"\n" +
+	"AdminOffer\x12,\n" +
+	"\x05offer\x18\x01 \x01(\v2\x16.forge.offers.v1.OfferR\x05offer\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1f\n" +
+	"\vhandoff_url\x18\x03 \x01(\tR\n" +
+	"handoffUrl\x12\x1d\n" +
+	"\n" +
+	"updated_by\x18\x04 \x01(\tR\tupdatedBy\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x05 \x01(\tR\tupdatedAt\x12\x1f\n" +
+	"\vvisible_now\x18\x06 \x01(\bR\n" +
+	"visibleNow\"\x18\n" +
+	"\x16ListAdminOffersRequest\"N\n" +
+	"\x17ListAdminOffersResponse\x123\n" +
+	"\x06offers\x18\x01 \x03(\v2\x1b.forge.offers.v1.AdminOfferR\x06offers2\xb0\x02\n" +
 	"\x14PartnerOffersService\x12U\n" +
 	"\n" +
 	"ListOffers\x12\".forge.offers.v1.ListOffersRequest\x1a#.forge.offers.v1.ListOffersResponse\x12a\n" +
 	"\x0eCreateReferral\x12&.forge.offers.v1.CreateReferralRequest\x1a'.forge.offers.v1.CreateReferralResponse\x12^\n" +
-	"\rListReferrals\x12%.forge.offers.v1.ListReferralsRequest\x1a&.forge.offers.v1.ListReferralsResponse2\xe1\x04\n" +
+	"\rListReferrals\x12%.forge.offers.v1.ListReferralsRequest\x1a&.forge.offers.v1.ListReferralsResponse2\xc7\x05\n" +
 	"\x13PartnerAdminService\x12g\n" +
 	"\x10RegisterProvider\x12(.forge.offers.v1.RegisterProviderRequest\x1a).forge.offers.v1.RegisterProviderResponse\x12^\n" +
 	"\rVerifyLicence\x12%.forge.offers.v1.VerifyLicenceRequest\x1a&.forge.offers.v1.VerifyLicenceResponse\x12d\n" +
 	"\x0fSuspendProvider\x12'.forge.offers.v1.SuspendProviderRequest\x1a(.forge.offers.v1.SuspendProviderResponse\x12X\n" +
 	"\vUpsertOffer\x12#.forge.offers.v1.UpsertOfferRequest\x1a$.forge.offers.v1.UpsertOfferResponse\x12a\n" +
 	"\x0eSetOfferStatus\x12&.forge.offers.v1.SetOfferStatusRequest\x1a'.forge.offers.v1.SetOfferStatusResponse\x12^\n" +
-	"\rListProviders\x12%.forge.offers.v1.ListProvidersRequest\x1a&.forge.offers.v1.ListProvidersResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;offersv1b\x06proto3"
+	"\rListProviders\x12%.forge.offers.v1.ListProvidersRequest\x1a&.forge.offers.v1.ListProvidersResponse\x12d\n" +
+	"\x0fListAdminOffers\x12'.forge.offers.v1.ListAdminOffersRequest\x1a(.forge.offers.v1.ListAdminOffersResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;offersv1b\x06proto3"
 
 var (
 	file_forge_offers_v1_offers_proto_rawDescOnce sync.Once
@@ -1432,7 +1622,7 @@ func file_forge_offers_v1_offers_proto_rawDescGZIP() []byte {
 	return file_forge_offers_v1_offers_proto_rawDescData
 }
 
-var file_forge_offers_v1_offers_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_forge_offers_v1_offers_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_forge_offers_v1_offers_proto_goTypes = []any{
 	(*Offer)(nil),                    // 0: forge.offers.v1.Offer
 	(*ListOffersRequest)(nil),        // 1: forge.offers.v1.ListOffersRequest
@@ -1455,6 +1645,9 @@ var file_forge_offers_v1_offers_proto_goTypes = []any{
 	(*SetOfferStatusResponse)(nil),   // 18: forge.offers.v1.SetOfferStatusResponse
 	(*ListProvidersRequest)(nil),     // 19: forge.offers.v1.ListProvidersRequest
 	(*ListProvidersResponse)(nil),    // 20: forge.offers.v1.ListProvidersResponse
+	(*AdminOffer)(nil),               // 21: forge.offers.v1.AdminOffer
+	(*ListAdminOffersRequest)(nil),   // 22: forge.offers.v1.ListAdminOffersRequest
+	(*ListAdminOffersResponse)(nil),  // 23: forge.offers.v1.ListAdminOffersResponse
 }
 var file_forge_offers_v1_offers_proto_depIdxs = []int32{
 	0,  // 0: forge.offers.v1.ListOffersResponse.offers:type_name -> forge.offers.v1.Offer
@@ -1465,29 +1658,33 @@ var file_forge_offers_v1_offers_proto_depIdxs = []int32{
 	9,  // 5: forge.offers.v1.SuspendProviderResponse.provider:type_name -> forge.offers.v1.Provider
 	0,  // 6: forge.offers.v1.UpsertOfferResponse.offer:type_name -> forge.offers.v1.Offer
 	9,  // 7: forge.offers.v1.ListProvidersResponse.providers:type_name -> forge.offers.v1.Provider
-	1,  // 8: forge.offers.v1.PartnerOffersService.ListOffers:input_type -> forge.offers.v1.ListOffersRequest
-	3,  // 9: forge.offers.v1.PartnerOffersService.CreateReferral:input_type -> forge.offers.v1.CreateReferralRequest
-	6,  // 10: forge.offers.v1.PartnerOffersService.ListReferrals:input_type -> forge.offers.v1.ListReferralsRequest
-	8,  // 11: forge.offers.v1.PartnerAdminService.RegisterProvider:input_type -> forge.offers.v1.RegisterProviderRequest
-	11, // 12: forge.offers.v1.PartnerAdminService.VerifyLicence:input_type -> forge.offers.v1.VerifyLicenceRequest
-	13, // 13: forge.offers.v1.PartnerAdminService.SuspendProvider:input_type -> forge.offers.v1.SuspendProviderRequest
-	15, // 14: forge.offers.v1.PartnerAdminService.UpsertOffer:input_type -> forge.offers.v1.UpsertOfferRequest
-	17, // 15: forge.offers.v1.PartnerAdminService.SetOfferStatus:input_type -> forge.offers.v1.SetOfferStatusRequest
-	19, // 16: forge.offers.v1.PartnerAdminService.ListProviders:input_type -> forge.offers.v1.ListProvidersRequest
-	2,  // 17: forge.offers.v1.PartnerOffersService.ListOffers:output_type -> forge.offers.v1.ListOffersResponse
-	5,  // 18: forge.offers.v1.PartnerOffersService.CreateReferral:output_type -> forge.offers.v1.CreateReferralResponse
-	7,  // 19: forge.offers.v1.PartnerOffersService.ListReferrals:output_type -> forge.offers.v1.ListReferralsResponse
-	10, // 20: forge.offers.v1.PartnerAdminService.RegisterProvider:output_type -> forge.offers.v1.RegisterProviderResponse
-	12, // 21: forge.offers.v1.PartnerAdminService.VerifyLicence:output_type -> forge.offers.v1.VerifyLicenceResponse
-	14, // 22: forge.offers.v1.PartnerAdminService.SuspendProvider:output_type -> forge.offers.v1.SuspendProviderResponse
-	16, // 23: forge.offers.v1.PartnerAdminService.UpsertOffer:output_type -> forge.offers.v1.UpsertOfferResponse
-	18, // 24: forge.offers.v1.PartnerAdminService.SetOfferStatus:output_type -> forge.offers.v1.SetOfferStatusResponse
-	20, // 25: forge.offers.v1.PartnerAdminService.ListProviders:output_type -> forge.offers.v1.ListProvidersResponse
-	17, // [17:26] is the sub-list for method output_type
-	8,  // [8:17] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	0,  // 8: forge.offers.v1.AdminOffer.offer:type_name -> forge.offers.v1.Offer
+	21, // 9: forge.offers.v1.ListAdminOffersResponse.offers:type_name -> forge.offers.v1.AdminOffer
+	1,  // 10: forge.offers.v1.PartnerOffersService.ListOffers:input_type -> forge.offers.v1.ListOffersRequest
+	3,  // 11: forge.offers.v1.PartnerOffersService.CreateReferral:input_type -> forge.offers.v1.CreateReferralRequest
+	6,  // 12: forge.offers.v1.PartnerOffersService.ListReferrals:input_type -> forge.offers.v1.ListReferralsRequest
+	8,  // 13: forge.offers.v1.PartnerAdminService.RegisterProvider:input_type -> forge.offers.v1.RegisterProviderRequest
+	11, // 14: forge.offers.v1.PartnerAdminService.VerifyLicence:input_type -> forge.offers.v1.VerifyLicenceRequest
+	13, // 15: forge.offers.v1.PartnerAdminService.SuspendProvider:input_type -> forge.offers.v1.SuspendProviderRequest
+	15, // 16: forge.offers.v1.PartnerAdminService.UpsertOffer:input_type -> forge.offers.v1.UpsertOfferRequest
+	17, // 17: forge.offers.v1.PartnerAdminService.SetOfferStatus:input_type -> forge.offers.v1.SetOfferStatusRequest
+	19, // 18: forge.offers.v1.PartnerAdminService.ListProviders:input_type -> forge.offers.v1.ListProvidersRequest
+	22, // 19: forge.offers.v1.PartnerAdminService.ListAdminOffers:input_type -> forge.offers.v1.ListAdminOffersRequest
+	2,  // 20: forge.offers.v1.PartnerOffersService.ListOffers:output_type -> forge.offers.v1.ListOffersResponse
+	5,  // 21: forge.offers.v1.PartnerOffersService.CreateReferral:output_type -> forge.offers.v1.CreateReferralResponse
+	7,  // 22: forge.offers.v1.PartnerOffersService.ListReferrals:output_type -> forge.offers.v1.ListReferralsResponse
+	10, // 23: forge.offers.v1.PartnerAdminService.RegisterProvider:output_type -> forge.offers.v1.RegisterProviderResponse
+	12, // 24: forge.offers.v1.PartnerAdminService.VerifyLicence:output_type -> forge.offers.v1.VerifyLicenceResponse
+	14, // 25: forge.offers.v1.PartnerAdminService.SuspendProvider:output_type -> forge.offers.v1.SuspendProviderResponse
+	16, // 26: forge.offers.v1.PartnerAdminService.UpsertOffer:output_type -> forge.offers.v1.UpsertOfferResponse
+	18, // 27: forge.offers.v1.PartnerAdminService.SetOfferStatus:output_type -> forge.offers.v1.SetOfferStatusResponse
+	20, // 28: forge.offers.v1.PartnerAdminService.ListProviders:output_type -> forge.offers.v1.ListProvidersResponse
+	23, // 29: forge.offers.v1.PartnerAdminService.ListAdminOffers:output_type -> forge.offers.v1.ListAdminOffersResponse
+	20, // [20:30] is the sub-list for method output_type
+	10, // [10:20] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_forge_offers_v1_offers_proto_init() }
@@ -1501,7 +1698,7 @@ func file_forge_offers_v1_offers_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_offers_v1_offers_proto_rawDesc), len(file_forge_offers_v1_offers_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

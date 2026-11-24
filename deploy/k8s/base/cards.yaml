@@ -18,7 +18,17 @@ metadata:
     app.kubernetes.io/part-of: forge
 data:
   callers.json: |
-    {}
+    {
+      "svc-workspace": [
+        "DisplayCard",
+        "GetCard",
+        "IssueCard",
+        "ListAuthorisations",
+        "ListCards",
+        "SetCardStatus",
+        "SetLimits"
+      ]
+    }
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -124,8 +134,6 @@ spec:
           value: /config/callers.json
         - name: CARDS_RECOVER_INTERVAL
           value: 1m
-        - name: CARD_PROCESSOR
-          value: sim
         - name: CARD_WEBHOOK_SECRET_FILE
           value: /secrets/CARD_WEBHOOK_SECRET
         - name: LEDGER_URL
@@ -242,7 +250,14 @@ spec:
   policyTypes:
   - Ingress
   - Egress
-  ingress: []
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: workspace
+    ports:
+    - protocol: TCP
+      port: 8140
   egress:
   - to:
     - namespaceSelector: {}

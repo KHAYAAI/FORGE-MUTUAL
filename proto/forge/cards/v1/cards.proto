@@ -9,7 +9,7 @@ option go_package = "github.com/khayaai/forge-mutual/pkg/api/forge/cards/v1;card
 // the last four digits and the expiry.
 //
 // Status: built against a processor simulator, off in production until FORGE_APPROVAL_CARDS names the approving
-// decision (pkg/licence), and not yet reachable from the customer app. See services/bank/card-service/SPEC.md.
+// decision (pkg/licence). Wired to the customer app through workspace-api but not configured, so off. See services/bank/card-service/SPEC.md.
 service CardService {
   // IssueCard creates a virtual card on an account the party owns. The key makes a retry safe.
   rpc IssueCard(IssueCardRequest) returns (IssueCardResponse);

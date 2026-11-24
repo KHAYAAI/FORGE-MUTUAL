@@ -19,6 +19,9 @@ metadata:
 data:
   callers.json: |
     {
+      "svc-lending": [
+        "Check"
+      ],
       "svc-onboarding": [
         "Grant"
       ],
@@ -26,7 +29,10 @@ data:
         "Check"
       ],
       "svc-workspace": [
-        "List"
+        "Check",
+        "Grant",
+        "List",
+        "Revoke"
       ]
     }
 ---
@@ -244,6 +250,9 @@ spec:
   - Egress
   ingress:
   - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: lending
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: onboarding

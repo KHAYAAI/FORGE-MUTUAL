@@ -630,10 +630,678 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility}/pre-agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The pre-agreement statement and quotation for an approved credit offer (NCA s.92).
+         * @description Generated from the approved terms. The customer acknowledges it by its statement_hash when accepting. DRAFT wording until the lawyer confirms the prescribed form.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    facility: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PreAgreement"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The session party's virtual cards.
+         * @description Cards are off unless a card service is configured; then 404 not_found.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CardList"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /**
+         * Issue a virtual debit card on a rand account the party owns.
+         * @description Needs an Idempotency-Key. The party is the session's. Card numbers never pass through here.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        account_id?: string;
+                        label?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Card"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards/{card}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One of the party's cards.
+         * @description Another party's card looks absent.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    card: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Card"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards/{card}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Freeze, unfreeze or close a card.
+         * @description A closed card stays closed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    card: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "ACTIVE" | "FROZEN" | "CLOSED";
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Card"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards/{card}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change a card's limits, up to the bank's ceilings.
+         * @description Amounts are rand cents as strings.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    card: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        per_transaction_limit_minor?: string;
+                        daily_limit_minor?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Card"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards/{card}/authorisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A card's purchases and declines.
+         * @description A decline carries a reason for the cardholder, never a financial-crime reason.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    card: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AuthorisationList"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cards/{card}/display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A short-lived address on the processor where the cardholder sees the number and security code.
+         * @description Forge never holds or relays the number.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    card: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CardDisplay"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Third-party investment and crypto-asset offers the party may see.
+         * @description Every product is provided, licensed and monitored by a third party, never by Forge Mutual. Every offer carries a generated statement saying so, to be shown in full. Off unless a partner-offers service is configured.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    category?: "INVESTMENTS" | "CRYPTO_ASSETS";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferList"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offers/{offer}/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Be introduced to a third-party provider.
+         * @description Needs an Idempotency-Key, acknowledged_third_party true and the statement_hash of the exact statement shown, the customer's consent to share details with that provider, and an active party. Returns the provider's own address; Forge takes no money and gives no advice.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        acknowledged_third_party?: boolean;
+                        statement_hash?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Referral"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offers/{offer}/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the party has consented to share their details with this offer's provider.
+         * @description Only for an offer the party can currently see; others look absent. Lists exactly what would be shared.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /**
+         * Consent to share details with this offer's provider.
+         * @description Needs an Idempotency-Key, agrees true and the statement_hash of the statement the customer read. Recorded in the consent service against that statement.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description Up to 100 characters. The same key with the same request returns the same result. */
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        agrees?: boolean;
+                        statement_hash?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offers/{offer}/consent/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw that consent. Withdrawing again is harmless.
+         * @description Takes effect on the next referral.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    offer: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferConsent"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The party's referrals to third-party providers.
+         * @description Only the session party's own.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralList"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        OfferConsent: {
+            granted: boolean;
+            consent_id?: string;
+            provider_name?: string;
+            shares: string[];
+        };
+        Card: {
+            card_id: string;
+            account_id?: string;
+            label?: string;
+            last4: string;
+            status: string;
+            per_transaction_limit_minor?: string;
+            daily_limit_minor?: string;
+            created_at?: string;
+            network?: string;
+            expiry_month?: number;
+            expiry_year?: number;
+        };
+        CardList: {
+            cards: components["schemas"]["Card"][];
+        };
+        Authorisation: {
+            auth_id: string;
+            card_id?: string;
+            merchant_name?: string;
+            mcc?: string;
+            country?: string;
+            currency?: string;
+            amount_minor: string;
+            status: string;
+            decline_reason?: string;
+            captured_minor?: string;
+            refunded_minor?: string;
+            at?: string;
+        };
+        AuthorisationList: {
+            authorisations: components["schemas"]["Authorisation"][];
+        };
+        CardDisplay: {
+            url: string;
+            expires_at?: string;
+        };
+        Offer: {
+            offer_id: string;
+            category?: string;
+            title: string;
+            summary?: string;
+            provider_name: string;
+            licence_type?: string;
+            licence_number?: string;
+            regulator?: string;
+            statement: string;
+            statement_hash: string;
+            fee_disclosure?: string;
+            provider_id?: string;
+        };
+        OfferList: {
+            offers: components["schemas"]["Offer"][];
+        };
+        Referral: {
+            referral_id: string;
+            offer_id?: string;
+            provider_name?: string;
+            handoff_url: string;
+            created_at?: string;
+        };
+        ReferralList: {
+            referrals: components["schemas"]["Referral"][];
+        };
+        PreAgreement: {
+            statement: string;
+            statement_hash: string;
+        };
         Error: {
             error: {
                 /** @enum {string} */
@@ -1673,6 +2341,8 @@ export interface operations {
             content: {
                 "application/json": {
                     accepts_terms: boolean;
+                    /** @description The statement_hash of the pre-agreement statement the customer was shown (GET /v1/facilities/{facility}/pre-agreement). Required in production. */
+                    pre_agreement_hash?: string;
                 };
             };
         };

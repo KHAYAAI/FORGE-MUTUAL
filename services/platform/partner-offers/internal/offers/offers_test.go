@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -250,7 +251,7 @@ func TestAReferralNeedsTheCurrentStatementAcknowledgedConsentAndAnActiveParty(t 
 	if _, err := refer("k1", true, o.StatementHash); connect.CodeOf(err) != connect.CodeFailedPrecondition || !strings.Contains(err.Error(), "consent") {
 		t.Fatalf("no consent to share details with this provider: %v", err)
 	}
-	r.con[alice+"|share_with_partner:acme|referral"] = true
+	r.con[alice+"|share_with_partner|referral:acme"] = true
 	r.pty[alice] = false
 	if _, err := refer("k1", true, o.StatementHash); connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("a frozen party is introduced to no one: %v", err)
@@ -278,4 +279,43 @@ func TestAReferralNeedsTheCurrentStatementAcknowledgedConsentAndAnActiveParty(t 
 		t.Fatalf("a hidden offer looks absent: %v", err)
 	}
 	_ = fmt.Sprint()
+}
+
+// Compliance sees every offer, drafts included, with the statement and whether a customer would see it now.
+func TestComplianceSeesDraftsAndWhatACustomerWouldSee(t *testing.T) {
+	r := setup(t)
+	ctx := context.Background()
+	r.liveOffer("acme", "FSP", "INVESTMENTS", "acme-tfsa")
+	_, err := r.s.UpsertOffer(ctx, connect.NewRequest(&offersv1.UpsertOfferRequest{OfferId: "acme-draft", ProviderId: "acme", Category: "INVESTMENTS", Title: "Acme Draft Fund",
+		Summary: "Not yet approved.", HandoffUrl: "https://invest.acme-wealth.example/draft", FeeDisclosure: "No fee.", Actor: "anna"}))
+	r.must(err)
+	res, err := r.s.ListAdminOffers(ctx, connect.NewRequest(&offersv1.ListAdminOffersRequest{}))
+	r.must(err)
+	byID := map[string]*offersv1.AdminOffer{}
+	for _, o := range res.Msg.Offers {
+		byID[o.Offer.OfferId] = o
+	}
+	if len(byID) != 2 || byID["acme-tfsa"].Status != "ACTIVE" || !byID["acme-tfsa"].VisibleNow || byID["acme-draft"].Status != "DRAFT" || byID["acme-draft"].VisibleNow {
+		t.Fatalf("admin view: %+v", byID)
+	}
+	if !strings.Contains(byID["acme-draft"].Offer.Statement, "THIRD-PARTY PRODUCT") || byID["acme-draft"].Offer.ProviderId != "acme" {
+		t.Fatal("compliance must see the statement a customer would see, and the provider id")
+	}
+	if got := r.list(""); len(got) != 1 || got[0].ProviderId != "acme" {
+		t.Fatalf("a customer sees only the active offer, with its provider id: %+v", got)
+	}
+}
+
+// The consent service refuses a purpose or scope it does not like, so ours must match its patterns for every provider id we allow.
+func TestTheConsentPurposeAndScopeAreAcceptedByTheConsentService(t *testing.T) {
+	purpose := regexp.MustCompile(`^[a-z][a-z0-9_.]{2,63}$`)
+	scope := regexp.MustCompile(`^[a-z][a-z0-9_.:-]{1,63}$`)
+	if !purpose.MatchString(ConsentPurpose) {
+		t.Fatalf("purpose %q", ConsentPurpose)
+	}
+	for _, id := range []string{"ab", "acme", "acme-wealth", "a" + strings.Repeat("b-", 20)} {
+		if !idPattern.MatchString(id) || !scope.MatchString(ConsentScope(id)) {
+			t.Fatalf("scope for %q: %q", id, ConsentScope(id))
+		}
+	}
 }

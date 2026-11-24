@@ -1,4 +1,7 @@
 {
+  "svc-lending": [
+    "Check"
+  ],
   "svc-onboarding": [
     "Grant"
   ],
@@ -6,6 +9,9 @@
     "Check"
   ],
   "svc-workspace": [
-    "List"
+    "Check",
+    "Grant",
+    "List",
+    "Revoke"
   ]
 }

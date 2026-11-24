@@ -693,6 +693,9 @@ paths:
               properties:
                 accepts_terms:
                   type: boolean
+                pre_agreement_hash:
+                  type: string
+                  description: The statement_hash of the pre-agreement statement the customer was shown (GET /v1/facilities/{facility}/pre-agreement). Required in production.
       responses:
         "200":
           description: The active facility.
@@ -1116,6 +1119,316 @@ paths:
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/Error"
+  /v1/facilities/{facility}/pre-agreement:
+    get:
+      summary: "The pre-agreement statement and quotation for an approved credit offer (NCA s.92)."
+      description: "Generated from the approved terms. The customer acknowledges it by its statement_hash when accepting. DRAFT wording until the lawyer confirms the prescribed form."
+      parameters:
+        - name: facility
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreAgreement"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards:
+    get:
+      summary: "The session party's virtual cards."
+      description: "Cards are off unless a card service is configured; then 404 not_found."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardList"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: "Issue a virtual debit card on a rand account the party owns."
+      description: "Needs an Idempotency-Key. The party is the session's. Card numbers never pass through here."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                account_id:
+                  type: string
+                label:
+                  type: string
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards/{card}:
+    get:
+      summary: "One of the party's cards."
+      description: "Another party's card looks absent."
+      parameters:
+        - name: card
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards/{card}/status:
+    post:
+      summary: "Freeze, unfreeze or close a card."
+      description: "A closed card stays closed."
+      parameters:
+        - name: card
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, FROZEN, CLOSED]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards/{card}/limits:
+    post:
+      summary: "Change a card's limits, up to the bank's ceilings."
+      description: "Amounts are rand cents as strings."
+      parameters:
+        - name: card
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                per_transaction_limit_minor:
+                  type: string
+                daily_limit_minor:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards/{card}/authorisations:
+    get:
+      summary: "A card's purchases and declines."
+      description: "A decline carries a reason for the cardholder, never a financial-crime reason."
+      parameters:
+        - name: card
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorisationList"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/cards/{card}/display:
+    post:
+      summary: "A short-lived address on the processor where the cardholder sees the number and security code."
+      description: "Forge never holds or relays the number."
+      parameters:
+        - name: card
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDisplay"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/offers:
+    get:
+      summary: "Third-party investment and crypto-asset offers the party may see."
+      description: "Every product is provided, licensed and monitored by a third party, never by Forge Mutual. Every offer carries a generated statement saying so, to be shown in full. Off unless a partner-offers service is configured."
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [INVESTMENTS, CRYPTO_ASSETS]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferList"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/offers/{offer}/referrals:
+    post:
+      summary: "Be introduced to a third-party provider."
+      description: "Needs an Idempotency-Key, acknowledged_third_party true and the statement_hash of the exact statement shown, the customer's consent to share details with that provider, and an active party. Returns the provider's own address; Forge takes no money and gives no advice."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                acknowledged_third_party:
+                  type: boolean
+                statement_hash:
+                  type: string
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Referral"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/offers/{offer}/consent:
+    get:
+      summary: "Whether the party has consented to share their details with this offer's provider."
+      description: "Only for an offer the party can currently see; others look absent. Lists exactly what would be shared."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: "Consent to share details with this offer's provider."
+      description: "Needs an Idempotency-Key, agrees true and the statement_hash of the statement the customer read. Recorded in the consent service against that statement."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                agrees:
+                  type: boolean
+                statement_hash:
+                  type: string
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/offers/{offer}/consent/withdraw:
+    post:
+      summary: "Withdraw that consent. Withdrawing again is harmless."
+      description: "Takes effect on the next referral."
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferConsent"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/referrals:
+    get:
+      summary: "The party's referrals to third-party providers."
+      description: "Only the session party's own."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralList"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     devParty:
@@ -1150,6 +1463,164 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
   schemas:
+    OfferConsent:
+      type: object
+      required: [granted, shares]
+      properties:
+        granted:
+          type: boolean
+        consent_id:
+          type: string
+        provider_name:
+          type: string
+        shares:
+          type: array
+          items:
+            type: string
+    Card:
+      type: object
+      required: [card_id, last4, status]
+      properties:
+        card_id:
+          type: string
+        account_id:
+          type: string
+        label:
+          type: string
+        last4:
+          type: string
+        status:
+          type: string
+        per_transaction_limit_minor:
+          type: string
+        daily_limit_minor:
+          type: string
+        created_at:
+          type: string
+        network:
+          type: string
+        expiry_month:
+          type: integer
+        expiry_year:
+          type: integer
+    CardList:
+      type: object
+      required: [cards]
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+    Authorisation:
+      type: object
+      required: [auth_id, status, amount_minor]
+      properties:
+        auth_id:
+          type: string
+        card_id:
+          type: string
+        merchant_name:
+          type: string
+        mcc:
+          type: string
+        country:
+          type: string
+        currency:
+          type: string
+        amount_minor:
+          type: string
+        status:
+          type: string
+        decline_reason:
+          type: string
+        captured_minor:
+          type: string
+        refunded_minor:
+          type: string
+        at:
+          type: string
+    AuthorisationList:
+      type: object
+      required: [authorisations]
+      properties:
+        authorisations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Authorisation"
+    CardDisplay:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+        expires_at:
+          type: string
+    Offer:
+      type: object
+      required: [offer_id, title, provider_name, statement, statement_hash]
+      properties:
+        offer_id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        provider_name:
+          type: string
+        licence_type:
+          type: string
+        licence_number:
+          type: string
+        regulator:
+          type: string
+        statement:
+          type: string
+        statement_hash:
+          type: string
+        fee_disclosure:
+          type: string
+        provider_id:
+          type: string
+    OfferList:
+      type: object
+      required: [offers]
+      properties:
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+    Referral:
+      type: object
+      required: [referral_id, handoff_url]
+      properties:
+        referral_id:
+          type: string
+        offer_id:
+          type: string
+        provider_name:
+          type: string
+        handoff_url:
+          type: string
+        created_at:
+          type: string
+    ReferralList:
+      type: object
+      required: [referrals]
+      properties:
+        referrals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Referral"
+    PreAgreement:
+      type: object
+      required: [statement, statement_hash]
+      properties:
+        statement:
+          type: string
+        statement_hash:
+          type: string
     Error:
       type: object
       required: [error]

@@ -1,1 +1,11 @@
-{}
+{
+  "svc-workspace": [
+    "DisplayCard",
+    "GetCard",
+    "IssueCard",
+    "ListAuthorisations",
+    "ListCards",
+    "SetCardStatus",
+    "SetLimits"
+  ]
+}

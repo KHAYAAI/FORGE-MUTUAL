@@ -286,6 +286,7 @@ test-regulatory:
 	python3 -I scripts/check-security-findings.py
 	python3 -I scripts/check-k8s.py --selftest
 	python3 -I scripts/check-aws.py --selftest
+	python3 -I scripts/build-licence-pack.py --check
 	python3 -I scripts/check-monitoring.py
 	scripts/test-backup-freshness.sh
 	python3 -I scripts/check-secure-config.py
@@ -340,3 +341,7 @@ governance:
 .PHONY: proforma
 proforma:
 	cd services/bank/reg-reporting && for f in mutual bank; do $(GO) run ./cmd/returns-proforma -form $$f -in ../../../docs/regulatory/proforma/projection.json -out ../../../docs/regulatory/proforma/$$f.md || exit 1; done
+
+.PHONY: licence-pack
+licence-pack:
+	python3 -I scripts/build-licence-pack.py

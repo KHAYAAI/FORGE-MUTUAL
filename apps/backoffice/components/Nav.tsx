@@ -2,12 +2,24 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useStaff } from "@/lib/useStaff";
+import { useEffect, useState } from "react";
+import { hasRole, useStaff } from "@/lib/useStaff";
 
 export default function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const staff = useStaff(pathname);
+  // The Partners link appears only for compliance, and only when third-party offers are switched on (the route answers 200).
+  const [partners, setPartners] = useState(false);
+  const compliance = hasRole(staff ?? null, "compliance");
+  useEffect(() => {
+    if (!compliance) return setPartners(false);
+    let live = true;
+    fetch("/api/v1/partners/providers", { cache: "no-store" }).then((r) => live && setPartners(r.ok)).catch(() => live && setPartners(false));
+    return () => {
+      live = false;
+    };
+  }, [compliance, pathname]);
 
   async function signOut() {
     await fetch("/api/session", { method: "DELETE" });
@@ -41,6 +53,11 @@ export default function Nav() {
             <Link href="/kyc" className="text-stone-700 hover:text-stone-950">
               KYC
             </Link>
+            {partners ? (
+              <Link href="/partners" className="text-stone-700 hover:text-stone-950">
+                Partners
+              </Link>
+            ) : null}
             <span className="text-stone-700" data-testid="staff-name">
               {staff.name}
             </span>

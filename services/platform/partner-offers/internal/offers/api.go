@@ -17,7 +17,7 @@ import (
 func (s *Service) offerProto(p provider, o offerRow) *offersv1.Offer {
 	st := Statement(p, o)
 	return &offersv1.Offer{OfferId: o.ID, Category: o.Category, Title: o.Title, Summary: o.Summary, ProviderName: p.Name, LicenceType: p.LicenceType,
-		LicenceNumber: p.Number, Regulator: p.Regulator, Statement: st, StatementHash: StatementHash(st), FeeDisclosure: o.Fee}
+		LicenceNumber: p.Number, Regulator: p.Regulator, ProviderId: p.ID, Statement: st, StatementHash: StatementHash(st), FeeDisclosure: o.Fee}
 }
 
 const offerSelect = `select o.offer_id, o.provider_id, o.category, o.title, o.summary, o.handoff_url, o.fee_disclosure, o.status, o.updated_by,
@@ -136,7 +136,7 @@ func (s *Service) CreateReferral(ctx context.Context, r *connect.Request[offersv
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("this action is not available on your account; please contact us"))
 		}
 	}
-	consentID, ok, err := s.Consents.Allowed(ctx, m.PartyId, "share_with_partner:"+p.ID, "referral")
+	consentID, ok, err := s.Consents.Allowed(ctx, m.PartyId, ConsentPurpose, ConsentScope(p.ID))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
@@ -415,4 +415,27 @@ func (s *Service) ListProviders(ctx context.Context, _ *connect.Request[offersv1
 		out.Providers = append(out.Providers, p.proto())
 	}
 	return connect.NewResponse(out), nil
+}
+
+// ListAdminOffers shows compliance every offer, with the statement a customer would see and whether they would see it now.
+func (s *Service) ListAdminOffers(ctx context.Context, _ *connect.Request[offersv1.ListAdminOffersRequest]) (*connect.Response[offersv1.ListAdminOffersResponse], error) {
+	if err := s.allowed(); err != nil {
+		return nil, err
+	}
+	rows, err := s.Pool.Query(ctx, offerSelect+` order by o.updated_at desc, o.offer_id`)
+	if err != nil {
+		return nil, wrap(err)
+	}
+	defer rows.Close()
+	out := &offersv1.ListAdminOffersResponse{}
+	now := s.now()
+	for rows.Next() {
+		o, p, err := scanOffer(rows)
+		if err != nil {
+			return nil, wrap(err)
+		}
+		out.Offers = append(out.Offers, &offersv1.AdminOffer{Offer: s.offerProto(p, o), Status: o.Status, HandoffUrl: o.URL, UpdatedBy: o.UpdatedBy,
+			VisibleNow: Visible(now, p.Status, p.VerifiedAt, p.ExpiresAt, o.Status)})
+	}
+	return connect.NewResponse(out), wrap(rows.Err())
 }
