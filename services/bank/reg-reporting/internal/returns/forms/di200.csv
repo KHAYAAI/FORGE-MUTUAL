@@ -1,0 +1,67 @@
+section,line,label,sum
+INCOME,1,Interest income from loans and advances (total of items 2 to 10),+2..10
+INCOME,2,Interbank (including intragroup bank funding and NCDs),
+INCOME,3,"Instalment debtors, suspensive sales and leases",
+INCOME,4,Mortgage loans,
+INCOME,5,Credit card debtors,
+INCOME,6,Acknowledgements of debt discounted,
+INCOME,7,Redeemable preference shares,
+INCOME,8,Overdrafts and loans,
+INCOME,9,Foreign currency loans and advances,
+INCOME,10,Loans granted under resale agreements,
+INCOME,11,"Interest expense i.r.o. deposits and loans received, excluding interest on debt instruments issued - to be shown against item 21 (total of items 12 to 20)",+12..20
+INCOME,12,Intragroup bank funding,
+INCOME,13,Interbank funding,
+INCOME,14,Demand,
+INCOME,15,Savings deposits,
+INCOME,16,Fixed and notice deposits,
+INCOME,17,NCDs issued,
+INCOME,18,Foreign funding,
+INCOME,19,Loans received under repurchase agreements,
+INCOME,20,Other funding liabilities,
+INCOME,21,"Interest expense i.r.o. debt instruments issued (refer DI 100, liability items 28 and 33)",
+INCOME,22,Total interest expense (total of items 11 and 21),+11 +21
+INCOME,23,Net interest turn (item 1 less item 22),+1 -22
+INCOME,24,Trading income (total of items 25 to 28),+25..28
+INCOME,25,Interest bearing,
+INCOME,26,Equities,
+INCOME,27,Other (including foreign-exchange earnings),
+INCOME,28,Net mark-to-market adjustments (total of items 29 and 30),+29 +30
+INCOME,29,Domestic trading portfolio,
+INCOME,30,Foreign-exchange trading portfolio,
+INCOME,31,Investment income (total of items 32 to 34),+32..34
+INCOME,32,Interest bearing,
+INCOME,33,Equities,
+INCOME,34,Other,
+INCOME,35,"Total of items 23, 24 and 31",+23 +24 +31
+INCOME,36,Fee income (total of items 37 and 38),+37 +38
+INCOME,37,Transaction-based banking-related fee income,
+INCOME,38,Knowledge-based fee income,
+INCOME,39,Operating expenses (total of items 40 to 44),+40..44
+INCOME,40,Staff,
+INCOME,41,Marketing and communication - excluding staff costs,
+INCOME,42,Bad debts written off directly against the income statement,
+INCOME,43,Depreciation,
+INCOME,44,Administrative and other operating expenses,
+INCOME,45,Provisions (total of items 46 to 50),+46 +49 +50
+INCOME,46,Specific provisions i.r.o. (total of items 47 and 48),+47 +48
+INCOME,47,Loans and advances included under asset item 52 on form DI 100,
+INCOME,48,Investments included under asset item 58 on form DI 100,
+INCOME,49,General debt provisions qualifying as secondary unimpaired reserves,
+INCOME,50,Other (including provisions credited to an interest suspense account),
+INCOME,51,Income before tax (total of items 35 and 36 less 39 and 45),+35 +36 -39 -45
+INCOME,52,Financial services levy,
+INCOME,53,Taxation (total of items 54 to 56),+54..56
+INCOME,54,Current,
+INCOME,55,Deferred,
+INCOME,56,Gross-up adjustment,
+INCOME,57,Net income after tax (item 51 less item 52 and 53),+51 -52 -53
+INCOME,58,Extraordinary items: consult AC 103 issued by the SA Institute of Chartered Accountants,
+INCOME,59,Prior-period adjustments: consult AC 103 issued by the SA Institute of Chartered Accountants,
+INCOME,60,Associate income (expenditure): consult AC 110 issued by the SA Institute of Chartered Accountants,
+INCOME,61,Reserves - Transfers to,
+INCOME,62,Reserves - Transfers from,
+INCOME,63,Dividends paid or proposed,
+INCOME,64,"RETAINED INCOME FOR THE PERIOD (item 57, plus or minus items 58 to 63)",+57 +58 +59 +60 -61 +62 -63
+INCOME,65,RETAINED INCOME AT BEGINNING OF THE PERIOD,
+INCOME,66,RETAINED INCOME AT END OF THE PERIOD (item 64 plus item 65),+64 +65

@@ -161,7 +161,7 @@ $270M against R1.5bn at year 3). One consistent model must replace both.
 
 **GAP, to be built with the CFO and an accountant:** a consistent three-to-five-year model (balance sheet, income statement, capital and liquidity, with customer, deposit,
 lending and cost drivers), a sponsor-bank revenue share, stress scenarios, and the pro forma returns (DI 100, 110, 200, 300, 400, 430, 700) regenerated from that model
-(`make proforma`). Line mappings to the form instructions are unverified (VERIFY-FORMS).
+(`make proforma`). DI 100 and DI 200 now use the forms' own line numbers (`docs/regulatory/returns/`); the transcription needs a second person's check.
 
 ## 9. Capital and funding plan
 

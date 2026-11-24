@@ -1,8 +1,56 @@
 {
-  "note": "ILLUSTRATIVE projection for three year-ends, to show the shape of the application pack. Replace with the CFO's projections from the business plan. Balances are cumulative ledger nets (credits less debits) in rand cents; year-to-date income and expense; each period sums to zero. Code 3003 is cash with the sponsor; 1001 deposits; 1020 loans; 1010 overdrafts; 2008/2007 interest income and expense; 2002 fees; 2006 write-offs; 2001 operating costs and capital paid in.",
+  "note": "ILLUSTRATIVE projection for three year-ends, to show the shape of the application pack. Replace with the CFO's projections from the business plan. Keys are a ledger account code, optionally with '/product' (a deposit product, or the deposit product interest was paid on); balances are cumulative ledger nets (credits less debits) in rand cents, income and expense year to date, and each period sums to zero. 3003 is cash with the sponsor; 1001 deposits (current, savings, notice); 1020 loans; 1010 overdrafts; 2008/2007 interest income and expense; 2002 fees; 2006 write-offs; 8001 member share capital paid in. It does not agree with the economics in docs/CONTEXT.md and must be rebuilt as one model (docs/licence-application/BUSINESS_PLAN_DRAFT.md section 8).",
   "periods": [
-    {"period": "Year 1 (2027-12)", "nets": {"1001": 15000000000, "1020": -1500000000, "1010": -300000000, "2008": 180000000, "2007": -60000000, "2002": 90000000, "2006": -10000000, "2001": 1000000000, "3003": -14400000000}},
-    {"period": "Year 2 (2028-12)", "nets": {"1001": 60000000000, "1020": -12000000000, "1010": -1500000000, "2008": 1300000000, "2007": -480000000, "2002": 450000000, "2006": -150000000, "2001": 2000000000, "3003": -49620000000}},
-    {"period": "Year 3 (2029-12)", "nets": {"1001": 150000000000, "1020": -40000000000, "1010": -5000000000, "2008": 4600000000, "2007": -1800000000, "2002": 1400000000, "2006": -600000000, "2001": 3000000000, "3003": -111600000000}}
+    {
+      "period": "Year 1 (2027-12)",
+      "nets": {
+        "1020": -1500000000,
+        "1010": -300000000,
+        "2008": 180000000,
+        "2002": 90000000,
+        "2006": -10000000,
+        "3003": -14400000000,
+        "1001/business-zar-current": 9000000000,
+        "1001/savings": 3750000000,
+        "1001/notice-32": 2250000000,
+        "2007/savings": -30000000,
+        "2007/notice-32": -30000000,
+        "8001": 1000000000
+      }
+    },
+    {
+      "period": "Year 2 (2028-12)",
+      "nets": {
+        "1020": -12000000000,
+        "1010": -1500000000,
+        "2008": 1300000000,
+        "2002": 450000000,
+        "2006": -150000000,
+        "3003": -49620000000,
+        "1001/business-zar-current": 36000000000,
+        "1001/savings": 15000000000,
+        "1001/notice-32": 9000000000,
+        "2007/savings": -240000000,
+        "2007/notice-32": -240000000,
+        "8001": 2000000000
+      }
+    },
+    {
+      "period": "Year 3 (2029-12)",
+      "nets": {
+        "1020": -40000000000,
+        "1010": -5000000000,
+        "2008": 4600000000,
+        "2002": 1400000000,
+        "2006": -600000000,
+        "3003": -111600000000,
+        "1001/business-zar-current": 90000000000,
+        "1001/savings": 37500000000,
+        "1001/notice-32": 22500000000,
+        "2007/savings": -900000000,
+        "2007/notice-32": -900000000,
+        "8001": 3000000000
+      }
+    }
   ]
 }

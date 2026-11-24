@@ -1,0 +1,77 @@
+section,line,label,sum
+LIABILITIES,1,Interbank funding - repayable in S A rand (total of items 2 and 3),+2 +3
+LIABILITIES,2,Intragroup bank funding,
+LIABILITIES,3,Interbank funding,
+LIABILITIES,4,Non-bank funding - repayable in S A rand (total of items 5 to 8),+5..8
+LIABILITIES,5,Demand,
+LIABILITIES,6,Savings deposits,
+LIABILITIES,7,Fixed and notice deposits,
+LIABILITIES,8,Negotiable certificates of deposit (NCDs) issued,
+LIABILITIES,9,Foreign funding - repayable in foreign currency (total of items 10 and 11),+10 +11
+LIABILITIES,10,Banks,
+LIABILITIES,11,Non-banks,
+LIABILITIES,12,Loans received under repurchase agreements (total of items 13 and 14),+13 +14
+LIABILITIES,13,Banks,
+LIABILITIES,14,Non-banks,
+LIABILITIES,15,Other funding liabilities - (including balances due to the S A Reserve Bank),
+LIABILITIES,16,"TOTAL FUNDING-RELATED LIABILITIES TO THE PUBLIC (total of items 1, 4, 9, 12 and 15)",+1 +4 +9 +12 +15
+LIABILITIES,17,"Acknowledgements of debt endorsed and rediscounted, but still outstanding on behalf of clients per contra, refer item 69 (total of items 18 to 21)",+18..21
+LIABILITIES,18,Acceptances outstanding,
+LIABILITIES,19,Commercial paper,
+LIABILITIES,20,Bills,
+LIABILITIES,21,Promissory notes and similar acknowledgements of debt,
+LIABILITIES,22,"Other liabilities and trade creditors, including impairments and tax liabilities",
+LIABILITIES,23,Capital and reserves (total of items 31 to 33),+31..33
+LIABILITIES,24,Primary - equity,
+LIABILITIES,25,Primary - reserves,
+LIABILITIES,26,Secondary - equity,
+LIABILITIES,27,Secondary - reserves,
+LIABILITIES,28,Secondary - debt instruments,
+LIABILITIES,29,Qualifying capital and reserves (total of items 24 to 28),+24..28
+LIABILITIES,30,Less: Impairments (section 48(5) of the Act),
+LIABILITIES,31,Net qualifying capital and reserves (item 29 less item 30),+29 -30
+LIABILITIES,32,"Profit not formally appropriated by board resolution (DI 200, item 66)",
+LIABILITIES,33,"Non-qualifying capital and reserves, including revaluations and other reserves and debt instruments not qualifying as secondary share capital and unimpaired reserves",
+LIABILITIES,34,"TOTAL LIABILITIES (total of items 16, 17, 22 and 23)",+16 +17 +22 +23
+ASSETS,35,Money (total of items 36 to 38),+36..38
+ASSETS,36,Legal tender in RSA,
+ASSETS,37,Gold coin and bullion and non-RSA currency (cash) holdings,
+ASSETS,38,Deposits with the S A Reserve Bank,
+ASSETS,39,Loans and advances (item 52 less item 53),+52 -53
+ASSETS,40,Interbank (including intragroup),
+ASSETS,41,Negotiable certificates of deposit (NCDs),
+ASSETS,42,"Instalment debtors, suspensive sales and leases",
+ASSETS,43,Mortgage loans,
+ASSETS,44,Credit card debtors less related unearned finance charges,
+ASSETS,45,"Acknowledgements of debt discounted, e.g. acceptances, com. paper, bills, prom. notes",
+ASSETS,46,Redeemable preference shares held to provide credit,
+ASSETS,47,Overdrafts and loans,
+ASSETS,48,Foreign currency loans and advances (repayable in foreign currency),
+ASSETS,49,Loans granted under resale agreements (total of items 50 and 51),+50 +51
+ASSETS,50,Banks,
+ASSETS,51,Non-banks,
+ASSETS,52,Total loans and advances (total of items 40 to 49),+40..49
+ASSETS,53,Less: Specific provisions,
+ASSETS,54,Trading portfolio after mark-to-market adjustments (total of items 55 to 57),+55..57
+ASSETS,55,Interest bearing,
+ASSETS,56,Equities,
+ASSETS,57,Other,
+ASSETS,58,Investment portfolio (total of items 59 to 61 less item 62),+59..61 -62
+ASSETS,59,Interest bearing,
+ASSETS,60,Listed equities and bank-related investments,
+ASSETS,61,Other (including unlisted equities),
+ASSETS,62,Less: Specific provisions,
+ASSETS,63,Total of trading and investment portfolios (total of items 54 and 58),+54 +58
+ASSETS,64,Fixed assets (total of items 65 to 68),+65..68
+ASSETS,65,Premises of bank,
+ASSETS,66,Other fixed property,
+ASSETS,67,"Computer equipment, including peripherals, at net book values",
+ASSETS,68,"Items other than 65 to 67, including vehicles, furniture and fittings, all at net book values",
+ASSETS,69,"Clients' liabilities for acknowledgements of debt outstanding, per contra, refer item 17 (total of items 70 to 73)",+70..73
+ASSETS,70,Acceptances outstanding,
+ASSETS,71,Commercial paper endorsed,
+ASSETS,72,Bills endorsed,
+ASSETS,73,Promissory notes and similar acknowledgements of debt endorsed,
+ASSETS,74,Other assets (including remittances in transit and properties in possession),
+ASSETS,75,Deferred tax,
+ASSETS,76,"TOTAL ASSETS (total of items 35, 39, 63, 64, 69, 74 and 75)",+35 +39 +63 +64 +69 +74 +75

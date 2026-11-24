@@ -33,16 +33,37 @@ institution classifies materiality; the 24 clock hours run from that decision. N
 differs from the preparer. It does not submit to the PA's Umoja portal (VERIFY-UMOJA); a person does. The 14 days are counted
 as 14x24 hours from notification (confirm with the PA).
 
-## Prudential returns framework (`internal/returns`)
+## Prudential returns (`internal/returns`)
 
-The frame only: line computation from named inputs, form arithmetic checks, reconciliation to other sources, preparer plus
-a different approver, tied to an evidence digest. It holds no line definitions. `Submittable` returns `ErrUnverified` until each
-line is verified against the form instructions by a named person (VERIFY-FORMS). Nothing is sent to the PA.
+The frame: line computation from named inputs, form arithmetic checks, reconciliation to other sources, preparer plus a different
+approver, tied to an evidence digest. `Submittable` returns `ErrUnverified` until every line has a named checker. Nothing is sent to
+the PA.
+
+**The official forms.** The PA moved every return out of the regulations into directives: BA returns in Banks Directive 1 of 2025, DI
+returns in a proposed mutual-bank directive of 13 August 2025 whose annexures carry every DI form and instruction. Sources, hashes and
+how to re-fetch them: `docs/regulatory/returns/SOURCES.md` and `scripts/fetch-return-forms.sh`. `docs/regulatory/returns/catalogue.csv`
+lists all 27 DI and 27 BA forms with frequency, deadline and how Forge treats each; a test keeps it and the code in step.
+
+- **DI 100 and DI 200** (`di.go`) use the forms' own line numbers (76 and 66 lines, in `forms/*.csv`, transcribed from the Gazette
+  scans by reading them; a second person must check them). Each total follows the form's own arithmetic. Ledger positions (asset,
+  code, product, net in rand) are placed on leaf lines by `mapDI100` and `mapDI200`; anything without a place is a problem, never
+  dropped. DI 100 must balance (line 76 = line 34) and its line 32 must equal DI 200 line 66 (`CrossCheck`). Only the total columns are
+  computed; the maturity split, averages, yields, risk-weight columns and cost of funds are not (`UnbuiltColumns`). Judgements in the
+  mapping (balances with the sponsor as interbank placements, FX fees as foreign-exchange earnings, DI 200 item 45 as 46 + 49 + 50 so
+  items 47 and 48 are not counted twice, the signs of items 58 to 63) are stated in the code and need the auditor's view.
+- **Nil returns** (`dicontrol.go`): DI 420, 430, 520, 525, 701, 702, 910 and 920 are filed as nil, and only when every ledger position
+  maps to a known DI 100 line (an unknown code could be exactly what the nil denies). DI 525 also needs a named person, because the
+  ledger cannot show that no borrower is a local government.
+- **Not applicable:** DI 099A, 401 and 403 (no off-shore or foreign operations, no subsidiaries).
+- **DI 099 control sheet:** two different officers (chief executive and chief accounting officer), only clean returns for the period,
+  the form-specific paragraphs only for forms in the set, and every qualification stated.
+- **Still to build:** DI 110, 300, 310, 400, 402, 410, 500, 505, 510, 600, 700, 900 and 930. BA returns stay on this repository's own
+  references (`statements.go`) while the bank route is only kept open.
 
 ## Not started
 
 - Balance of Payments data handed to the AD partner (VERIFY the division of responsibility).
-- The prudential return line definitions (BA 100 to BA 950, DI forms) and their submission channel.
+- The 13 DI forms still to build, the BA forms if the bank route is chosen, and the submission channel (the PA's Umoja portal).
 - The report builders that read compliance cases and ledger balances into a pack.
 - Any binary, schedule or ConnectRPC API.
 
