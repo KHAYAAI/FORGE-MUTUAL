@@ -108,7 +108,7 @@ export default function CurrenciesPage() {
           const account = accounts.find((a) => a.asset === c.asset);
           const detail = details.find((d) => d.asset === c.asset);
           return (
-            <li key={c.asset} className="flex flex-col justify-between gap-6 rounded-2xl border border-stone-200 bg-white shadow-sm p-8">
+            <li key={c.asset} className="flex flex-col justify-between gap-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
               <div>
                 <p className="text-sm text-stone-500">{c.name}</p>
                 <p className="mt-1 text-3xl font-light tabular-nums">

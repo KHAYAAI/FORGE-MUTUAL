@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import Notice from "@/components/Notice";
+import { CardArt } from "@/components/Visuals";
 import { api, errorText } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { formatMinor, parseToMinor } from "@/lib/money";
@@ -113,15 +114,17 @@ export default function CardsPage() {
       {done ? <Notice tone="success">{done}</Notice> : null}
       {cards === null ? <p className="text-stone-500">Loading…</p> : null}
       {cards?.length ? (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {cards.map((c) => (
             <CardItem key={c.card_id} card={c} onStatus={setStatus} onLimits={setLimits} onShow={show} />
           ))}
         </ul>
       ) : null}
       {cards ? (
-        <form onSubmit={issue} className="max-w-xl space-y-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label="Get a card">
-          <h2 className="text-2xl font-light tracking-tight">Get a card</h2>
+        <form onSubmit={issue} className="grid max-w-3xl gap-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8 md:grid-cols-2 md:items-center" aria-label="Get a card">
+          <div className="order-last md:order-first"><CardArt label={label} skin={(cards?.length ?? 0)} /></div>
+          <div className="space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight">Get a card</h2>
           <label className="block text-sm">
             <span className="font-medium">Name</span>
             <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2" />
@@ -129,6 +132,7 @@ export default function CardsPage() {
           <button type="submit" className="rounded-full bg-stone-900 px-6 py-3 text-white hover:bg-black">
             Get card
           </button>
+          </div>
         </form>
       ) : null}
     </section>
@@ -151,12 +155,18 @@ function CardItem({ card, onStatus, onLimits, onShow }: {
     setAuths(res.data?.authorisations ?? []);
   }
   return (
-    <li className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label={card.label}>
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm text-stone-500">{card.label}</p>
-        <p className="text-sm font-medium">{STATUS[card.status] ?? card.status}</p>
+    <li className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6" aria-label={card.label}>
+      <CardArt
+        label={card.label ?? ""}
+        last4={card.last4}
+        expiry={`${String(card.expiry_month ?? "").padStart(2, "0")}/${String(card.expiry_year ?? "").slice(-2)}`}
+        frozen={card.status !== "ACTIVE"}
+        skin={[...card.card_id].reduce((n, ch) => n + ch.charCodeAt(0), 0)}
+      />
+      <div className="mt-5 flex items-baseline justify-between gap-2">
+        <p className="font-medium">{card.label}</p>
+        <p className="text-sm font-medium text-stone-600">{STATUS[card.status] ?? card.status}</p>
       </div>
-      <p className="mt-1 text-2xl font-light tabular-nums">•••• {card.last4}</p>
       <p className="text-sm text-stone-500">
         Expires {String(card.expiry_month ?? "").padStart(2, "0")}/{card.expiry_year}
         {card.network === "SIMULATED" ? " · test card" : ""}

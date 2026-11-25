@@ -42,6 +42,8 @@ export default function Nav() {
     };
   }, [pathname]);
 
+  const [menu, setMenu] = useState(false);
+  useEffect(() => setMenu(false), [pathname]);
   const [on, setOn] = useState<Record<string, boolean>>({});
   const isCustomer = who?.signedIn === true && who.customer;
   useEffect(() => {
@@ -83,48 +85,91 @@ export default function Nav() {
     );
   }
 
+  const linkList = (
+    <nav aria-label="Main" className="flex flex-col gap-1 px-3 text-sm lg:flex-1">
+      {links.map((l) => {
+        const active = pathname.startsWith(l.href);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 lg:py-2 ${active ? "bg-stone-100 font-medium text-stone-950" : "text-stone-600 hover:bg-stone-50 hover:text-stone-950"}`}
+          >
+            <Icon name={l.label} />
+            {l.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+  const footer = (
+    <div className="flex flex-col gap-1 border-t border-stone-200 px-3 py-3 text-sm">
+      {who.customer ? (
+        <a href="/api/v1/my-data" className="rounded-lg px-3 py-2 text-stone-500 hover:bg-stone-50" title="Download what Forge holds about you">
+          My data
+        </a>
+      ) : null}
+      <div className="flex items-center gap-3 px-3 py-2">
+        <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-sky-50 text-xs font-semibold text-sky-700">
+          {who.actor.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="truncate text-stone-700" data-testid="signed-in-as">
+          {who.actor}
+        </span>
+      </div>
+      <button type="button" onClick={signOut} className="rounded-lg border border-stone-200 px-3 py-2 text-stone-700 hover:bg-stone-50">
+        Sign out
+      </button>
+    </div>
+  );
+
   return (
-    <aside className="border-b border-stone-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-b-0">
-      <div className="flex items-center justify-between px-5 py-4 lg:py-6">
+    <>
+      {/* Phones and tablets: a slim top bar with a menu. */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stone-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/accounts" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
           <Mark /> Forge
         </Link>
-      </div>
-      <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-3 pb-3 text-sm lg:flex-1 lg:flex-col lg:overflow-visible lg:pb-0">
-        {links.map((l) => {
-          const active = pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-current={active ? "page" : undefined}
-              className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 ${active ? "bg-stone-100 font-medium text-stone-950" : "text-stone-600 hover:bg-stone-50 hover:text-stone-950"}`}
-            >
-              <Icon name={l.label} />
-              {l.label}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="flex items-center gap-2 border-t border-stone-200 px-3 py-3 text-sm lg:flex-col lg:items-stretch">
-        {who.customer ? (
-          <a href="/api/v1/my-data" className="rounded-lg px-3 py-2 text-stone-500 hover:bg-stone-50" title="Download what Forge holds about you">
-            My data
-          </a>
-        ) : null}
-        <div className="flex flex-1 items-center gap-3 px-3 py-2">
-          <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-sky-50 text-xs font-semibold text-sky-700">
-            {who.actor.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="truncate text-stone-700" data-testid="signed-in-as">
-            {who.actor}
-          </span>
-        </div>
-        <button type="button" onClick={signOut} className="rounded-lg border border-stone-200 px-3 py-2 text-stone-700 hover:bg-stone-50">
-          Sign out
+        <button
+          type="button"
+          onClick={() => setMenu((m) => !m)}
+          aria-expanded={menu}
+          aria-controls="mobile-menu"
+          className="grid h-10 w-10 place-items-center rounded-lg border border-stone-200 text-stone-700"
+        >
+          <span className="sr-only">{menu ? "Close menu" : "Open menu"}</span>
+          <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d={menu ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"} />
+          </svg>
         </button>
-      </div>
-    </aside>
+      </header>
+      {menu ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button type="button" aria-label="Close menu" onClick={() => setMenu(false)} className="absolute inset-0 bg-stone-950/30" />
+          <div id="mobile-menu" className="absolute top-0 bottom-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-white pt-4 shadow-xl">
+            <div className="px-5 pb-4">
+              <Link href="/accounts" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                <Mark /> Forge
+              </Link>
+            </div>
+            <div className="flex-1">{linkList}</div>
+            {footer}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Laptops and desktops: a fixed sidebar. */}
+      <aside className="hidden border-r border-stone-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col xl:w-64">
+        <div className="px-5 py-6">
+          <Link href="/accounts" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <Mark /> Forge
+          </Link>
+        </div>
+        {linkList}
+        {footer}
+      </aside>
+    </>
   );
 }
 

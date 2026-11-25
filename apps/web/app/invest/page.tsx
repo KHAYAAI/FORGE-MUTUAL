@@ -102,7 +102,7 @@ function OfferCard({ offer, onContinue }: { offer: Offer; onContinue: (o: Offer)
     setConsent(res.data);
   }
   return (
-    <li className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label={offer.title}>
+    <li className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8" aria-label={offer.title}>
       <p className="text-sm text-stone-500">
         {CATEGORY[offer.category ?? ""] ?? offer.category} · {offer.provider_name}
       </p>

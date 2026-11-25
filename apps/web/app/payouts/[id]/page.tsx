@@ -101,7 +101,7 @@ export default function PayoutBatchPage() {
         </div>
       ) : null}
 
-      <table className="w-full border-collapse text-left text-sm">
+      <div className="-mx-1 overflow-x-auto px-1"><table className="w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-stone-200 text-stone-500">
             <th className="py-2 font-medium">Item</th>
@@ -121,7 +121,7 @@ export default function PayoutBatchPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </section>
   );
 }

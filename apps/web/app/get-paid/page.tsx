@@ -89,7 +89,7 @@ export default function GetPaidPage() {
       {error ? <Notice tone="error">{error}</Notice> : null}
       {done ? <Notice tone="success">{done}</Notice> : null}
 
-      <form onSubmit={create} className="grid max-w-3xl gap-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8 sm:grid-cols-2" aria-label="New payment request">
+      <form onSubmit={create} className="grid max-w-3xl gap-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8 sm:grid-cols-2" aria-label="New payment request">
         <label className="text-sm">
           <span className="font-medium">Your business name, as the customer sees it</span>
           <input required value={form.merchant} onChange={(e) => setForm({ ...form, merchant: e.target.value })} maxLength={80} className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2" />
@@ -166,7 +166,7 @@ export default function GetPaidPage() {
       {settlements.length ? (
         <div>
           <h2 className="text-2xl font-light tracking-tight">Settlements</h2>
-          <table className="mt-4 w-full text-left text-sm">
+          <div className="-mx-1 overflow-x-auto px-1"><table className="mt-4 w-full text-left text-sm">
             <thead className="text-stone-500">
               <tr>
                 <th className="py-2 font-normal">Day</th>
@@ -187,7 +187,7 @@ export default function GetPaidPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       ) : null}
     </section>

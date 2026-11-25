@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Notice from "@/components/Notice";
+import { CurrencyBadge } from "@/components/Visuals";
 import { api, errorText } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { formatMinor } from "@/lib/money";
@@ -43,7 +44,7 @@ export default function AccountsPage() {
             Your accounts
           </h1>
         </div>
-        <div className="flex gap-2 text-sm">
+        <div className="grid w-full grid-cols-3 gap-2 text-center text-sm whitespace-nowrap sm:flex sm:w-auto">
           <Link href="/payments/new" className="rounded-lg bg-stone-950 px-4 py-2 font-medium text-white hover:bg-black">
             Send money
           </Link>
@@ -57,9 +58,9 @@ export default function AccountsPage() {
       </div>
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {accounts.map((a) => (
-          <li key={a.account_id} className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium text-stone-500">{a.asset} account</p>
+          <li key={a.account_id} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3"><CurrencyBadge asset={a.asset} /><p className="text-sm font-medium text-stone-500">{a.asset} account</p></div>
               <Link href={`/accounts/${encodeURIComponent(a.account_id)}`} className="text-sm font-medium text-sky-700 hover:underline">
                 Activity
               </Link>

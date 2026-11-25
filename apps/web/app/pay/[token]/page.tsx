@@ -34,7 +34,7 @@ export default function PayPage() {
     <section className="mx-auto max-w-md space-y-6 py-10" aria-labelledby="pay-heading">
       {error ? <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-red-900">{error}</p> : null}
       {co ? (
-        <div className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8">
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
           <p className="text-sm text-stone-500">Pay {co.merchant_name}</p>
           <h1 id="pay-heading" className="mt-2 text-5xl font-light tabular-nums tracking-tight">
             {formatMinor(co.amount_minor, "ZAR")}

@@ -56,7 +56,7 @@ export default function ActivityPage() {
       {error ? <Notice tone="error">{error}</Notice> : null}
       {!loading && !error && entries.length === 0 ? <p className="text-stone-600">No activity yet.</p> : null}
       {entries.length > 0 ? (
-        <table className="w-full border-collapse text-left text-sm">
+        <div className="-mx-1 overflow-x-auto px-1"><table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-stone-200 text-stone-500">
               <th className="py-2 font-medium">When</th>
@@ -73,7 +73,7 @@ export default function ActivityPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       ) : null}
       {hasMore ? (
         <button

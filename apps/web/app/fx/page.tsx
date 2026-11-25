@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import Notice from "@/components/Notice";
+import { ExchangeArt } from "@/components/Visuals";
 import { api, errorText } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { formatMinor, parseToMinor } from "@/lib/money";
@@ -89,7 +90,10 @@ export default function FxPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Convert currency</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight">Convert currency</h1>
+        <ExchangeArt from={pair.split("-")[0]} to={pair.split("-")[1]} />
+      </div>
       {error ? <Notice tone="error">{error}</Notice> : null}
       {deal ? (
         <Notice tone="success">
@@ -134,7 +138,7 @@ export default function FxPage() {
       </form>
 
       {quote ? (
-        <div className="space-y-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label="Your quote">
+        <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8" aria-label="Your quote">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-stone-500">You pay</dt>
             <dd className="tabular-nums">{formatMinor(quote.sell_amount_minor, quote.sell_asset)}</dd>
