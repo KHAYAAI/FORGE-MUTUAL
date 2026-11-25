@@ -256,6 +256,8 @@ export interface paths {
                         regulator?: string;
                         licence_number?: string;
                         licence_source_url?: string;
+                        /** @description https address the customer's consented details are sent to; empty means nothing is sent */
+                        delivery_url?: string;
                     };
                 };
             };
@@ -419,6 +421,9 @@ export interface paths {
                         title?: string;
                         summary?: string;
                         handoff_url?: string;
+                        /** @description The most Forge may be paid for introducing a customer, in rand cents; "0" for nothing. The statement the customer acknowledges is generated from this. */
+                        referral_fee_cap_minor?: string;
+                        /** @description An optional extra sentence added to the generated fee line */
                         fee_disclosure?: string;
                     };
                 };
@@ -431,6 +436,91 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["PartnerOffer"];
+                    };
+                };
+                403: components["responses"]["Error"];
+                404: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/partners/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every referral, whether the customer's details reached the provider, and the fees booked. Compliance or operations. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PartnerReferralList"];
+                    };
+                };
+                403: components["responses"]["Error"];
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/partners/referrals/{referral}/fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter (first person) or confirm (a different person) a referral fee received, against its bank statement line. Operations. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    referral: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        amount_minor?: string;
+                        bank_reference?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PartnerFeeResult"];
                     };
                 };
                 403: components["responses"]["Error"];
@@ -503,6 +593,9 @@ export interface components {
             licence_verified_at?: string;
             licence_verified_by?: string;
             licence_expires_at?: string;
+            /** @description When the regulator's register last confirmed the licence automatically */
+            licence_checked_at?: string;
+            delivery_configured?: boolean;
         };
         PartnerProviderList: {
             providers: components["schemas"]["PartnerProvider"][];
@@ -517,6 +610,8 @@ export interface components {
             statement: string;
             statement_hash?: string;
             fee_disclosure?: string;
+            referral_fee_cap_minor?: string;
+            shares?: string[];
         };
         PartnerAdminOffer: {
             offer: components["schemas"]["PartnerOffer"];
@@ -527,6 +622,35 @@ export interface components {
         };
         PartnerOfferList: {
             offers: components["schemas"]["PartnerAdminOffer"][];
+        };
+        PartnerReferral: {
+            referral_id: string;
+            offer_id?: string;
+            offer_title?: string;
+            provider_id?: string;
+            provider_name?: string;
+            party_id?: string;
+            created_at?: string;
+            /** @description PENDING, SENT, FAILED, CANCELLED or NOT_CONFIGURED */
+            delivery_status: string;
+            delivery_detail?: string;
+            delivered_at?: string;
+            fee_cap_minor?: string;
+            fees_recorded_minor?: string;
+        };
+        PartnerReferralList: {
+            referrals: components["schemas"]["PartnerReferral"][];
+        };
+        PartnerFeeResult: {
+            fee?: {
+                referral_id?: string;
+                amount_minor?: string;
+                bank_reference?: string;
+                recorded_by?: string;
+                approved_by?: string;
+                recorded_at?: string;
+            };
+            awaiting_second_person?: boolean;
         };
         PartnerOfferStatus: {
             status: string;

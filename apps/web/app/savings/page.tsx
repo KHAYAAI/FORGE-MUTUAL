@@ -75,7 +75,7 @@ export default function SavingsPage() {
   return (
     <section className="space-y-10" aria-labelledby="savings-heading">
       <div>
-        <h1 id="savings-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="savings-heading" className="text-3xl font-semibold tracking-tight">
           Savings
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
@@ -85,7 +85,7 @@ export default function SavingsPage() {
       {error ? <Notice tone="error">{error}</Notice> : null}
       {done ? <Notice tone="success">{done}</Notice> : null}
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="motion-stagger grid gap-4 sm:grid-cols-2">
         {accounts.map((a) => {
           const p = products.find((x) => x.product_id === a.product_id);
           return <SavingsCard key={a.account_id} account={a} name={p?.name ?? a.product_id} onMove={move} onCancel={cancel} />;
@@ -97,7 +97,7 @@ export default function SavingsPage() {
           <h2 className="text-2xl font-light tracking-tight">Open an account</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-3">
             {unopened.map((p) => (
-              <li key={p.product_id} className="flex flex-col justify-between gap-6 rounded-[2rem] bg-stone-100 p-8">
+              <li key={p.product_id} className="lift flex flex-col justify-between gap-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
                 <div>
                   <p className="text-xl font-light">{p.name}</p>
                   <p className="mt-1 text-3xl font-light">{pct(p.rate_bps)}</p>
@@ -130,12 +130,12 @@ function SavingsCard({ account, name, onMove, onCancel }: {
   const [amount, setAmount] = useState("");
   const pending = account.notices.filter((n) => n.status === "PENDING");
   return (
-    <li className="rounded-[2rem] bg-stone-100 p-8" aria-label={name}>
+    <li className="lift rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8" aria-label={name}>
       <div className="flex items-baseline justify-between">
         <p className="text-sm text-stone-500">{name}</p>
         <p className="text-sm text-stone-500">{pct(account.rate_bps)} a year</p>
       </div>
-      <p className="mt-1 text-4xl font-light tabular-nums" data-testid="savings-balance">{formatMinor(account.balance_minor, "ZAR")}</p>
+      <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums" data-testid="savings-balance">{formatMinor(account.balance_minor, "ZAR")}</p>
       <dl className="mt-3 grid grid-cols-2 gap-1 text-sm">
         <dt className="text-stone-500">Interest this month</dt>
         <dd className="tabular-nums">{formatMinor(account.accrued_minor, "ZAR")}</dd>

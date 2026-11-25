@@ -1,12 +1,12 @@
 section,title,register_ids,owner_role,note
-A1,Legal form and constitution,LIC-01;LIC-07,Head of Legal (R26) with the lawyer,Mutual bank constitution or company articles; see docs/governance/LEGAL_FORMS.md
+A1,Legal form and constitution,LIC-01;LIC-07,Head of Legal (R26) with the lawyer,Mutual bank constitution or company articles; draft in docs/licence-application/CONSTITUTION_DRAFT.md; see docs/governance/LEGAL_FORMS.md
 A2,Name and naming authorisation,LIC-17,Chief Compliance Officer (R04),No 'bank' or 'mutual bank' in public naming until authorised
 A3,Capital and proof of funds,LIC-02,CFO (R03) and the founder,R10m (mutual) or R250m (bank) with written proof
 A4,Founders and shareholders or members,LIC-05;LIC-07,Company Secretary (R17),Register of founders and members; fit and proper for significant holders; membership module checks seven founders
 B1,Board and executive officers,LIC-06;MR-03,Board chair (R05) and Nominations Committee,Composition and independence; at least two employee directors on the mutual route
 B2,Fit-and-proper statements (DI 020 / BA 020),BR-06,Company Secretary (R17),See docs/governance/FIT_AND_PROPER_PACK.md; nobody has filed
 B3,Directors' report on internal control,MR-02,Board (Audit Committee),Yearly report to the Registrar
-C1,Business plan and public-interest motivation,LIC-15,Founder and CFO,Outline only; see docs/regulatory/policies/business-plan-outline.md
+C1,Business plan and public-interest motivation,LIC-15,Founder and CFO,Draft in docs/licence-application/BUSINESS_PLAN_DRAFT.md; outline in docs/regulatory/policies/business-plan-outline.md
 C2,Financial projections and pro forma returns,LIC-08;LIC-11;BR-07;MR-06;RET-01;MR-05,CFO (R03) and Regulatory Reporting (R22),make proforma builds DI/BA 100 and 200 from projections; other forms outstanding; figures are illustrative
 D1,Risk management framework and policies,LIC-13;BR-01;BR-02;MR-01,Chief Risk Officer (R02),Risk framework and appetite drafted; appetite numbers await the owner
 D2,Capital adequacy and liquidity,LIC-03;LIC-04;LIC-12;BR-04,Head of Treasury (R13),Capital and leverage ratios and the liquidity coverage ratio are computed from the ledger (treasury-risk); concentration policy and liquidity plan drafted

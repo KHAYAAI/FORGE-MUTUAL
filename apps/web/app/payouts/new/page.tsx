@@ -81,7 +81,7 @@ export default function NewPayoutPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-4xl font-light tracking-tight">New bulk payout</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">New bulk payout</h1>
       <Notice tone="info">
         You create the batch. A different person must approve it before any payment is sent.
       </Notice>

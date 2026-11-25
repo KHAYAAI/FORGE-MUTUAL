@@ -20,7 +20,7 @@ test("the third-party statement is shown in full and must be acknowledged before
   let referral: unknown = null;
   let consent: unknown = null;
   let consentGranted = false;
-  const view = () => ({ granted: consentGranted, consent_id: consentGranted ? "consent-1" : "", provider_name: "Acme Wealth (Pty) Ltd", shares: ["your name", "your email address and phone number held by Forge"] });
+  const view = () => ({ granted: consentGranted, consent_id: consentGranted ? "consent-1" : "", provider_name: "Acme Wealth (Pty) Ltd", shares: ["your name"] });
   await page.route("**/api/v1/offers", (route) => reply(route, 200, { offers: [offer] }));
   await page.route("**/api/v1/offers/acme-tfsa/consent", (route) => {
     if (route.request().method() === "POST") {
@@ -50,7 +50,9 @@ test("the third-party statement is shown in full and must be acknowledged before
 
   const go = card.getByRole("button", { name: "Continue to Acme Wealth (Pty) Ltd" });
   const sharing = card.getByRole("group", { name: "Sharing your details with Acme Wealth (Pty) Ltd" });
-  await expect(sharing).toContainText("your email address and phone number held by Forge");
+  await expect(sharing).toContainText("your name");
+  await expect(sharing).not.toContainText("email");
+  await expect(sharing).toContainText("cannot take back details already sent");
   await expect(go).toBeDisabled();
   await expect(sharing.getByRole("button", { name: "I agree to share these details" })).toBeDisabled();
   await card.getByRole("checkbox").check();

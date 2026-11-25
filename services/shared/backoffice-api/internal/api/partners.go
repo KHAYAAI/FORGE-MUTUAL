@@ -70,13 +70,14 @@ func (a *API) registerProvider(w http.ResponseWriter, r *http.Request, s Session
 		Regulator        string `json:"regulator"`
 		LicenceNumber    string `json:"licence_number"`
 		LicenceSourceURL string `json:"licence_source_url"`
+		DeliveryURL      string `json:"delivery_url"`
 	}
 	if !decode(w, r, &req) {
 		return
 	}
 	res, err := a.Services.Partners.RegisterProvider(r.Context(), connect.NewRequest(&offersv1.RegisterProviderRequest{
 		ProviderId: req.ProviderID, Name: req.Name, LicenceType: req.LicenceType, Regulator: req.Regulator, LicenceNumber: req.LicenceNumber,
-		LicenceSourceUrl: req.LicenceSourceURL, Actor: s.Actor}))
+		LicenceSourceUrl: req.LicenceSourceURL, DeliveryUrl: req.DeliveryURL, Actor: s.Actor}))
 	if err != nil {
 		writeErr(w, err)
 		return
@@ -127,20 +128,21 @@ func (a *API) upsertPartnerOffer(w http.ResponseWriter, r *http.Request, s Sessi
 		return
 	}
 	var req struct {
-		OfferID       string `json:"offer_id"`
-		ProviderID    string `json:"provider_id"`
-		Category      string `json:"category"`
-		Title         string `json:"title"`
-		Summary       string `json:"summary"`
-		HandoffURL    string `json:"handoff_url"`
-		FeeDisclosure string `json:"fee_disclosure"`
+		OfferID             string `json:"offer_id"`
+		ProviderID          string `json:"provider_id"`
+		Category            string `json:"category"`
+		Title               string `json:"title"`
+		Summary             string `json:"summary"`
+		HandoffURL          string `json:"handoff_url"`
+		ReferralFeeCapMinor string `json:"referral_fee_cap_minor"` // the most Forge may be paid, rand cents; "0" for nothing
+		FeeDisclosure       string `json:"fee_disclosure"`         // an optional extra sentence
 	}
 	if !decode(w, r, &req) {
 		return
 	}
 	res, err := a.Services.Partners.UpsertOffer(r.Context(), connect.NewRequest(&offersv1.UpsertOfferRequest{
 		OfferId: req.OfferID, ProviderId: req.ProviderID, Category: req.Category, Title: req.Title, Summary: req.Summary,
-		HandoffUrl: req.HandoffURL, FeeDisclosure: req.FeeDisclosure, Actor: s.Actor}))
+		HandoffUrl: req.HandoffURL, ReferralFeeCapMinor: req.ReferralFeeCapMinor, FeeDisclosure: req.FeeDisclosure, Actor: s.Actor}))
 	if err != nil {
 		writeErr(w, err)
 		return
@@ -160,6 +162,41 @@ func (a *API) setPartnerOfferStatus(w http.ResponseWriter, r *http.Request, s Se
 	}
 	res, err := a.Services.Partners.SetOfferStatus(r.Context(), connect.NewRequest(&offersv1.SetOfferStatusRequest{
 		OfferId: r.PathValue("offer"), Status: req.Status, Actor: s.Actor}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writePartners(w, http.StatusOK, res.Msg)
+}
+
+// Referrals: whether each customer's details reached the provider, and the referral fees booked. Compliance and operations both look;
+// only operations records a fee, and a fee needs two different operations people (the first proposes, the second confirms from their own session).
+
+func (a *API) listPartnerReferrals(w http.ResponseWriter, r *http.Request, _ Session) {
+	if !a.partnersOffered(w) {
+		return
+	}
+	res, err := a.Services.Partners.ListAdminReferrals(r.Context(), connect.NewRequest(&offersv1.ListAdminReferralsRequest{}))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writePartners(w, http.StatusOK, res.Msg)
+}
+
+func (a *API) recordReferralFee(w http.ResponseWriter, r *http.Request, s Session) {
+	if !a.partnersOffered(w) {
+		return
+	}
+	var req struct {
+		AmountMinor   string `json:"amount_minor"`
+		BankReference string `json:"bank_reference"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	res, err := a.Services.Partners.RecordReferralFee(r.Context(), connect.NewRequest(&offersv1.RecordReferralFeeRequest{
+		ReferralId: r.PathValue("referral"), AmountMinor: req.AmountMinor, BankReference: req.BankReference, Officer: s.Actor}))
 	if err != nil {
 		writeErr(w, err)
 		return

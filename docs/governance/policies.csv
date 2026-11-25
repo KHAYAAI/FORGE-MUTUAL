@@ -20,7 +20,7 @@ Risk and capital,credit-risk-policy.md,Credit risk policy,"Head of Credit (R15, 
 Risk and capital,market-and-interest-rate-risk-policy.md,Market and interest rate risk policy,"Head of Treasury (R13, VACANT)","Board, on ALCO and Risk Committee recommendation",Yearly,LIC-13;MR-01;EXC-02,Draft 0.1
 Risk and capital,operational-risk-policy.md,Operational risk policy,"Chief Risk Officer (R02, VACANT)","Board, on Risk Committee recommendation",Yearly,LIC-13;BR-02;MR-01,Draft 0.1
 Risk and capital,concentration-policy.md,Deposit concentration and liquidity limits policy,"Head of Treasury (R13, VACANT)","Board, on ALCO recommendation",Yearly,BR-04,Draft
-Risk and capital,liquidity-and-contingency-funding-plan.md,Liquidity risk framework and contingency funding plan (Banks Act regulations),"Head of Treasury (R13, VACANT)","Board, on ALCO recommendation",Yearly,BR-04;LIC-04,Draft
+Risk and capital,liquidity-and-contingency-funding-plan.md,Liquidity risk framework and contingency funding plan (Mutual Banks Act s.50 and Banks Act regulations),"Head of Treasury (R13, VACANT)","Board, on ALCO recommendation",Yearly,BR-04;LIC-04,Draft
 Risk and capital,recovery-plan.md,"Business continuity, disaster recovery and recovery plan","Chief Risk Officer (R02, VACANT)",Board,Yearly,BR-04;JS2-12;JS2-13,Draft
 Risk and capital,new-product-approval-policy.md,New product approval policy,"Head of Product (R18, VACANT)",Board,Yearly,BR-02;LIC-13,Draft 0.1
 Finance and reporting,internal-control-over-financial-reporting.md,Internal control over financial reporting,"Chief Financial Officer (R03, VACANT)",Audit Committee,Yearly,MR-02;RET-01;BR-07,Draft 0.1
@@ -54,3 +54,6 @@ Third parties,exit-plans.md,Exit plans for providers (Directive 3 of 2018; Guida
 Third parties,provider-contract-schedule.md,Provider contract schedule: minimum clauses,"Head of Legal (R26, VACANT)","Board, on Audit Committee recommendation",Yearly,D3-05;D3-07;OUT-03;OUT-06;JN-04;POP-08,Draft 0.1
 "Technology, cyber and resilience",business-impact-analysis.md,Business impact analysis,"Business Continuity Manager (R28, VACANT)",IT and Cyber Committee,Yearly,G4-02;JS1-12;OUT-05,Draft 0.1
 "Compliance, financial crime and conduct",cash-policy.md,Cash policy,"Money Laundering Reporting Officer (R06, VACANT)","Board, on Risk and Capital Management Committee recommendation","Yearly, and before any cash channel is added",FIC-07;FIC-10,Draft 0.1
+Risk and capital,large-exposures-policy.md,Large exposures and investment limits policy,"Chief Risk Officer (R02, VACANT)","Board, on risk committee recommendation",Yearly,LIC-14;MR-01,Draft
+"Compliance, financial crime and conduct",deposit-insurance-policy.md,Deposit insurance policy (CODI),"Chief Financial Officer (R03, VACANT)",Board,Yearly,DI-01;DI-02,Draft
+Governance,membership-and-surplus-policy.md,Membership and surplus distribution policy,"Company Secretary (R17, VACANT)","Board, then members' meeting",Yearly,LIC-07,Draft

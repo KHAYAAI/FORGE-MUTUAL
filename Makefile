@@ -278,6 +278,7 @@ test-reg-reporting:
 # backup freshness script. No database, no Docker. Needs python3 and bash.
 test-regulatory:
 	python3 -I scripts/check-regulatory-register.py
+	python3 -I scripts/build-policy-map.py --check
 	python3 -I scripts/check-asset-register.py
 	python3 -I scripts/check-data-classes.py
 	python3 -I scripts/build-governance.py --check

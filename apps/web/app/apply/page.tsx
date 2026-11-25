@@ -28,7 +28,7 @@ export default function ApplyLanding() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-20 sm:px-6" aria-label="Choose an account">
-        <h2 className="max-w-2xl text-4xl font-light tracking-tight sm:text-5xl">Choose your account.</h2>
+        <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl">Choose your account.</h2>
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           <Choice title="Personal account" text="For you. Your South African ID and a selfie are all it takes." href="/apply/personal" />
           <Choice

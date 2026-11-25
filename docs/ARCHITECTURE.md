@@ -712,7 +712,7 @@ sequenceDiagram
   WS->>WF: Start workflow (workflow ID = idempotency key)
   WF->>POL: Check limits, sector, step-up
   POL-->>WF: allow / deny / step-up
-  WF->>CMP: Screen beneficiary and country; capture exchange-control data
+  WF->>CMP: Screen beneficiary and country, capture exchange-control data
   CMP-->>WF: clear / hold
   WF->>LG: Pending transfer: customer ZAR -> AD_PARTNER_SETTLEMENT (+ fee leg)
   LG-->>WF: transfer_ids

@@ -22,21 +22,23 @@ const (
 )
 
 type Offer struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	OfferId       string                 `protobuf:"bytes,1,opt,name=offer_id,json=offerId,proto3" json:"offer_id,omitempty"`
-	Category      string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"` // INVESTMENTS or CRYPTO_ASSETS
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Summary       string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
-	ProviderName  string                 `protobuf:"bytes,5,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
-	LicenceType   string                 `protobuf:"bytes,6,opt,name=licence_type,json=licenceType,proto3" json:"licence_type,omitempty"` // FSP or CASP
-	LicenceNumber string                 `protobuf:"bytes,7,opt,name=licence_number,json=licenceNumber,proto3" json:"licence_number,omitempty"`
-	Regulator     string                 `protobuf:"bytes,8,opt,name=regulator,proto3" json:"regulator,omitempty"`                               // for example "FSCA"
-	Statement     string                 `protobuf:"bytes,9,opt,name=statement,proto3" json:"statement,omitempty"`                               // the mandatory third-party statement, generated; show it in full
-	StatementHash string                 `protobuf:"bytes,10,opt,name=statement_hash,json=statementHash,proto3" json:"statement_hash,omitempty"` // sent back in CreateReferral to prove this exact text was acknowledged
-	FeeDisclosure string                 `protobuf:"bytes,11,opt,name=fee_disclosure,json=feeDisclosure,proto3" json:"fee_disclosure,omitempty"`
-	ProviderId    string                 `protobuf:"bytes,12,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"` // for the consent a referral needs (purpose share_with_partner, scope referral:<provider_id>)
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	OfferId             string                 `protobuf:"bytes,1,opt,name=offer_id,json=offerId,proto3" json:"offer_id,omitempty"`
+	Category            string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"` // INVESTMENTS or CRYPTO_ASSETS
+	Title               string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Summary             string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
+	ProviderName        string                 `protobuf:"bytes,5,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
+	LicenceType         string                 `protobuf:"bytes,6,opt,name=licence_type,json=licenceType,proto3" json:"licence_type,omitempty"` // FSP or CASP
+	LicenceNumber       string                 `protobuf:"bytes,7,opt,name=licence_number,json=licenceNumber,proto3" json:"licence_number,omitempty"`
+	Regulator           string                 `protobuf:"bytes,8,opt,name=regulator,proto3" json:"regulator,omitempty"`                               // for example "FSCA"
+	Statement           string                 `protobuf:"bytes,9,opt,name=statement,proto3" json:"statement,omitempty"`                               // the mandatory third-party statement, generated; show it in full
+	StatementHash       string                 `protobuf:"bytes,10,opt,name=statement_hash,json=statementHash,proto3" json:"statement_hash,omitempty"` // sent back in CreateReferral to prove this exact text was acknowledged
+	FeeDisclosure       string                 `protobuf:"bytes,11,opt,name=fee_disclosure,json=feeDisclosure,proto3" json:"fee_disclosure,omitempty"`
+	ReferralFeeCapMinor string                 `protobuf:"bytes,13,opt,name=referral_fee_cap_minor,json=referralFeeCapMinor,proto3" json:"referral_fee_cap_minor,omitempty"` // the most Forge may be paid for introducing a customer to this product; "0" means nothing
+	Shares              []string               `protobuf:"bytes,14,rep,name=shares,proto3" json:"shares,omitempty"`                                                          // exactly what Forge sends the provider if the customer consents: the same list the sender uses
+	ProviderId          string                 `protobuf:"bytes,12,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`                                // for the consent a referral needs (purpose share_with_partner, scope referral:<provider_id>)
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Offer) Reset() {
@@ -144,6 +146,20 @@ func (x *Offer) GetFeeDisclosure() string {
 		return x.FeeDisclosure
 	}
 	return ""
+}
+
+func (x *Offer) GetReferralFeeCapMinor() string {
+	if x != nil {
+		return x.ReferralFeeCapMinor
+	}
+	return ""
+}
+
+func (x *Offer) GetShares() []string {
+	if x != nil {
+		return x.Shares
+	}
+	return nil
 }
 
 func (x *Offer) GetProviderId() string {
@@ -542,6 +558,7 @@ type RegisterProviderRequest struct {
 	LicenceNumber    string                 `protobuf:"bytes,5,opt,name=licence_number,json=licenceNumber,proto3" json:"licence_number,omitempty"`
 	LicenceSourceUrl string                 `protobuf:"bytes,6,opt,name=licence_source_url,json=licenceSourceUrl,proto3" json:"licence_source_url,omitempty"` // the regulator's register entry, https
 	Actor            string                 `protobuf:"bytes,7,opt,name=actor,proto3" json:"actor,omitempty"`
+	DeliveryUrl      string                 `protobuf:"bytes,8,opt,name=delivery_url,json=deliveryUrl,proto3" json:"delivery_url,omitempty"` // where Forge sends a referred customer's details (https, the provider's own domain); empty: nothing is sent
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -625,19 +642,28 @@ func (x *RegisterProviderRequest) GetActor() string {
 	return ""
 }
 
+func (x *RegisterProviderRequest) GetDeliveryUrl() string {
+	if x != nil {
+		return x.DeliveryUrl
+	}
+	return ""
+}
+
 type Provider struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	ProviderId        string                 `protobuf:"bytes,1,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
-	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	LicenceType       string                 `protobuf:"bytes,3,opt,name=licence_type,json=licenceType,proto3" json:"licence_type,omitempty"`
-	Regulator         string                 `protobuf:"bytes,4,opt,name=regulator,proto3" json:"regulator,omitempty"`
-	LicenceNumber     string                 `protobuf:"bytes,5,opt,name=licence_number,json=licenceNumber,proto3" json:"licence_number,omitempty"`
-	Status            string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"` // PENDING, ACTIVE, SUSPENDED or WITHDRAWN
-	LicenceVerifiedAt string                 `protobuf:"bytes,7,opt,name=licence_verified_at,json=licenceVerifiedAt,proto3" json:"licence_verified_at,omitempty"`
-	LicenceVerifiedBy string                 `protobuf:"bytes,8,opt,name=licence_verified_by,json=licenceVerifiedBy,proto3" json:"licence_verified_by,omitempty"`
-	LicenceExpiresAt  string                 `protobuf:"bytes,9,opt,name=licence_expires_at,json=licenceExpiresAt,proto3" json:"licence_expires_at,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ProviderId         string                 `protobuf:"bytes,1,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	LicenceType        string                 `protobuf:"bytes,3,opt,name=licence_type,json=licenceType,proto3" json:"licence_type,omitempty"`
+	Regulator          string                 `protobuf:"bytes,4,opt,name=regulator,proto3" json:"regulator,omitempty"`
+	LicenceNumber      string                 `protobuf:"bytes,5,opt,name=licence_number,json=licenceNumber,proto3" json:"licence_number,omitempty"`
+	Status             string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"` // PENDING, ACTIVE, SUSPENDED or WITHDRAWN
+	LicenceVerifiedAt  string                 `protobuf:"bytes,7,opt,name=licence_verified_at,json=licenceVerifiedAt,proto3" json:"licence_verified_at,omitempty"`
+	LicenceVerifiedBy  string                 `protobuf:"bytes,8,opt,name=licence_verified_by,json=licenceVerifiedBy,proto3" json:"licence_verified_by,omitempty"`
+	LicenceExpiresAt   string                 `protobuf:"bytes,9,opt,name=licence_expires_at,json=licenceExpiresAt,proto3" json:"licence_expires_at,omitempty"`
+	LicenceCheckedAt   string                 `protobuf:"bytes,10,opt,name=licence_checked_at,json=licenceCheckedAt,proto3" json:"licence_checked_at,omitempty"`      // the last automatic check against the regulator's register extract
+	DeliveryConfigured bool                   `protobuf:"varint,11,opt,name=delivery_configured,json=deliveryConfigured,proto3" json:"delivery_configured,omitempty"` // Forge can send this provider referred customers' details
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Provider) Reset() {
@@ -731,6 +757,20 @@ func (x *Provider) GetLicenceExpiresAt() string {
 		return x.LicenceExpiresAt
 	}
 	return ""
+}
+
+func (x *Provider) GetLicenceCheckedAt() string {
+	if x != nil {
+		return x.LicenceCheckedAt
+	}
+	return ""
+}
+
+func (x *Provider) GetDeliveryConfigured() bool {
+	if x != nil {
+		return x.DeliveryConfigured
+	}
+	return false
 }
 
 type RegisterProviderResponse struct {
@@ -986,17 +1026,18 @@ func (x *SuspendProviderResponse) GetProvider() *Provider {
 }
 
 type UpsertOfferRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	OfferId       string                 `protobuf:"bytes,1,opt,name=offer_id,json=offerId,proto3" json:"offer_id,omitempty"`
-	ProviderId    string                 `protobuf:"bytes,2,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
-	Category      string                 `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
-	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Summary       string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
-	HandoffUrl    string                 `protobuf:"bytes,6,opt,name=handoff_url,json=handoffUrl,proto3" json:"handoff_url,omitempty"`          // https, on the provider's own domain
-	FeeDisclosure string                 `protobuf:"bytes,7,opt,name=fee_disclosure,json=feeDisclosure,proto3" json:"fee_disclosure,omitempty"` // required: what, if anything, Forge is paid
-	Actor         string                 `protobuf:"bytes,8,opt,name=actor,proto3" json:"actor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	OfferId             string                 `protobuf:"bytes,1,opt,name=offer_id,json=offerId,proto3" json:"offer_id,omitempty"`
+	ProviderId          string                 `protobuf:"bytes,2,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
+	Category            string                 `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	Title               string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Summary             string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
+	HandoffUrl          string                 `protobuf:"bytes,6,opt,name=handoff_url,json=handoffUrl,proto3" json:"handoff_url,omitempty"`          // https, on the provider's own domain
+	FeeDisclosure       string                 `protobuf:"bytes,7,opt,name=fee_disclosure,json=feeDisclosure,proto3" json:"fee_disclosure,omitempty"` // optional note on how a fee is worked out; the statement's fee sentence is generated from the cap
+	Actor               string                 `protobuf:"bytes,8,opt,name=actor,proto3" json:"actor,omitempty"`
+	ReferralFeeCapMinor string                 `protobuf:"bytes,9,opt,name=referral_fee_cap_minor,json=referralFeeCapMinor,proto3" json:"referral_fee_cap_minor,omitempty"` // required: the most Forge may be paid per referral, rand cents; "0" means Forge is paid nothing
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *UpsertOfferRequest) Reset() {
@@ -1081,6 +1122,13 @@ func (x *UpsertOfferRequest) GetFeeDisclosure() string {
 func (x *UpsertOfferRequest) GetActor() string {
 	if x != nil {
 		return x.Actor
+	}
+	return ""
+}
+
+func (x *UpsertOfferRequest) GetReferralFeeCapMinor() string {
+	if x != nil {
+		return x.ReferralFeeCapMinor
 	}
 	return ""
 }
@@ -1477,11 +1525,427 @@ func (x *ListAdminOffersResponse) GetOffers() []*AdminOffer {
 	return nil
 }
 
+type AdminReferral struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ReferralId        string                 `protobuf:"bytes,1,opt,name=referral_id,json=referralId,proto3" json:"referral_id,omitempty"`
+	OfferId           string                 `protobuf:"bytes,2,opt,name=offer_id,json=offerId,proto3" json:"offer_id,omitempty"`
+	OfferTitle        string                 `protobuf:"bytes,3,opt,name=offer_title,json=offerTitle,proto3" json:"offer_title,omitempty"`
+	ProviderId        string                 `protobuf:"bytes,4,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
+	ProviderName      string                 `protobuf:"bytes,5,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
+	PartyId           string                 `protobuf:"bytes,6,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	CreatedAt         string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	DeliveryStatus    string                 `protobuf:"bytes,8,opt,name=delivery_status,json=deliveryStatus,proto3" json:"delivery_status,omitempty"` // PENDING, SENT, FAILED, CANCELLED or NOT_CONFIGURED
+	DeliveryDetail    string                 `protobuf:"bytes,9,opt,name=delivery_detail,json=deliveryDetail,proto3" json:"delivery_detail,omitempty"` // why, for FAILED and CANCELLED; never the details themselves
+	DeliveredAt       string                 `protobuf:"bytes,10,opt,name=delivered_at,json=deliveredAt,proto3" json:"delivered_at,omitempty"`
+	FeeCapMinor       string                 `protobuf:"bytes,11,opt,name=fee_cap_minor,json=feeCapMinor,proto3" json:"fee_cap_minor,omitempty"`
+	FeesRecordedMinor string                 `protobuf:"bytes,12,opt,name=fees_recorded_minor,json=feesRecordedMinor,proto3" json:"fees_recorded_minor,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *AdminReferral) Reset() {
+	*x = AdminReferral{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminReferral) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminReferral) ProtoMessage() {}
+
+func (x *AdminReferral) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminReferral.ProtoReflect.Descriptor instead.
+func (*AdminReferral) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *AdminReferral) GetReferralId() string {
+	if x != nil {
+		return x.ReferralId
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetOfferId() string {
+	if x != nil {
+		return x.OfferId
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetOfferTitle() string {
+	if x != nil {
+		return x.OfferTitle
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetProviderId() string {
+	if x != nil {
+		return x.ProviderId
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetProviderName() string {
+	if x != nil {
+		return x.ProviderName
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetPartyId() string {
+	if x != nil {
+		return x.PartyId
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetDeliveryStatus() string {
+	if x != nil {
+		return x.DeliveryStatus
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetDeliveryDetail() string {
+	if x != nil {
+		return x.DeliveryDetail
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetDeliveredAt() string {
+	if x != nil {
+		return x.DeliveredAt
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetFeeCapMinor() string {
+	if x != nil {
+		return x.FeeCapMinor
+	}
+	return ""
+}
+
+func (x *AdminReferral) GetFeesRecordedMinor() string {
+	if x != nil {
+		return x.FeesRecordedMinor
+	}
+	return ""
+}
+
+type ListAdminReferralsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAdminReferralsRequest) Reset() {
+	*x = ListAdminReferralsRequest{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminReferralsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminReferralsRequest) ProtoMessage() {}
+
+func (x *ListAdminReferralsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminReferralsRequest.ProtoReflect.Descriptor instead.
+func (*ListAdminReferralsRequest) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{25}
+}
+
+type ListAdminReferralsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Referrals     []*AdminReferral       `protobuf:"bytes,1,rep,name=referrals,proto3" json:"referrals,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAdminReferralsResponse) Reset() {
+	*x = ListAdminReferralsResponse{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminReferralsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminReferralsResponse) ProtoMessage() {}
+
+func (x *ListAdminReferralsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminReferralsResponse.ProtoReflect.Descriptor instead.
+func (*ListAdminReferralsResponse) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListAdminReferralsResponse) GetReferrals() []*AdminReferral {
+	if x != nil {
+		return x.Referrals
+	}
+	return nil
+}
+
+type RecordReferralFeeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ReferralId    string                 `protobuf:"bytes,1,opt,name=referral_id,json=referralId,proto3" json:"referral_id,omitempty"`
+	AmountMinor   string                 `protobuf:"bytes,2,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`       // rand cents
+	BankReference string                 `protobuf:"bytes,3,opt,name=bank_reference,json=bankReference,proto3" json:"bank_reference,omitempty"` // the line on the sponsor bank statement the provider's payment arrived on; each is booked once
+	Officer       string                 `protobuf:"bytes,4,opt,name=officer,proto3" json:"officer,omitempty"`                                  // the person making this call; the second call must come from someone else
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordReferralFeeRequest) Reset() {
+	*x = RecordReferralFeeRequest{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordReferralFeeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordReferralFeeRequest) ProtoMessage() {}
+
+func (x *RecordReferralFeeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordReferralFeeRequest.ProtoReflect.Descriptor instead.
+func (*RecordReferralFeeRequest) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *RecordReferralFeeRequest) GetReferralId() string {
+	if x != nil {
+		return x.ReferralId
+	}
+	return ""
+}
+
+func (x *RecordReferralFeeRequest) GetAmountMinor() string {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return ""
+}
+
+func (x *RecordReferralFeeRequest) GetBankReference() string {
+	if x != nil {
+		return x.BankReference
+	}
+	return ""
+}
+
+func (x *RecordReferralFeeRequest) GetOfficer() string {
+	if x != nil {
+		return x.Officer
+	}
+	return ""
+}
+
+type ReferralFee struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ReferralId    string                 `protobuf:"bytes,1,opt,name=referral_id,json=referralId,proto3" json:"referral_id,omitempty"`
+	AmountMinor   string                 `protobuf:"bytes,2,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	BankReference string                 `protobuf:"bytes,3,opt,name=bank_reference,json=bankReference,proto3" json:"bank_reference,omitempty"`
+	RecordedBy    string                 `protobuf:"bytes,4,opt,name=recorded_by,json=recordedBy,proto3" json:"recorded_by,omitempty"`
+	ApprovedBy    string                 `protobuf:"bytes,5,opt,name=approved_by,json=approvedBy,proto3" json:"approved_by,omitempty"`
+	RecordedAt    string                 `protobuf:"bytes,6,opt,name=recorded_at,json=recordedAt,proto3" json:"recorded_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReferralFee) Reset() {
+	*x = ReferralFee{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReferralFee) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReferralFee) ProtoMessage() {}
+
+func (x *ReferralFee) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReferralFee.ProtoReflect.Descriptor instead.
+func (*ReferralFee) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ReferralFee) GetReferralId() string {
+	if x != nil {
+		return x.ReferralId
+	}
+	return ""
+}
+
+func (x *ReferralFee) GetAmountMinor() string {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return ""
+}
+
+func (x *ReferralFee) GetBankReference() string {
+	if x != nil {
+		return x.BankReference
+	}
+	return ""
+}
+
+func (x *ReferralFee) GetRecordedBy() string {
+	if x != nil {
+		return x.RecordedBy
+	}
+	return ""
+}
+
+func (x *ReferralFee) GetApprovedBy() string {
+	if x != nil {
+		return x.ApprovedBy
+	}
+	return ""
+}
+
+func (x *ReferralFee) GetRecordedAt() string {
+	if x != nil {
+		return x.RecordedAt
+	}
+	return ""
+}
+
+type RecordReferralFeeResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Fee                  *ReferralFee           `protobuf:"bytes,1,opt,name=fee,proto3" json:"fee,omitempty"`                                                                  // set once booked
+	AwaitingSecondPerson bool                   `protobuf:"varint,2,opt,name=awaiting_second_person,json=awaitingSecondPerson,proto3" json:"awaiting_second_person,omitempty"` // proposed, not yet booked
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *RecordReferralFeeResponse) Reset() {
+	*x = RecordReferralFeeResponse{}
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordReferralFeeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordReferralFeeResponse) ProtoMessage() {}
+
+func (x *RecordReferralFeeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forge_offers_v1_offers_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordReferralFeeResponse.ProtoReflect.Descriptor instead.
+func (*RecordReferralFeeResponse) Descriptor() ([]byte, []int) {
+	return file_forge_offers_v1_offers_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *RecordReferralFeeResponse) GetFee() *ReferralFee {
+	if x != nil {
+		return x.Fee
+	}
+	return nil
+}
+
+func (x *RecordReferralFeeResponse) GetAwaitingSecondPerson() bool {
+	if x != nil {
+		return x.AwaitingSecondPerson
+	}
+	return false
+}
+
 var File_forge_offers_v1_offers_proto protoreflect.FileDescriptor
 
 const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\n" +
-	"\x1cforge/offers/v1/offers.proto\x12\x0fforge.offers.v1\"\x88\x03\n" +
+	"\x1cforge/offers/v1/offers.proto\x12\x0fforge.offers.v1\"\xd5\x03\n" +
 	"\x05Offer\x12\x19\n" +
 	"\boffer_id\x18\x01 \x01(\tR\aofferId\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x14\n" +
@@ -1494,7 +1958,9 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\tstatement\x18\t \x01(\tR\tstatement\x12%\n" +
 	"\x0estatement_hash\x18\n" +
 	" \x01(\tR\rstatementHash\x12%\n" +
-	"\x0efee_disclosure\x18\v \x01(\tR\rfeeDisclosure\x12\x1f\n" +
+	"\x0efee_disclosure\x18\v \x01(\tR\rfeeDisclosure\x123\n" +
+	"\x16referral_fee_cap_minor\x18\r \x01(\tR\x13referralFeeCapMinor\x12\x16\n" +
+	"\x06shares\x18\x0e \x03(\tR\x06shares\x12\x1f\n" +
 	"\vprovider_id\x18\f \x01(\tR\n" +
 	"providerId\"J\n" +
 	"\x11ListOffersRequest\x12\x19\n" +
@@ -1522,7 +1988,7 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\x14ListReferralsRequest\x12\x19\n" +
 	"\bparty_id\x18\x01 \x01(\tR\apartyId\"P\n" +
 	"\x15ListReferralsResponse\x127\n" +
-	"\treferrals\x18\x01 \x03(\v2\x19.forge.offers.v1.ReferralR\treferrals\"\xfa\x01\n" +
+	"\treferrals\x18\x01 \x03(\v2\x19.forge.offers.v1.ReferralR\treferrals\"\x9d\x02\n" +
 	"\x17RegisterProviderRequest\x12\x1f\n" +
 	"\vprovider_id\x18\x01 \x01(\tR\n" +
 	"providerId\x12\x12\n" +
@@ -1531,7 +1997,8 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\tregulator\x18\x04 \x01(\tR\tregulator\x12%\n" +
 	"\x0elicence_number\x18\x05 \x01(\tR\rlicenceNumber\x12,\n" +
 	"\x12licence_source_url\x18\x06 \x01(\tR\x10licenceSourceUrl\x12\x14\n" +
-	"\x05actor\x18\a \x01(\tR\x05actor\"\xcd\x02\n" +
+	"\x05actor\x18\a \x01(\tR\x05actor\x12!\n" +
+	"\fdelivery_url\x18\b \x01(\tR\vdeliveryUrl\"\xac\x03\n" +
 	"\bProvider\x12\x1f\n" +
 	"\vprovider_id\x18\x01 \x01(\tR\n" +
 	"providerId\x12\x12\n" +
@@ -1542,7 +2009,10 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12.\n" +
 	"\x13licence_verified_at\x18\a \x01(\tR\x11licenceVerifiedAt\x12.\n" +
 	"\x13licence_verified_by\x18\b \x01(\tR\x11licenceVerifiedBy\x12,\n" +
-	"\x12licence_expires_at\x18\t \x01(\tR\x10licenceExpiresAt\"Q\n" +
+	"\x12licence_expires_at\x18\t \x01(\tR\x10licenceExpiresAt\x12,\n" +
+	"\x12licence_checked_at\x18\n" +
+	" \x01(\tR\x10licenceCheckedAt\x12/\n" +
+	"\x13delivery_configured\x18\v \x01(\bR\x12deliveryConfigured\"Q\n" +
 	"\x18RegisterProviderResponse\x125\n" +
 	"\bprovider\x18\x01 \x01(\v2\x19.forge.offers.v1.ProviderR\bprovider\"{\n" +
 	"\x14VerifyLicenceRequest\x12\x1f\n" +
@@ -1558,7 +2028,7 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x14\n" +
 	"\x05actor\x18\x03 \x01(\tR\x05actor\"P\n" +
 	"\x17SuspendProviderResponse\x125\n" +
-	"\bprovider\x18\x01 \x01(\v2\x19.forge.offers.v1.ProviderR\bprovider\"\xfa\x01\n" +
+	"\bprovider\x18\x01 \x01(\v2\x19.forge.offers.v1.ProviderR\bprovider\"\xaf\x02\n" +
 	"\x12UpsertOfferRequest\x12\x19\n" +
 	"\boffer_id\x18\x01 \x01(\tR\aofferId\x12\x1f\n" +
 	"\vprovider_id\x18\x02 \x01(\tR\n" +
@@ -1569,7 +2039,8 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\vhandoff_url\x18\x06 \x01(\tR\n" +
 	"handoffUrl\x12%\n" +
 	"\x0efee_disclosure\x18\a \x01(\tR\rfeeDisclosure\x12\x14\n" +
-	"\x05actor\x18\b \x01(\tR\x05actor\"C\n" +
+	"\x05actor\x18\b \x01(\tR\x05actor\x123\n" +
+	"\x16referral_fee_cap_minor\x18\t \x01(\tR\x13referralFeeCapMinor\"C\n" +
 	"\x13UpsertOfferResponse\x12,\n" +
 	"\x05offer\x18\x01 \x01(\v2\x16.forge.offers.v1.OfferR\x05offer\"`\n" +
 	"\x15SetOfferStatusRequest\x12\x19\n" +
@@ -1595,12 +2066,53 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"visibleNow\"\x18\n" +
 	"\x16ListAdminOffersRequest\"N\n" +
 	"\x17ListAdminOffersResponse\x123\n" +
-	"\x06offers\x18\x01 \x03(\v2\x1b.forge.offers.v1.AdminOfferR\x06offers2\xb0\x02\n" +
+	"\x06offers\x18\x01 \x03(\v2\x1b.forge.offers.v1.AdminOfferR\x06offers\"\xb5\x03\n" +
+	"\rAdminReferral\x12\x1f\n" +
+	"\vreferral_id\x18\x01 \x01(\tR\n" +
+	"referralId\x12\x19\n" +
+	"\boffer_id\x18\x02 \x01(\tR\aofferId\x12\x1f\n" +
+	"\voffer_title\x18\x03 \x01(\tR\n" +
+	"offerTitle\x12\x1f\n" +
+	"\vprovider_id\x18\x04 \x01(\tR\n" +
+	"providerId\x12#\n" +
+	"\rprovider_name\x18\x05 \x01(\tR\fproviderName\x12\x19\n" +
+	"\bparty_id\x18\x06 \x01(\tR\apartyId\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12'\n" +
+	"\x0fdelivery_status\x18\b \x01(\tR\x0edeliveryStatus\x12'\n" +
+	"\x0fdelivery_detail\x18\t \x01(\tR\x0edeliveryDetail\x12!\n" +
+	"\fdelivered_at\x18\n" +
+	" \x01(\tR\vdeliveredAt\x12\"\n" +
+	"\rfee_cap_minor\x18\v \x01(\tR\vfeeCapMinor\x12.\n" +
+	"\x13fees_recorded_minor\x18\f \x01(\tR\x11feesRecordedMinor\"\x1b\n" +
+	"\x19ListAdminReferralsRequest\"Z\n" +
+	"\x1aListAdminReferralsResponse\x12<\n" +
+	"\treferrals\x18\x01 \x03(\v2\x1e.forge.offers.v1.AdminReferralR\treferrals\"\xa5\x01\n" +
+	"\x18RecordReferralFeeRequest\x12\x1f\n" +
+	"\vreferral_id\x18\x01 \x01(\tR\n" +
+	"referralId\x12!\n" +
+	"\famount_minor\x18\x02 \x01(\tR\vamountMinor\x12%\n" +
+	"\x0ebank_reference\x18\x03 \x01(\tR\rbankReference\x12\x18\n" +
+	"\aofficer\x18\x04 \x01(\tR\aofficerJ\x04\b\x05\x10\x06\"\xdb\x01\n" +
+	"\vReferralFee\x12\x1f\n" +
+	"\vreferral_id\x18\x01 \x01(\tR\n" +
+	"referralId\x12!\n" +
+	"\famount_minor\x18\x02 \x01(\tR\vamountMinor\x12%\n" +
+	"\x0ebank_reference\x18\x03 \x01(\tR\rbankReference\x12\x1f\n" +
+	"\vrecorded_by\x18\x04 \x01(\tR\n" +
+	"recordedBy\x12\x1f\n" +
+	"\vapproved_by\x18\x05 \x01(\tR\n" +
+	"approvedBy\x12\x1f\n" +
+	"\vrecorded_at\x18\x06 \x01(\tR\n" +
+	"recordedAt\"\x81\x01\n" +
+	"\x19RecordReferralFeeResponse\x12.\n" +
+	"\x03fee\x18\x01 \x01(\v2\x1c.forge.offers.v1.ReferralFeeR\x03fee\x124\n" +
+	"\x16awaiting_second_person\x18\x02 \x01(\bR\x14awaitingSecondPerson2\xb0\x02\n" +
 	"\x14PartnerOffersService\x12U\n" +
 	"\n" +
 	"ListOffers\x12\".forge.offers.v1.ListOffersRequest\x1a#.forge.offers.v1.ListOffersResponse\x12a\n" +
 	"\x0eCreateReferral\x12&.forge.offers.v1.CreateReferralRequest\x1a'.forge.offers.v1.CreateReferralResponse\x12^\n" +
-	"\rListReferrals\x12%.forge.offers.v1.ListReferralsRequest\x1a&.forge.offers.v1.ListReferralsResponse2\xc7\x05\n" +
+	"\rListReferrals\x12%.forge.offers.v1.ListReferralsRequest\x1a&.forge.offers.v1.ListReferralsResponse2\xa2\a\n" +
 	"\x13PartnerAdminService\x12g\n" +
 	"\x10RegisterProvider\x12(.forge.offers.v1.RegisterProviderRequest\x1a).forge.offers.v1.RegisterProviderResponse\x12^\n" +
 	"\rVerifyLicence\x12%.forge.offers.v1.VerifyLicenceRequest\x1a&.forge.offers.v1.VerifyLicenceResponse\x12d\n" +
@@ -1608,7 +2120,9 @@ const file_forge_offers_v1_offers_proto_rawDesc = "" +
 	"\vUpsertOffer\x12#.forge.offers.v1.UpsertOfferRequest\x1a$.forge.offers.v1.UpsertOfferResponse\x12a\n" +
 	"\x0eSetOfferStatus\x12&.forge.offers.v1.SetOfferStatusRequest\x1a'.forge.offers.v1.SetOfferStatusResponse\x12^\n" +
 	"\rListProviders\x12%.forge.offers.v1.ListProvidersRequest\x1a&.forge.offers.v1.ListProvidersResponse\x12d\n" +
-	"\x0fListAdminOffers\x12'.forge.offers.v1.ListAdminOffersRequest\x1a(.forge.offers.v1.ListAdminOffersResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;offersv1b\x06proto3"
+	"\x0fListAdminOffers\x12'.forge.offers.v1.ListAdminOffersRequest\x1a(.forge.offers.v1.ListAdminOffersResponse\x12m\n" +
+	"\x12ListAdminReferrals\x12*.forge.offers.v1.ListAdminReferralsRequest\x1a+.forge.offers.v1.ListAdminReferralsResponse\x12j\n" +
+	"\x11RecordReferralFee\x12).forge.offers.v1.RecordReferralFeeRequest\x1a*.forge.offers.v1.RecordReferralFeeResponseBBZ@github.com/khayaai/forge-mutual/pkg/api/forge/offers/v1;offersv1b\x06proto3"
 
 var (
 	file_forge_offers_v1_offers_proto_rawDescOnce sync.Once
@@ -1622,32 +2136,38 @@ func file_forge_offers_v1_offers_proto_rawDescGZIP() []byte {
 	return file_forge_offers_v1_offers_proto_rawDescData
 }
 
-var file_forge_offers_v1_offers_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_forge_offers_v1_offers_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_forge_offers_v1_offers_proto_goTypes = []any{
-	(*Offer)(nil),                    // 0: forge.offers.v1.Offer
-	(*ListOffersRequest)(nil),        // 1: forge.offers.v1.ListOffersRequest
-	(*ListOffersResponse)(nil),       // 2: forge.offers.v1.ListOffersResponse
-	(*CreateReferralRequest)(nil),    // 3: forge.offers.v1.CreateReferralRequest
-	(*Referral)(nil),                 // 4: forge.offers.v1.Referral
-	(*CreateReferralResponse)(nil),   // 5: forge.offers.v1.CreateReferralResponse
-	(*ListReferralsRequest)(nil),     // 6: forge.offers.v1.ListReferralsRequest
-	(*ListReferralsResponse)(nil),    // 7: forge.offers.v1.ListReferralsResponse
-	(*RegisterProviderRequest)(nil),  // 8: forge.offers.v1.RegisterProviderRequest
-	(*Provider)(nil),                 // 9: forge.offers.v1.Provider
-	(*RegisterProviderResponse)(nil), // 10: forge.offers.v1.RegisterProviderResponse
-	(*VerifyLicenceRequest)(nil),     // 11: forge.offers.v1.VerifyLicenceRequest
-	(*VerifyLicenceResponse)(nil),    // 12: forge.offers.v1.VerifyLicenceResponse
-	(*SuspendProviderRequest)(nil),   // 13: forge.offers.v1.SuspendProviderRequest
-	(*SuspendProviderResponse)(nil),  // 14: forge.offers.v1.SuspendProviderResponse
-	(*UpsertOfferRequest)(nil),       // 15: forge.offers.v1.UpsertOfferRequest
-	(*UpsertOfferResponse)(nil),      // 16: forge.offers.v1.UpsertOfferResponse
-	(*SetOfferStatusRequest)(nil),    // 17: forge.offers.v1.SetOfferStatusRequest
-	(*SetOfferStatusResponse)(nil),   // 18: forge.offers.v1.SetOfferStatusResponse
-	(*ListProvidersRequest)(nil),     // 19: forge.offers.v1.ListProvidersRequest
-	(*ListProvidersResponse)(nil),    // 20: forge.offers.v1.ListProvidersResponse
-	(*AdminOffer)(nil),               // 21: forge.offers.v1.AdminOffer
-	(*ListAdminOffersRequest)(nil),   // 22: forge.offers.v1.ListAdminOffersRequest
-	(*ListAdminOffersResponse)(nil),  // 23: forge.offers.v1.ListAdminOffersResponse
+	(*Offer)(nil),                      // 0: forge.offers.v1.Offer
+	(*ListOffersRequest)(nil),          // 1: forge.offers.v1.ListOffersRequest
+	(*ListOffersResponse)(nil),         // 2: forge.offers.v1.ListOffersResponse
+	(*CreateReferralRequest)(nil),      // 3: forge.offers.v1.CreateReferralRequest
+	(*Referral)(nil),                   // 4: forge.offers.v1.Referral
+	(*CreateReferralResponse)(nil),     // 5: forge.offers.v1.CreateReferralResponse
+	(*ListReferralsRequest)(nil),       // 6: forge.offers.v1.ListReferralsRequest
+	(*ListReferralsResponse)(nil),      // 7: forge.offers.v1.ListReferralsResponse
+	(*RegisterProviderRequest)(nil),    // 8: forge.offers.v1.RegisterProviderRequest
+	(*Provider)(nil),                   // 9: forge.offers.v1.Provider
+	(*RegisterProviderResponse)(nil),   // 10: forge.offers.v1.RegisterProviderResponse
+	(*VerifyLicenceRequest)(nil),       // 11: forge.offers.v1.VerifyLicenceRequest
+	(*VerifyLicenceResponse)(nil),      // 12: forge.offers.v1.VerifyLicenceResponse
+	(*SuspendProviderRequest)(nil),     // 13: forge.offers.v1.SuspendProviderRequest
+	(*SuspendProviderResponse)(nil),    // 14: forge.offers.v1.SuspendProviderResponse
+	(*UpsertOfferRequest)(nil),         // 15: forge.offers.v1.UpsertOfferRequest
+	(*UpsertOfferResponse)(nil),        // 16: forge.offers.v1.UpsertOfferResponse
+	(*SetOfferStatusRequest)(nil),      // 17: forge.offers.v1.SetOfferStatusRequest
+	(*SetOfferStatusResponse)(nil),     // 18: forge.offers.v1.SetOfferStatusResponse
+	(*ListProvidersRequest)(nil),       // 19: forge.offers.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil),      // 20: forge.offers.v1.ListProvidersResponse
+	(*AdminOffer)(nil),                 // 21: forge.offers.v1.AdminOffer
+	(*ListAdminOffersRequest)(nil),     // 22: forge.offers.v1.ListAdminOffersRequest
+	(*ListAdminOffersResponse)(nil),    // 23: forge.offers.v1.ListAdminOffersResponse
+	(*AdminReferral)(nil),              // 24: forge.offers.v1.AdminReferral
+	(*ListAdminReferralsRequest)(nil),  // 25: forge.offers.v1.ListAdminReferralsRequest
+	(*ListAdminReferralsResponse)(nil), // 26: forge.offers.v1.ListAdminReferralsResponse
+	(*RecordReferralFeeRequest)(nil),   // 27: forge.offers.v1.RecordReferralFeeRequest
+	(*ReferralFee)(nil),                // 28: forge.offers.v1.ReferralFee
+	(*RecordReferralFeeResponse)(nil),  // 29: forge.offers.v1.RecordReferralFeeResponse
 }
 var file_forge_offers_v1_offers_proto_depIdxs = []int32{
 	0,  // 0: forge.offers.v1.ListOffersResponse.offers:type_name -> forge.offers.v1.Offer
@@ -1660,31 +2180,37 @@ var file_forge_offers_v1_offers_proto_depIdxs = []int32{
 	9,  // 7: forge.offers.v1.ListProvidersResponse.providers:type_name -> forge.offers.v1.Provider
 	0,  // 8: forge.offers.v1.AdminOffer.offer:type_name -> forge.offers.v1.Offer
 	21, // 9: forge.offers.v1.ListAdminOffersResponse.offers:type_name -> forge.offers.v1.AdminOffer
-	1,  // 10: forge.offers.v1.PartnerOffersService.ListOffers:input_type -> forge.offers.v1.ListOffersRequest
-	3,  // 11: forge.offers.v1.PartnerOffersService.CreateReferral:input_type -> forge.offers.v1.CreateReferralRequest
-	6,  // 12: forge.offers.v1.PartnerOffersService.ListReferrals:input_type -> forge.offers.v1.ListReferralsRequest
-	8,  // 13: forge.offers.v1.PartnerAdminService.RegisterProvider:input_type -> forge.offers.v1.RegisterProviderRequest
-	11, // 14: forge.offers.v1.PartnerAdminService.VerifyLicence:input_type -> forge.offers.v1.VerifyLicenceRequest
-	13, // 15: forge.offers.v1.PartnerAdminService.SuspendProvider:input_type -> forge.offers.v1.SuspendProviderRequest
-	15, // 16: forge.offers.v1.PartnerAdminService.UpsertOffer:input_type -> forge.offers.v1.UpsertOfferRequest
-	17, // 17: forge.offers.v1.PartnerAdminService.SetOfferStatus:input_type -> forge.offers.v1.SetOfferStatusRequest
-	19, // 18: forge.offers.v1.PartnerAdminService.ListProviders:input_type -> forge.offers.v1.ListProvidersRequest
-	22, // 19: forge.offers.v1.PartnerAdminService.ListAdminOffers:input_type -> forge.offers.v1.ListAdminOffersRequest
-	2,  // 20: forge.offers.v1.PartnerOffersService.ListOffers:output_type -> forge.offers.v1.ListOffersResponse
-	5,  // 21: forge.offers.v1.PartnerOffersService.CreateReferral:output_type -> forge.offers.v1.CreateReferralResponse
-	7,  // 22: forge.offers.v1.PartnerOffersService.ListReferrals:output_type -> forge.offers.v1.ListReferralsResponse
-	10, // 23: forge.offers.v1.PartnerAdminService.RegisterProvider:output_type -> forge.offers.v1.RegisterProviderResponse
-	12, // 24: forge.offers.v1.PartnerAdminService.VerifyLicence:output_type -> forge.offers.v1.VerifyLicenceResponse
-	14, // 25: forge.offers.v1.PartnerAdminService.SuspendProvider:output_type -> forge.offers.v1.SuspendProviderResponse
-	16, // 26: forge.offers.v1.PartnerAdminService.UpsertOffer:output_type -> forge.offers.v1.UpsertOfferResponse
-	18, // 27: forge.offers.v1.PartnerAdminService.SetOfferStatus:output_type -> forge.offers.v1.SetOfferStatusResponse
-	20, // 28: forge.offers.v1.PartnerAdminService.ListProviders:output_type -> forge.offers.v1.ListProvidersResponse
-	23, // 29: forge.offers.v1.PartnerAdminService.ListAdminOffers:output_type -> forge.offers.v1.ListAdminOffersResponse
-	20, // [20:30] is the sub-list for method output_type
-	10, // [10:20] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	24, // 10: forge.offers.v1.ListAdminReferralsResponse.referrals:type_name -> forge.offers.v1.AdminReferral
+	28, // 11: forge.offers.v1.RecordReferralFeeResponse.fee:type_name -> forge.offers.v1.ReferralFee
+	1,  // 12: forge.offers.v1.PartnerOffersService.ListOffers:input_type -> forge.offers.v1.ListOffersRequest
+	3,  // 13: forge.offers.v1.PartnerOffersService.CreateReferral:input_type -> forge.offers.v1.CreateReferralRequest
+	6,  // 14: forge.offers.v1.PartnerOffersService.ListReferrals:input_type -> forge.offers.v1.ListReferralsRequest
+	8,  // 15: forge.offers.v1.PartnerAdminService.RegisterProvider:input_type -> forge.offers.v1.RegisterProviderRequest
+	11, // 16: forge.offers.v1.PartnerAdminService.VerifyLicence:input_type -> forge.offers.v1.VerifyLicenceRequest
+	13, // 17: forge.offers.v1.PartnerAdminService.SuspendProvider:input_type -> forge.offers.v1.SuspendProviderRequest
+	15, // 18: forge.offers.v1.PartnerAdminService.UpsertOffer:input_type -> forge.offers.v1.UpsertOfferRequest
+	17, // 19: forge.offers.v1.PartnerAdminService.SetOfferStatus:input_type -> forge.offers.v1.SetOfferStatusRequest
+	19, // 20: forge.offers.v1.PartnerAdminService.ListProviders:input_type -> forge.offers.v1.ListProvidersRequest
+	22, // 21: forge.offers.v1.PartnerAdminService.ListAdminOffers:input_type -> forge.offers.v1.ListAdminOffersRequest
+	25, // 22: forge.offers.v1.PartnerAdminService.ListAdminReferrals:input_type -> forge.offers.v1.ListAdminReferralsRequest
+	27, // 23: forge.offers.v1.PartnerAdminService.RecordReferralFee:input_type -> forge.offers.v1.RecordReferralFeeRequest
+	2,  // 24: forge.offers.v1.PartnerOffersService.ListOffers:output_type -> forge.offers.v1.ListOffersResponse
+	5,  // 25: forge.offers.v1.PartnerOffersService.CreateReferral:output_type -> forge.offers.v1.CreateReferralResponse
+	7,  // 26: forge.offers.v1.PartnerOffersService.ListReferrals:output_type -> forge.offers.v1.ListReferralsResponse
+	10, // 27: forge.offers.v1.PartnerAdminService.RegisterProvider:output_type -> forge.offers.v1.RegisterProviderResponse
+	12, // 28: forge.offers.v1.PartnerAdminService.VerifyLicence:output_type -> forge.offers.v1.VerifyLicenceResponse
+	14, // 29: forge.offers.v1.PartnerAdminService.SuspendProvider:output_type -> forge.offers.v1.SuspendProviderResponse
+	16, // 30: forge.offers.v1.PartnerAdminService.UpsertOffer:output_type -> forge.offers.v1.UpsertOfferResponse
+	18, // 31: forge.offers.v1.PartnerAdminService.SetOfferStatus:output_type -> forge.offers.v1.SetOfferStatusResponse
+	20, // 32: forge.offers.v1.PartnerAdminService.ListProviders:output_type -> forge.offers.v1.ListProvidersResponse
+	23, // 33: forge.offers.v1.PartnerAdminService.ListAdminOffers:output_type -> forge.offers.v1.ListAdminOffersResponse
+	26, // 34: forge.offers.v1.PartnerAdminService.ListAdminReferrals:output_type -> forge.offers.v1.ListAdminReferralsResponse
+	29, // 35: forge.offers.v1.PartnerAdminService.RecordReferralFee:output_type -> forge.offers.v1.RecordReferralFeeResponse
+	24, // [24:36] is the sub-list for method output_type
+	12, // [12:24] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_forge_offers_v1_offers_proto_init() }
@@ -1698,7 +2224,7 @@ func file_forge_offers_v1_offers_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forge_offers_v1_offers_proto_rawDesc), len(file_forge_offers_v1_offers_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   24,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

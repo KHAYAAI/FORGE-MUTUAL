@@ -100,6 +100,8 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/partners/offers", a.staff(needRole(RoleCompliance, a.listPartnerOffers)))
 	mux.HandleFunc("POST /v1/partners/offers", a.staff(needRole(RoleCompliance, a.upsertPartnerOffer)))
 	mux.HandleFunc("POST /v1/partners/offers/{offer}/status", a.staff(needRole(RoleCompliance, a.setPartnerOfferStatus)))
+	mux.HandleFunc("GET /v1/partners/referrals", a.staff(needAnyRole(a.listPartnerReferrals, RoleCompliance, RoleOperations)))
+	mux.HandleFunc("POST /v1/partners/referrals/{referral}/fee", a.staff(needRole(RoleOperations, a.recordReferralFee)))
 	mux.HandleFunc("GET /v1/credit/applications", a.staff(needRole(RoleCredit, a.listCreditApplications)))
 	mux.HandleFunc("POST /v1/credit/applications/{facility}/decision", a.staff(needRole(RoleCredit, a.decideCredit)))
 	return mux
@@ -115,6 +117,19 @@ func (a *API) staff(h handler) http.HandlerFunc {
 			return
 		}
 		h(w, r, s)
+	}
+}
+
+// needAnyRole lets a session through if it holds at least one of the roles.
+func needAnyRole(h handler, roles ...string) handler {
+	return func(w http.ResponseWriter, r *http.Request, s Session) {
+		for _, role := range roles {
+			if s.Roles[role] {
+				h(w, r, s)
+				return
+			}
+		}
+		writeJSON(w, http.StatusForbidden, errBody("permission_denied", "your role does not allow this action"))
 	}
 }
 

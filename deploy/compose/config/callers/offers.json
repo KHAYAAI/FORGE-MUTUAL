@@ -1,7 +1,9 @@
 {
   "svc-backoffice-api": [
     "ListAdminOffers",
+    "ListAdminReferrals",
     "ListProviders",
+    "RecordReferralFee",
     "RegisterProvider",
     "SetOfferStatus",
     "SuspendProvider",

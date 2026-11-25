@@ -74,7 +74,7 @@ It is not a mass-market bank. Capitec has 26.6 million active clients and 686,00
 | Influence | What Forge takes | What Forge does not take |
 |---|---|---|
 | Mercury (US) | Software first on partner banks; a licence later; breadth beyond tech | Its scale or US market |
-| Erebor (US) | A specialist, API-first bank for tech; on-chain money treated as native | Its capital (about $380M raised) or its customer base |
+| Erebor (US) | A specialist, API-first bank for tech; on-chain money treated as native | Its capital (about R6.84 billion (US$380 million) raised) or its customer base |
 | Capitec | Simplicity and low cost to serve | Mass-market ambition |
 | Discovery | Orchestration and consented, data-driven incentives | A large group customer base or years of heavy investment |
 | Investec | Community, high value per client, founder-plus-company banking | A decades-old brand |
@@ -201,7 +201,7 @@ Mass-market retail, consumer lending, crypto traders looking for an exchange, an
 
 These come from earlier notes and are unverified. The serviceable market is an estimate: a few thousand startups and scale-ups plus several thousand active tech SMEs, agencies and exporters.
 
-**The funding backdrop is thin.** South African startups raised about $83M in the first half of 2026, against $327M in Egypt, $254M in Nigeria and $126M in Kenya. Startup runway alone cannot support a bank, which is why profitable tech SMEs, adjacent businesses and other African markets matter.
+**The funding backdrop is thin.** South African startups raised about R1.49 billion (US$83 million) in the first half of 2026, against R5.89 billion (US$327 million) in Egypt, R4.57 billion (US$254 million) in Nigeria and R2.27 billion (US$126 million) in Kenya. Startup runway alone cannot support a bank, which is why profitable tech SMEs, adjacent businesses and other African markets matter.
 
 ---
 
@@ -263,22 +263,24 @@ DeFi (swaps, staking, yield), self-custody products, Forge-issued stablecoins, a
 
 ### 8.3 Illustrative economics
 
-These are assumptions, not data. Revenue per customer starts at $500, $900 or $1,400 a year and grows 10% a year; variable costs are 25% of revenue; operating costs grow from $2M to $16M over five years.
+Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+
+These are assumptions, not data. Revenue per customer starts at R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year and grows 10% a year; variable costs are 25% of revenue; operating costs grow from R36 million (US$2 million) to R288 million (US$16 million) over five years.
 
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about $1.8M | about $8.9M | about $27.7M |
-| Operating result | about -$4.6M | about -$3.3M | about +$4.8M |
-| Deposits | about $48M | about $270M | about $900M |
-| Peak funding need | about $17.7M | about $19.8M | about $16.8M |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
 **What this means**
 
 - Break-even needs about 10,000 business customers, close to the whole South African serviceable market, so expansion is necessary.
 - The funding need is similar across scenarios, because spending grows with success.
-- Mercury earns about $2,170 per customer ($650M over about 300,000 customers, a calculation from reported figures). South African companies are smaller, so even the conservative case may be generous.
+- Mercury earns about R39,100 (US$2,170) per customer (R11.7 billion (US$650 million) over about 300,000 customers, a calculation from reported figures). South African companies are smaller, so even the conservative case may be generous.
 - The model excludes the sponsor bank's revenue share, licence capital, credit losses and compliance headcount. Real economics are harder.
 
 The customer interviews (section 17) replace these assumptions with real prices and balances.
@@ -370,8 +372,8 @@ An alternative to test first is the agent-network model used in Nigeria (Moniepo
 |---|---|---|---|
 | Customers | Tech, crypto, defence | Startups and tech, then broader | Tech companies, then adjacent SMEs |
 | Structure | Own national charter (opened February 2026) | Partner banks; conditional charter approval April 2026 | Sponsor bank, licence later |
-| Scale | $4.05bn deposits by end of June 2026 | 300,000+ customers, about $650M annualised revenue | Concept |
-| Capital | About $380M raised | Large | Far smaller |
+| Scale | R72.9 billion (US$4.05 billion) deposits by end of June 2026 | 300,000+ customers, about R11.7 billion (US$650 million) annualised revenue | Concept |
+| Capital | About R6.84 billion (US$380 million) raised | Large | Far smaller |
 | Stack | Proprietary | Proprietary | Open-source, self-hostable |
 
 Erebor found demand for crypto-backed lending lower than expected, which is a reminder that on-chain features are not yet why businesses choose a bank.
@@ -467,7 +469,7 @@ A short audit of each (task P0-11 in the architecture) decides reuse, adaptation
 | MFI risks | Funding mismatch, contagion, over-indebtedness | Pilot first, caps, software-enforced limits |
 | Data and consent | POPIA applies to every data feature | Consent required, purposes limited, decisions explainable |
 | Focus | A bank, a platform, a digital-asset entity and an MFI network are four businesses | Strict sequencing |
-| Capital | About $15M to $20M before profit in the base case | Milestone funding; a sale as an acceptable outcome |
+| Capital | About R270 million (US$15 million) to R360 million (US$20 million) before profit in the base case | Milestone funding; a sale as an acceptable outcome |
 | AI-built software | Defects in money-path code | Tests decide; two human reviews; no real data in development |
 
 ---
@@ -523,7 +525,7 @@ Estimates assume six to eight people working with coding agents. Calendar time t
 - Capitec has 26.6M active clients, not 22M.
 - GoTyme has more than 12.5M customers, per its chief executive.
 - Bank Zero's 275,000 direct and 500,000 alliance customers are unsupported. Sources show over 40,000 funded accounts (April 2025), about R700M deposits and its first alliance partner only in April 2026.
-- Erebor raised about $380M in total, not $635M.
+- Erebor raised about R6.84 billion (US$380 million) in total, not R11.4 billion (US$635 million).
 - One account holding rand, USDC and tokenised deposits with full deposit insurance is not currently achievable. Third-party stablecoins are not bank liabilities and are not deposit-insured, and only a licensed bank can issue tokenised deposits.
 
 **To verify before relying on**

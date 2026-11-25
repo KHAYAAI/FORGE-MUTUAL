@@ -30,6 +30,7 @@ flowchart LR
 | [Licence application plan](../regulatory/policies/licence-application-plan.md) | Founder and CEO: Tebogo Mvelase (R01) | Board (once constituted) | Monthly until submitted | LIC-01, LIC-02, LIC-05, LIC-06, LIC-07, LIC-10, LIC-11, LIC-12, LIC-13, LIC-14, LIC-16, LIC-17 | Draft 0.1 |
 | [Business plan outline (application pack)](../regulatory/policies/business-plan-outline.md) | Founder and CEO: Tebogo Mvelase (R01) | Board | Yearly | LIC-14 | Draft |
 | [Naming, marketing and public statements policy](../regulatory/policies/naming-and-marketing-policy.md) | Chief Compliance Officer (R04, VACANT) | Executive committee | Yearly | LIC-17 | Draft 0.1 |
+| [Membership and surplus distribution policy](../regulatory/policies/membership-and-surplus-policy.md) | Company Secretary (R17, VACANT) | Board, then members' meeting | Yearly | LIC-07 | Draft |
 
 ## Risk and capital
 
@@ -43,9 +44,10 @@ flowchart LR
 | [Market and interest rate risk policy](../regulatory/policies/market-and-interest-rate-risk-policy.md) | Head of Treasury (R13, VACANT) | Board, on ALCO and Risk Committee recommendation | Yearly | LIC-13, MR-01, EXC-02 | Draft 0.1 |
 | [Operational risk policy](../regulatory/policies/operational-risk-policy.md) | Chief Risk Officer (R02, VACANT) | Board, on Risk Committee recommendation | Yearly | LIC-13, BR-02, MR-01 | Draft 0.1 |
 | [Deposit concentration and liquidity limits policy](../regulatory/policies/concentration-policy.md) | Head of Treasury (R13, VACANT) | Board, on ALCO recommendation | Yearly | BR-04 | Draft |
-| [Liquidity risk framework and contingency funding plan (Banks Act regulations)](../regulatory/policies/liquidity-and-contingency-funding-plan.md) | Head of Treasury (R13, VACANT) | Board, on ALCO recommendation | Yearly | BR-04, LIC-04 | Draft |
+| [Liquidity risk framework and contingency funding plan (Mutual Banks Act s.50 and Banks Act regulations)](../regulatory/policies/liquidity-and-contingency-funding-plan.md) | Head of Treasury (R13, VACANT) | Board, on ALCO recommendation | Yearly | BR-04, LIC-04 | Draft |
 | [Business continuity, disaster recovery and recovery plan](../regulatory/policies/recovery-plan.md) | Chief Risk Officer (R02, VACANT) | Board | Yearly | BR-04, JS2-12, JS2-13 | Draft |
 | [New product approval policy](../regulatory/policies/new-product-approval-policy.md) | Head of Product (R18, VACANT) | Board | Yearly | BR-02, LIC-13 | Draft 0.1 |
+| [Large exposures and investment limits policy](../regulatory/policies/large-exposures-policy.md) | Chief Risk Officer (R02, VACANT) | Board, on risk committee recommendation | Yearly | LIC-14, MR-01 | Draft |
 
 ## Finance and reporting
 
@@ -63,6 +65,7 @@ flowchart LR
 | [Cash threshold reporting procedure](../regulatory/policies/cash-threshold-reporting-procedure.md) | Money Laundering Reporting Officer (R06, VACANT) | Financial Crime Committee | Yearly | FIC-07 | Draft 0.1 |
 | [Complaints and treating customers fairly policy](../regulatory/policies/complaints-and-fair-treatment-policy.md) | Head of Customer Service and Complaints (R19, VACANT) | Board, on Social and Ethics Committee recommendation | Yearly | BR-02 | Draft 0.1 |
 | [Cash policy](../regulatory/policies/cash-policy.md) | Money Laundering Reporting Officer (R06, VACANT) | Board, on Risk and Capital Management Committee recommendation | Yearly, and before any cash channel is added | FIC-07, FIC-10 | Draft 0.1 |
+| [Deposit insurance policy (CODI)](../regulatory/policies/deposit-insurance-policy.md) | Chief Financial Officer (R03, VACANT) | Board | Yearly | DI-01, DI-02 | Draft |
 
 ## Assurance
 

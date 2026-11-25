@@ -7,9 +7,10 @@ import (
 	"strings"
 )
 
-// The balance sheet and income statement, built from the ledger's trial balance, for either legal form. These are the
-// first two returns of each set: the bank's BA 100 and BA 120, and the mutual bank's DI 100 and DI 200 (form numbers
-// for the mutual route are VERIFY: confirm which DI form carries each statement).
+// A summary balance sheet and income statement, built from the ledger's trial balance, for either legal form: the bank's
+// BA 100 and BA 120 (form numbers confirmed in Directive 1 of 2025, Annexure 1A), still on this repository's own line
+// references. The mutual bank's filed forms, DI 100 and DI 200, are built on the form's own line numbers in di.go; the
+// summary here stays for the bank route and for management packs.
 //
 // Every line reads the net balance (credits less debits, in rand cents) of named ledger account codes, given as inputs
 // "code:<n>". The balance sheet must balance: total assets equal total liabilities and equity, which holds only when
@@ -29,7 +30,7 @@ const (
 // FormNumbers are the form numbers for each statement by legal form.
 var FormNumbers = map[LegalForm]map[string]string{
 	Bank:   {"balance-sheet": "BA 100", "income-statement": "BA 120"},
-	Mutual: {"balance-sheet": "DI 100", "income-statement": "DI 200"}, // VERIFY
+	Mutual: {"balance-sheet": "DI 100", "income-statement": "DI 200"},
 }
 
 // Classes say where each ledger account code goes. Debit-normal codes are negated so the statement shows positives.
@@ -37,12 +38,13 @@ var (
 	cashCodes        = []uint32{3001, 3002, 3003, 3010, 3020, 5001}
 	loanCodes        = []uint32{1010, 1020}
 	depositCodes     = []uint32{1001}
-	otherLiabCodes   = []uint32{2001, 2003, 2004, 2005, 5002}
+	otherLiabCodes   = []uint32{2001, 2003, 2004, 2005, 3030, 5002, 8002}
 	incomeCodes      = []uint32{2002, 2008}
 	expenseCodes     = []uint32{2006, 2007}
+	capitalCodes     = []uint32{8001} // member share capital (mutual) or share capital paid in
 	statementMapping = func() map[uint32]bool {
 		m := map[uint32]bool{}
-		for _, cs := range [][]uint32{cashCodes, loanCodes, depositCodes, otherLiabCodes, incomeCodes, expenseCodes} {
+		for _, cs := range [][]uint32{cashCodes, loanCodes, depositCodes, otherLiabCodes, incomeCodes, expenseCodes, capitalCodes} {
 			for _, c := range cs {
 				m[c] = true
 			}
@@ -97,9 +99,9 @@ func BalanceSheet(form LegalForm) (Spec, error) {
 	if !ok {
 		return Spec{}, fmt.Errorf("returns: unknown legal form %q", form)
 	}
-	equity := "Retained earnings (current period)"
+	equity := "Equity: share capital and retained earnings (current period)"
 	if form == Mutual {
-		equity = "Members' reserves: retained surplus (current period)"
+		equity = "Members' shares and reserves: share capital and retained surplus (current period)"
 	}
 	s := Spec{Form: num, Name: "Balance sheet", Frequency: "monthly", Audited: true,
 		Lines: []Line{
@@ -109,20 +111,20 @@ func BalanceSheet(form LegalForm) (Spec, error) {
 				Compute: func(in map[string]Cents) (Cents, error) { return sum(in, cashCodes, -1) + sum(in, loanCodes, -1), nil }},
 			line("BS.4", "Deposits from customers", depositCodes, 1),
 			line("BS.5", "Other liabilities: operating, FX pool and position, suspense, rewards", otherLiabCodes, 1),
-			{Ref: "BS.6", Label: equity, Inputs: names(append(append([]uint32{}, incomeCodes...), expenseCodes...)),
+			{Ref: "BS.6", Label: equity, Inputs: names(append(append(append([]uint32{}, incomeCodes...), expenseCodes...), capitalCodes...)),
 				Compute: func(in map[string]Cents) (Cents, error) {
-					return sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1), nil
+					return sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1) + sum(in, capitalCodes, 1), nil
 				}},
 			{Ref: "BS.7", Label: "Total liabilities and equity", Inputs: nil,
 				Compute: func(in map[string]Cents) (Cents, error) {
-					return sum(in, depositCodes, 1) + sum(in, otherLiabCodes, 1) + sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1), nil
+					return sum(in, depositCodes, 1) + sum(in, otherLiabCodes, 1) + sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1) + sum(in, capitalCodes, 1), nil
 				}},
 		},
 		Totals: []Total{{Line: "BS.3", Sum: []string{"BS.1", "BS.2"}}, {Line: "BS.7", Sum: []string{"BS.4", "BS.5", "BS.6"}}},
 		// The sheet balances: assets come from the debit side, liabilities and equity from the credit side.
 		Reconcile: map[string]func(map[string]Cents) (Cents, error){
 			"BS.3": func(in map[string]Cents) (Cents, error) {
-				return sum(in, depositCodes, 1) + sum(in, otherLiabCodes, 1) + sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1), nil
+				return sum(in, depositCodes, 1) + sum(in, otherLiabCodes, 1) + sum(in, incomeCodes, 1) + sum(in, expenseCodes, 1) + sum(in, capitalCodes, 1), nil
 			},
 		},
 	}

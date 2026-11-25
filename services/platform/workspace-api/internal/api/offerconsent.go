@@ -12,15 +12,15 @@ import (
 // The customer's consent to share their details with a third-party provider. A referral needs it (the offers service checks), and it is
 // the customer's to give and to withdraw. It is recorded in the consent service, tied to the exact statement the customer saw.
 //
+// What the customer is told is shared is the offer's own Shares list, the very list the offers service's sender builds the details from, so
+// the words on screen and the data sent cannot drift apart.
+//
 // The consent service accepts only plain purposes, so the provider is in the scope: purpose "share_with_partner", scope "referral:<provider>".
 // (These must match partner-offers' ConsentPurpose and ConsentScope; a test pins them.)
 const (
 	partnerConsentPurpose = "share_with_partner"
 	partnerConsentScope   = "referral:"
 )
-
-// sharedWithProvider is what the customer is told Forge may share, in full, before they agree.
-var sharedWithProvider = []string{"your name", "your email address and phone number held by Forge"}
 
 // offerFor finds an offer the session party may currently see. Hidden offers look absent, so a consent can only ever be given for a
 // provider the customer was actually shown.
@@ -58,7 +58,7 @@ func (a *API) currentConsent(r *http.Request, s Session, o *offersv1.Offer) (con
 	if err != nil {
 		return consentView{}, err
 	}
-	return consentView{Granted: c.Msg.Allowed, ConsentID: c.Msg.ConsentId, ProviderName: o.ProviderName, Shares: sharedWithProvider}, nil
+	return consentView{Granted: c.Msg.Allowed, ConsentID: c.Msg.ConsentId, ProviderName: o.ProviderName, Shares: o.Shares}, nil
 }
 
 func (a *API) getOfferConsent(w http.ResponseWriter, r *http.Request, s Session) {
@@ -96,7 +96,7 @@ func (a *API) grantOfferConsent(w http.ResponseWriter, r *http.Request, s Sessio
 	}
 	if _, err := a.Services.Consent.Grant(r.Context(), connect.NewRequest(&consentv1.GrantRequest{
 		IdempotencyKey: key, PartyId: s.Party, Purpose: partnerConsentPurpose, Scopes: []string{partnerConsentScope + o.ProviderId},
-		DataSources: []string{"identity", "contact"}, EvidenceRef: "offer:" + o.OfferId + ";statement:" + o.StatementHash, Actor: s.Actor})); err != nil {
+		DataSources: []string{"identity"}, EvidenceRef: "offer:" + o.OfferId + ";statement:" + o.StatementHash, Actor: s.Actor})); err != nil {
 		writeErr(w, err)
 		return
 	}

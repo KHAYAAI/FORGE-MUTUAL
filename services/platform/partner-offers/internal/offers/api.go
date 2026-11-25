@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,19 +19,19 @@ import (
 func (s *Service) offerProto(p provider, o offerRow) *offersv1.Offer {
 	st := Statement(p, o)
 	return &offersv1.Offer{OfferId: o.ID, Category: o.Category, Title: o.Title, Summary: o.Summary, ProviderName: p.Name, LicenceType: p.LicenceType,
-		LicenceNumber: p.Number, Regulator: p.Regulator, ProviderId: p.ID, Statement: st, StatementHash: StatementHash(st), FeeDisclosure: o.Fee}
+		LicenceNumber: p.Number, Regulator: p.Regulator, ProviderId: p.ID, ReferralFeeCapMinor: fmt.Sprint(o.FeeCap), Shares: SharedFields, Statement: st, StatementHash: StatementHash(st), FeeDisclosure: o.Fee}
 }
 
 const offerSelect = `select o.offer_id, o.provider_id, o.category, o.title, o.summary, o.handoff_url, o.fee_disclosure, o.status, o.updated_by,
 	p.provider_id, p.name, p.licence_type, p.regulator, p.licence_number, p.licence_source_url, p.status, p.registered_by,
-	p.licence_verified_at, coalesce(p.licence_verified_by,''), p.licence_expires_at
+	p.licence_verified_at, coalesce(p.licence_verified_by,''), p.licence_expires_at, p.delivery_url, p.licence_checked_at, o.fee_cap_minor
 	from offer o join provider p using (provider_id)`
 
 func scanOffer(row pgx.Row) (offerRow, provider, error) {
 	var o offerRow
 	var p provider
 	err := row.Scan(&o.ID, &o.ProviderID, &o.Category, &o.Title, &o.Summary, &o.URL, &o.Fee, &o.Status, &o.UpdatedBy,
-		&p.ID, &p.Name, &p.LicenceType, &p.Regulator, &p.Number, &p.SourceURL, &p.Status, &p.RegisteredBy, &p.VerifiedAt, &p.VerifiedBy, &p.ExpiresAt)
+		&p.ID, &p.Name, &p.LicenceType, &p.Regulator, &p.Number, &p.SourceURL, &p.Status, &p.RegisteredBy, &p.VerifiedAt, &p.VerifiedBy, &p.ExpiresAt, &p.DeliveryURL, &p.CheckedAt, &o.FeeCap)
 	return o, p, err
 }
 
@@ -52,13 +54,12 @@ func (s *Service) ListOffers(ctx context.Context, r *connect.Request[offersv1.Li
 	}
 	defer rows.Close()
 	out := &offersv1.ListOffersResponse{}
-	now := s.now()
 	for rows.Next() {
 		o, p, err := scanOffer(rows)
 		if err != nil {
 			return nil, wrap(err)
 		}
-		if Visible(now, p.Status, p.VerifiedAt, p.ExpiresAt, o.Status) {
+		if s.visible(p, o) {
 			out.Offers = append(out.Offers, s.offerProto(p, o))
 		}
 	}
@@ -120,7 +121,7 @@ func (s *Service) CreateReferral(ctx context.Context, r *connect.Request[offersv
 	if err != nil {
 		return nil, wrap(err)
 	}
-	if !Visible(s.now(), p.Status, p.VerifiedAt, p.ExpiresAt, o.Status) {
+	if !s.visible(p, o) {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("no such offer")) // hidden offers look absent
 	}
 	st := StatementHash(Statement(p, o))
@@ -153,6 +154,14 @@ func (s *Service) CreateReferral(ctx context.Context, r *connect.Request[offersv
 		return nil, wrap(err)
 	}
 	if err := s.Pool.QueryRow(ctx, `select referral_id, created_at from referral where party_id = $1 and idempotency_key = $2`, m.PartyId, m.IdempotencyKey).Scan(&id, &at); err != nil {
+		return nil, wrap(err)
+	}
+	// Queue the customer's details for the provider, if it has an address for them. Nothing is sent here: the sender re-checks the consent first.
+	status := "PENDING"
+	if p.DeliveryURL == "" || s.Names == nil {
+		status = "NOT_CONFIGURED"
+	}
+	if _, err := s.Pool.Exec(ctx, `insert into referral_delivery (referral_id, status, next_at) values ($1,$2,$3) on conflict (referral_id) do nothing`, id, status, now); err != nil {
 		return nil, wrap(err)
 	}
 	return connect.NewResponse(&offersv1.CreateReferralResponse{Referral: s.referralProto(id, o.ID, p.Name, handoff(o.URL, id), at)}), nil
@@ -212,10 +221,15 @@ func (s *Service) RegisterProvider(ctx context.Context, r *connect.Request[offer
 	if err := httpsURL(m.LicenceSourceUrl); err != nil {
 		return nil, invalid("licence_source_url " + err.Error())
 	}
+	if m.DeliveryUrl != "" {
+		if err := httpsURL(m.DeliveryUrl); err != nil {
+			return nil, invalid("delivery_url " + err.Error())
+		}
+	}
 	err := pgx.BeginFunc(ctx, s.Pool, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `insert into provider (provider_id, name, licence_type, regulator, licence_number, licence_source_url, status, registered_by, created_at)
-			values ($1,$2,$3,$4,$5,$6,'PENDING',$7,$8) on conflict (provider_id) do nothing`, m.ProviderId, strings.TrimSpace(m.Name), m.LicenceType,
-			strings.TrimSpace(m.Regulator), strings.TrimSpace(m.LicenceNumber), m.LicenceSourceUrl, m.Actor, s.now())
+		tag, err := tx.Exec(ctx, `insert into provider (provider_id, name, licence_type, regulator, licence_number, licence_source_url, status, registered_by, created_at, delivery_url)
+			values ($1,$2,$3,$4,$5,$6,'PENDING',$7,$8,$9) on conflict (provider_id) do nothing`, m.ProviderId, strings.TrimSpace(m.Name), m.LicenceType,
+			strings.TrimSpace(m.Regulator), strings.TrimSpace(m.LicenceNumber), m.LicenceSourceUrl, m.Actor, s.now(), m.DeliveryUrl)
 		if err != nil {
 			return err
 		}
@@ -325,11 +339,16 @@ func (s *Service) UpsertOffer(ctx context.Context, r *connect.Request[offersv1.U
 		return nil, invalid("offer_id must be lower-case letters, digits and hyphens")
 	}
 	title, summary, fee := strings.TrimSpace(m.Title), strings.TrimSpace(m.Summary), strings.TrimSpace(m.FeeDisclosure)
-	if title == "" || len(title) > 120 || summary == "" || len(summary) > 500 {
-		return nil, invalid("a title of up to 120 and a summary of up to 500 characters are required")
+	if title == "" || len(title) > 120 || summary == "" || len(summary) > 500 || len(fee) > 300 {
+		return nil, invalid("a title of up to 120, a summary of up to 500 and a fee note of up to 300 characters are required")
 	}
-	if fee == "" {
-		return nil, invalid("fee_disclosure is required: say what, if anything, Forge is paid")
+	cap, err := strconv.ParseInt(strings.TrimSpace(m.ReferralFeeCapMinor), 10, 64)
+	maxCap := s.MaxFeeCap
+	if maxCap <= 0 {
+		maxCap = DefaultMaxFeeCap
+	}
+	if err != nil || cap < 0 || cap > maxCap {
+		return nil, invalid(fmt.Sprintf("referral_fee_cap_minor is required: the most Forge may be paid per referral in rand cents, 0 for nothing, at most %d", maxCap))
 	}
 	if err := httpsURL(m.HandoffUrl); err != nil {
 		return nil, invalid("handoff_url " + err.Error())
@@ -344,11 +363,11 @@ func (s *Service) UpsertOffer(ctx context.Context, r *connect.Request[offersv1.U
 	if p.LicenceType != want {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("this category needs a provider holding a "+want+" licence"))
 	}
-	o := offerRow{ID: m.OfferId, ProviderID: p.ID, Category: m.Category, Title: title, Summary: summary, URL: m.HandoffUrl, Fee: fee, Status: "DRAFT", UpdatedBy: m.Actor}
-	if _, err := s.Pool.Exec(ctx, `insert into offer (offer_id, provider_id, category, title, summary, handoff_url, fee_disclosure, status, updated_at, updated_by)
-		values ($1,$2,$3,$4,$5,$6,$7,'DRAFT',$8,$9)
-		on conflict (offer_id) do update set provider_id=$2, category=$3, title=$4, summary=$5, handoff_url=$6, fee_disclosure=$7, status='DRAFT', updated_at=$8, updated_by=$9`,
-		o.ID, o.ProviderID, o.Category, o.Title, o.Summary, o.URL, o.Fee, s.now(), m.Actor); err != nil {
+	o := offerRow{ID: m.OfferId, ProviderID: p.ID, Category: m.Category, Title: title, Summary: summary, URL: m.HandoffUrl, Fee: fee, Status: "DRAFT", UpdatedBy: m.Actor, FeeCap: cap}
+	if _, err := s.Pool.Exec(ctx, `insert into offer (offer_id, provider_id, category, title, summary, handoff_url, fee_disclosure, status, updated_at, updated_by, fee_cap_minor)
+		values ($1,$2,$3,$4,$5,$6,$7,'DRAFT',$8,$9,$10)
+		on conflict (offer_id) do update set provider_id=$2, category=$3, title=$4, summary=$5, handoff_url=$6, fee_disclosure=$7, status='DRAFT', updated_at=$8, updated_by=$9, fee_cap_minor=$10`,
+		o.ID, o.ProviderID, o.Category, o.Title, o.Summary, o.URL, o.Fee, s.now(), m.Actor, o.FeeCap); err != nil {
 		return nil, wrap(err)
 	}
 	return connect.NewResponse(&offersv1.UpsertOfferResponse{Offer: s.offerProto(p, o)}), nil
@@ -375,7 +394,7 @@ func (s *Service) SetOfferStatus(ctx context.Context, r *connect.Request[offersv
 		return nil, wrap(err)
 	}
 	if m.Status == "ACTIVE" {
-		if !Visible(s.now(), p.Status, p.VerifiedAt, p.ExpiresAt, "ACTIVE") {
+		if !s.visible(p, offerRow{Status: "ACTIVE"}) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the provider's licence is not currently verified"))
 		}
 		if strings.EqualFold(strings.TrimSpace(m.Actor), o.UpdatedBy) {
@@ -428,14 +447,13 @@ func (s *Service) ListAdminOffers(ctx context.Context, _ *connect.Request[offers
 	}
 	defer rows.Close()
 	out := &offersv1.ListAdminOffersResponse{}
-	now := s.now()
 	for rows.Next() {
 		o, p, err := scanOffer(rows)
 		if err != nil {
 			return nil, wrap(err)
 		}
 		out.Offers = append(out.Offers, &offersv1.AdminOffer{Offer: s.offerProto(p, o), Status: o.Status, HandoffUrl: o.URL, UpdatedBy: o.UpdatedBy,
-			VisibleNow: Visible(now, p.Status, p.VerifiedAt, p.ExpiresAt, o.Status)})
+			VisibleNow: s.visible(p, o)})
 	}
 	return connect.NewResponse(out), wrap(rows.Err())
 }

@@ -65,6 +65,12 @@ const (
 	// PartnerAdminServiceListAdminOffersProcedure is the fully-qualified name of the
 	// PartnerAdminService's ListAdminOffers RPC.
 	PartnerAdminServiceListAdminOffersProcedure = "/forge.offers.v1.PartnerAdminService/ListAdminOffers"
+	// PartnerAdminServiceListAdminReferralsProcedure is the fully-qualified name of the
+	// PartnerAdminService's ListAdminReferrals RPC.
+	PartnerAdminServiceListAdminReferralsProcedure = "/forge.offers.v1.PartnerAdminService/ListAdminReferrals"
+	// PartnerAdminServiceRecordReferralFeeProcedure is the fully-qualified name of the
+	// PartnerAdminService's RecordReferralFee RPC.
+	PartnerAdminServiceRecordReferralFeeProcedure = "/forge.offers.v1.PartnerAdminService/RecordReferralFee"
 )
 
 // PartnerOffersServiceClient is a client for the forge.offers.v1.PartnerOffersService service.
@@ -209,6 +215,11 @@ type PartnerAdminServiceClient interface {
 	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
 	// Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
 	ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error)
+	// Every referral with whether the customer's details were sent, and the referral fees recorded against it.
+	ListAdminReferrals(context.Context, *connect.Request[v1.ListAdminReferralsRequest]) (*connect.Response[v1.ListAdminReferralsResponse], error)
+	// Books a referral fee the provider paid, as income, against the bank receipt. Two people: the first call proposes it, a call from a DIFFERENT
+	// person with the same referral, amount and bank reference books it. Never more than the offer's cap; once per bank reference.
+	RecordReferralFee(context.Context, *connect.Request[v1.RecordReferralFeeRequest]) (*connect.Response[v1.RecordReferralFeeResponse], error)
 }
 
 // NewPartnerAdminServiceClient constructs a client for the forge.offers.v1.PartnerAdminService
@@ -264,18 +275,32 @@ func NewPartnerAdminServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminOffers")),
 			connect.WithClientOptions(opts...),
 		),
+		listAdminReferrals: connect.NewClient[v1.ListAdminReferralsRequest, v1.ListAdminReferralsResponse](
+			httpClient,
+			baseURL+PartnerAdminServiceListAdminReferralsProcedure,
+			connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminReferrals")),
+			connect.WithClientOptions(opts...),
+		),
+		recordReferralFee: connect.NewClient[v1.RecordReferralFeeRequest, v1.RecordReferralFeeResponse](
+			httpClient,
+			baseURL+PartnerAdminServiceRecordReferralFeeProcedure,
+			connect.WithSchema(partnerAdminServiceMethods.ByName("RecordReferralFee")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // partnerAdminServiceClient implements PartnerAdminServiceClient.
 type partnerAdminServiceClient struct {
-	registerProvider *connect.Client[v1.RegisterProviderRequest, v1.RegisterProviderResponse]
-	verifyLicence    *connect.Client[v1.VerifyLicenceRequest, v1.VerifyLicenceResponse]
-	suspendProvider  *connect.Client[v1.SuspendProviderRequest, v1.SuspendProviderResponse]
-	upsertOffer      *connect.Client[v1.UpsertOfferRequest, v1.UpsertOfferResponse]
-	setOfferStatus   *connect.Client[v1.SetOfferStatusRequest, v1.SetOfferStatusResponse]
-	listProviders    *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
-	listAdminOffers  *connect.Client[v1.ListAdminOffersRequest, v1.ListAdminOffersResponse]
+	registerProvider   *connect.Client[v1.RegisterProviderRequest, v1.RegisterProviderResponse]
+	verifyLicence      *connect.Client[v1.VerifyLicenceRequest, v1.VerifyLicenceResponse]
+	suspendProvider    *connect.Client[v1.SuspendProviderRequest, v1.SuspendProviderResponse]
+	upsertOffer        *connect.Client[v1.UpsertOfferRequest, v1.UpsertOfferResponse]
+	setOfferStatus     *connect.Client[v1.SetOfferStatusRequest, v1.SetOfferStatusResponse]
+	listProviders      *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
+	listAdminOffers    *connect.Client[v1.ListAdminOffersRequest, v1.ListAdminOffersResponse]
+	listAdminReferrals *connect.Client[v1.ListAdminReferralsRequest, v1.ListAdminReferralsResponse]
+	recordReferralFee  *connect.Client[v1.RecordReferralFeeRequest, v1.RecordReferralFeeResponse]
 }
 
 // RegisterProvider calls forge.offers.v1.PartnerAdminService.RegisterProvider.
@@ -313,6 +338,16 @@ func (c *partnerAdminServiceClient) ListAdminOffers(ctx context.Context, req *co
 	return c.listAdminOffers.CallUnary(ctx, req)
 }
 
+// ListAdminReferrals calls forge.offers.v1.PartnerAdminService.ListAdminReferrals.
+func (c *partnerAdminServiceClient) ListAdminReferrals(ctx context.Context, req *connect.Request[v1.ListAdminReferralsRequest]) (*connect.Response[v1.ListAdminReferralsResponse], error) {
+	return c.listAdminReferrals.CallUnary(ctx, req)
+}
+
+// RecordReferralFee calls forge.offers.v1.PartnerAdminService.RecordReferralFee.
+func (c *partnerAdminServiceClient) RecordReferralFee(ctx context.Context, req *connect.Request[v1.RecordReferralFeeRequest]) (*connect.Response[v1.RecordReferralFeeResponse], error) {
+	return c.recordReferralFee.CallUnary(ctx, req)
+}
+
 // PartnerAdminServiceHandler is an implementation of the forge.offers.v1.PartnerAdminService
 // service.
 type PartnerAdminServiceHandler interface {
@@ -325,6 +360,11 @@ type PartnerAdminServiceHandler interface {
 	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
 	// Every offer, drafts and withdrawn included, with the statement a customer would be shown, so a second person can read it before switching it on.
 	ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error)
+	// Every referral with whether the customer's details were sent, and the referral fees recorded against it.
+	ListAdminReferrals(context.Context, *connect.Request[v1.ListAdminReferralsRequest]) (*connect.Response[v1.ListAdminReferralsResponse], error)
+	// Books a referral fee the provider paid, as income, against the bank receipt. Two people: the first call proposes it, a call from a DIFFERENT
+	// person with the same referral, amount and bank reference books it. Never more than the offer's cap; once per bank reference.
+	RecordReferralFee(context.Context, *connect.Request[v1.RecordReferralFeeRequest]) (*connect.Response[v1.RecordReferralFeeResponse], error)
 }
 
 // NewPartnerAdminServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -376,6 +416,18 @@ func NewPartnerAdminServiceHandler(svc PartnerAdminServiceHandler, opts ...conne
 		connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminOffers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	partnerAdminServiceListAdminReferralsHandler := connect.NewUnaryHandler(
+		PartnerAdminServiceListAdminReferralsProcedure,
+		svc.ListAdminReferrals,
+		connect.WithSchema(partnerAdminServiceMethods.ByName("ListAdminReferrals")),
+		connect.WithHandlerOptions(opts...),
+	)
+	partnerAdminServiceRecordReferralFeeHandler := connect.NewUnaryHandler(
+		PartnerAdminServiceRecordReferralFeeProcedure,
+		svc.RecordReferralFee,
+		connect.WithSchema(partnerAdminServiceMethods.ByName("RecordReferralFee")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/forge.offers.v1.PartnerAdminService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PartnerAdminServiceRegisterProviderProcedure:
@@ -392,6 +444,10 @@ func NewPartnerAdminServiceHandler(svc PartnerAdminServiceHandler, opts ...conne
 			partnerAdminServiceListProvidersHandler.ServeHTTP(w, r)
 		case PartnerAdminServiceListAdminOffersProcedure:
 			partnerAdminServiceListAdminOffersHandler.ServeHTTP(w, r)
+		case PartnerAdminServiceListAdminReferralsProcedure:
+			partnerAdminServiceListAdminReferralsHandler.ServeHTTP(w, r)
+		case PartnerAdminServiceRecordReferralFeeProcedure:
+			partnerAdminServiceRecordReferralFeeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -427,4 +483,12 @@ func (UnimplementedPartnerAdminServiceHandler) ListProviders(context.Context, *c
 
 func (UnimplementedPartnerAdminServiceHandler) ListAdminOffers(context.Context, *connect.Request[v1.ListAdminOffersRequest]) (*connect.Response[v1.ListAdminOffersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.offers.v1.PartnerAdminService.ListAdminOffers is not implemented"))
+}
+
+func (UnimplementedPartnerAdminServiceHandler) ListAdminReferrals(context.Context, *connect.Request[v1.ListAdminReferralsRequest]) (*connect.Response[v1.ListAdminReferralsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.offers.v1.PartnerAdminService.ListAdminReferrals is not implemented"))
+}
+
+func (UnimplementedPartnerAdminServiceHandler) RecordReferralFee(context.Context, *connect.Request[v1.RecordReferralFeeRequest]) (*connect.Response[v1.RecordReferralFeeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("forge.offers.v1.PartnerAdminService.RecordReferralFee is not implemented"))
 }

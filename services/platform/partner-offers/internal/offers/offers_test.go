@@ -53,7 +53,7 @@ func setup(t *testing.T) *rig {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, `drop table if exists referral, offer, provider_event, provider cascade`); err != nil {
+	if _, err := pool.Exec(ctx, `drop table if exists referral_fee, referral_fee_proposal, referral_delivery, referral, offer, provider_event, provider cascade`); err != nil {
 		t.Fatal(err)
 	}
 	if err := Open(ctx, pool); err != nil {
@@ -82,7 +82,7 @@ func (r *rig) liveOffer(providerID, licenceType, category, offerID string) {
 	_, err = r.s.VerifyLicence(ctx, connect.NewRequest(&offersv1.VerifyLicenceRequest{ProviderId: providerID, Actor: "ben"}))
 	r.must(err)
 	_, err = r.s.UpsertOffer(ctx, connect.NewRequest(&offersv1.UpsertOfferRequest{OfferId: offerID, ProviderId: providerID, Category: category, Title: "Acme Tax-Free Savings",
-		Summary: "A tax-free savings account.", HandoffUrl: "https://invest.acme-wealth.example/start", FeeDisclosure: "Forge receives no fee for introducing you.", Actor: "anna"}))
+		Summary: "A tax-free savings account.", HandoffUrl: "https://invest.acme-wealth.example/start", ReferralFeeCapMinor: "0", Actor: "anna"}))
 	r.must(err)
 	_, err = r.s.SetOfferStatus(ctx, connect.NewRequest(&offersv1.SetOfferStatusRequest{OfferId: offerID, Status: "ACTIVE", Actor: "ben"}))
 	r.must(err)
@@ -128,7 +128,7 @@ func TestEveryOfferCarriesTheThirdPartyStatementInFull(t *testing.T) {
 		for _, need := range []string{"THIRD-PARTY PRODUCT: provided, licensed and monitored by " + o.ProviderName + ", not by Forge Mutual.",
 			"licensed by the FSCA", "licence number FSP 12345", "responsible for this product and for monitoring it",
 			"does not provide this product, advise you on it, hold your money or assets in it, or guarantee it",
-			"not covered by any deposit insurance through us", "Fees: Forge receives no fee"} {
+			"not covered by any deposit insurance through us", "Fees: Forge Mutual receives no fee"} {
 			if !strings.Contains(o.Statement, need) {
 				t.Errorf("%s: the statement lacks %q:\n%s", o.OfferId, need, o.Statement)
 			}
@@ -200,18 +200,18 @@ func TestComplianceRulesAreEnforced(t *testing.T) {
 			t.Fatalf("%s must be refused: %v", u, err)
 		}
 	}
-	up := func(category, fee string) error {
+	up := func(category, cap string) error {
 		_, err := r.s.UpsertOffer(ctx, connect.NewRequest(&offersv1.UpsertOfferRequest{OfferId: "o1", ProviderId: "acme", Category: category, Title: "T", Summary: "S",
-			HandoffUrl: "https://acme.example/go", FeeDisclosure: fee, Actor: "anna"}))
+			HandoffUrl: "https://acme.example/go", ReferralFeeCapMinor: cap, Actor: "anna"}))
 		return err
 	}
-	if connect.CodeOf(up("CRYPTO_ASSETS", "none")) != connect.CodeFailedPrecondition {
+	if connect.CodeOf(up("CRYPTO_ASSETS", "0")) != connect.CodeFailedPrecondition {
 		t.Fatal("a crypto offer needs a CASP licence, not an FSP one")
 	}
-	if connect.CodeOf(up("INVESTMENTS", " ")) != connect.CodeInvalidArgument {
-		t.Fatal("a fee disclosure is required")
+	if connect.CodeOf(up("INVESTMENTS", "")) != connect.CodeInvalidArgument {
+		t.Fatal("the fee cap is required")
 	}
-	r.must(up("INVESTMENTS", "No fee."))
+	r.must(up("INVESTMENTS", "0"))
 	if _, err := r.s.SetOfferStatus(ctx, connect.NewRequest(&offersv1.SetOfferStatusRequest{OfferId: "o1", Status: "ACTIVE", Actor: "ben"})); connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("not while the licence is unverified: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestComplianceRulesAreEnforced(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Changed words go back to DRAFT: someone must approve the new statement.
-	r.must(up("INVESTMENTS", "Forge receives 0.5% of what you invest."))
+	r.must(up("INVESTMENTS", "50000"))
 	if len(r.list("")) != 0 {
 		t.Fatal("a rewritten offer is hidden until switched on again")
 	}
@@ -287,7 +287,7 @@ func TestComplianceSeesDraftsAndWhatACustomerWouldSee(t *testing.T) {
 	ctx := context.Background()
 	r.liveOffer("acme", "FSP", "INVESTMENTS", "acme-tfsa")
 	_, err := r.s.UpsertOffer(ctx, connect.NewRequest(&offersv1.UpsertOfferRequest{OfferId: "acme-draft", ProviderId: "acme", Category: "INVESTMENTS", Title: "Acme Draft Fund",
-		Summary: "Not yet approved.", HandoffUrl: "https://invest.acme-wealth.example/draft", FeeDisclosure: "No fee.", Actor: "anna"}))
+		Summary: "Not yet approved.", HandoffUrl: "https://invest.acme-wealth.example/draft", ReferralFeeCapMinor: "0", Actor: "anna"}))
 	r.must(err)
 	res, err := r.s.ListAdminOffers(ctx, connect.NewRequest(&offersv1.ListAdminOffersRequest{}))
 	r.must(err)

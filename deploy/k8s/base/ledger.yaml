@@ -57,6 +57,10 @@ data:
       "svc-onboarding": [
         "CreateAccounts"
       ],
+      "svc-partner-offers": [
+        "CreateAccounts",
+        "CreateTransfers"
+      ],
       "svc-payments": [
         "CreateAccounts",
         "CreateTransfers",
@@ -312,6 +316,9 @@ spec:
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: onboarding
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: partner-offers
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: payments

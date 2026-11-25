@@ -21,7 +21,9 @@ data:
     {
       "svc-backoffice-api": [
         "ListAdminOffers",
+        "ListAdminReferrals",
         "ListProviders",
+        "RecordReferralFee",
         "RegisterProvider",
         "SetOfferStatus",
         "SuspendProvider",
@@ -141,6 +143,10 @@ spec:
           value: https://consent.forge.svc.cluster.local:8082
         - name: PARTY_URL
           value: https://party.forge.svc.cluster.local:8081
+        - name: LEDGER_URL
+          value: https://ledger.forge.svc.cluster.local:8070
+        - name: PARTNER_OFFERS_SIGNING_DIR
+          value: /secrets
         readinessProbe:
           httpGet:
             path: /readyz
@@ -297,9 +303,14 @@ spec:
           app.kubernetes.io/name: consent
     - podSelector:
         matchLabels:
+          app.kubernetes.io/name: ledger
+    - podSelector:
+        matchLabels:
           app.kubernetes.io/name: party
     ports:
     - protocol: TCP
       port: 8082
+    - protocol: TCP
+      port: 8070
     - protocol: TCP
       port: 8081

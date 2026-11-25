@@ -75,7 +75,7 @@ export default function CurrenciesPage() {
   return (
     <section className="space-y-10" aria-labelledby="currencies-heading">
       <div>
-        <h1 id="currencies-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="currencies-heading" className="text-3xl font-semibold tracking-tight">
           Currencies
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
@@ -88,7 +88,7 @@ export default function CurrenciesPage() {
       {done ? <Notice tone="success">{done}</Notice> : null}
 
       {awaiting.length ? (
-        <div className="rounded-[2rem] bg-sky-50 p-8" aria-labelledby="reasons-heading">
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-8" aria-labelledby="reasons-heading">
           <h2 id="reasons-heading" className="text-2xl font-light tracking-tight">
             Tell us what {awaiting.length === 1 ? "this payment was" : "these payments were"} for
           </h2>
@@ -108,7 +108,7 @@ export default function CurrenciesPage() {
           const account = accounts.find((a) => a.asset === c.asset);
           const detail = details.find((d) => d.asset === c.asset);
           return (
-            <li key={c.asset} className="flex flex-col justify-between gap-6 rounded-[2rem] bg-stone-100 p-8">
+            <li key={c.asset} className="flex flex-col justify-between gap-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
               <div>
                 <p className="text-sm text-stone-500">{c.name}</p>
                 <p className="mt-1 text-3xl font-light tabular-nums">

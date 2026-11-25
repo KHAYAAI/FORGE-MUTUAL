@@ -15,7 +15,7 @@ this and a launch is mostly not code: a banking licence or sponsor bank, account
 production infrastructure and an independent security review. Assessed 2026-11-23.
 
 **Scorecard.** Regulatory register (`docs/regulatory/register.csv`, 114 requirements): 100 Partial, 10 Open, 4 waiting
-on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 55 draft policies, none approved;
+on an external party, none fully met. The 10 open rows all wait on a person, capital or a hosting choice. Governance pack (`docs/governance/`): 58 draft policies, none approved;
 37 seats, 1 named (founder Tebogo Mvelase), 36 vacant. Thresholds: 31 placeholders, none with a named owner. Legal form: mutual bank planned, bank kept open (`docs/governance/LEGAL_FORMS.md`); both built into the code. Licence: none.
 Production infrastructure: none. Software gate (`make ci-db`): passing.
 
@@ -33,14 +33,23 @@ How the bank is shaped by Erebor (technology) and Investec (service), and where 
 
 | Stage | Where we are | What is missing |
 |---|---|---|
-| **Conversations** (sponsor banks, a regulatory lawyer, the Prudential Authority's pre-application meeting, investors, first hires) | **Ready to start.** A working platform, a governance pack (structure, 37 seats, 55 draft policies), a 114-line regulatory register, a bank-model note, a legal-forms comparison (mutual planned, bank open), a sponsor pitch, a lawyer brief and a risk appetite worksheet. | The founder's own fit-and-proper file; real financial projections (the pro formas use illustrative figures); a named lawyer and a sponsor shortlist; the owner's answers to the risk appetite worksheet. |
-| **Licence application** (Prudential Authority registration as a mutual bank or a bank) | **Not ready.** Policies and structure are drafted, but nothing is approved. 2 of about 18 returns per route are built, with unverified line mapping. | Capital (R10m mutual, R250m bank); at least 7 founding members for a mutual; a board with independent directors; fit-and-proper filings for every director and executive; approved policies; a business plan with real projections; the lawyer's advice on the legal form. Typically 18 to 24 months or more from a complete application (general knowledge; confirm with the lawyer). |
+| **Conversations** (sponsor banks, a regulatory lawyer, the Prudential Authority's pre-application meeting, investors, first hires) | **Ready to start.** A working platform, a governance pack (structure, 37 seats, 58 draft policies), a 114-line regulatory register, a bank-model note, a legal-forms comparison (mutual planned, bank open), a sponsor pitch, a lawyer brief and a risk appetite worksheet. | The founder's own fit-and-proper file; real financial projections (the pro formas use illustrative figures); a named lawyer and a sponsor shortlist; the owner's answers to the risk appetite worksheet. |
+| **Licence application** (Prudential Authority registration as a mutual bank or a bank) | **Not ready.** Policies and structure are drafted, but nothing is approved. For the mutual route the official forms are now in hand (27 DI forms, from the PA): DI 100, DI 200, DI 110, DI 300 (liquidity ladder), DI 310 (liquid assets), DI 400 (capital), DI 410 (interest-rate risk), DI 500 (credit risk), DI 505 and DI 510 (large exposures), DI 600 (currency risk), DI 700 (investment limits), DI 900 (institutional breakdown) and DI 930 (interest rates) are built on the forms' own line numbers, the DI 099 control sheet is built, 9 forms are nil returns and 3 do not apply; none is left to build (`docs/regulatory/returns/catalogue.csv`). The line transcription still needs a second person's check. | Capital (R10m mutual, R250m bank); at least 7 founding members for a mutual; a board with independent directors; fit-and-proper filings for every director and executive; approved policies; a business plan with real projections; the lawyer's advice on the legal form. Typically 18 to 24 months or more from a complete application (general knowledge; confirm with the lawyer). |
 | **Live launch** (real customers, through a sponsor bank first) | **Not ready.** The software passes its gate on a local stack, with every external party simulated. | A signed sponsor bank; the MLRO, risk and compliance heads; approved policies; production hosting and a Prudential Authority notice 20 working days ahead; a penetration test; live WorkOS and Didit; a licensed sanctions list; lawyer-reviewed terms and privacy notice; FIC registration; a pilot. Roughly 6 to 12 months if the first steps start now (general knowledge). |
 
 ### Licence application pack
 
 [`docs/licence-application/PACK.md`](docs/licence-application/PACK.md) is generated (`make licence-pack`) from the regulatory register: 18 sections, 59
 requirements, each with its owner, evidence and gap. It is an index of what the application needs, not the application.
+Two working drafts sit beside it, both for the lawyer and the founder to correct and neither approved: a
+[draft constitution](docs/licence-application/CONSTITUTION_DRAFT.md) (20 decisions listed; the Act's own provisions still to be added) and a
+[draft business plan](docs/licence-application/BUSINESS_PLAN_DRAFT.md) (projections, capital plan, board and auditor are gaps).
+
+### Policies against the regulator's structure
+
+[`docs/governance/POLICY_MAP.md`](docs/governance/POLICY_MAP.md) places all 58 draft policies under 17 areas: the seven prudential standards the PA has
+announced for mutual banks (not yet published) and the instruments already in force (Mutual Banks Act and regulations, Joint Standards, guidance
+notes, FICA, CODI, POPIA). Three gaps it found are now drafted: large exposures, deposit insurance, and membership and surplus.
 
 ### Governance and people
 
