@@ -89,7 +89,7 @@ export default function FxPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-4xl font-light tracking-tight">Convert currency</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Convert currency</h1>
       {error ? <Notice tone="error">{error}</Notice> : null}
       {deal ? (
         <Notice tone="success">
@@ -134,7 +134,7 @@ export default function FxPage() {
       </form>
 
       {quote ? (
-        <div className="space-y-4 rounded-[2rem] bg-stone-100 p-8" aria-label="Your quote">
+        <div className="space-y-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label="Your quote">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-stone-500">You pay</dt>
             <dd className="tabular-nums">{formatMinor(quote.sell_amount_minor, quote.sell_asset)}</dd>

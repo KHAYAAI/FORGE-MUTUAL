@@ -78,7 +78,7 @@ export default function GetPaidPage() {
   return (
     <section className="space-y-10" aria-labelledby="get-paid-heading">
       <div>
-        <h1 id="get-paid-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="get-paid-heading" className="text-3xl font-semibold tracking-tight">
           Get paid
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
@@ -89,7 +89,7 @@ export default function GetPaidPage() {
       {error ? <Notice tone="error">{error}</Notice> : null}
       {done ? <Notice tone="success">{done}</Notice> : null}
 
-      <form onSubmit={create} className="grid max-w-3xl gap-4 rounded-[2rem] bg-stone-100 p-8 sm:grid-cols-2" aria-label="New payment request">
+      <form onSubmit={create} className="grid max-w-3xl gap-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8 sm:grid-cols-2" aria-label="New payment request">
         <label className="text-sm">
           <span className="font-medium">Your business name, as the customer sees it</span>
           <input required value={form.merchant} onChange={(e) => setForm({ ...form, merchant: e.target.value })} maxLength={80} className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2" />

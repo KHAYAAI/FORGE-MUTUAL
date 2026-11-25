@@ -92,7 +92,7 @@ export default function CreditPage() {
   return (
     <section className="space-y-10" aria-labelledby="credit-heading">
       <div>
-        <h1 id="credit-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="credit-heading" className="text-3xl font-semibold tracking-tight">
           Credit
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
@@ -112,7 +112,7 @@ export default function CreditPage() {
       ) : null}
 
       {available.length ? (
-        <form onSubmit={apply} className="max-w-xl space-y-4 rounded-[2rem] bg-stone-100 p-8" aria-label="Apply for credit">
+        <form onSubmit={apply} className="max-w-xl space-y-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label="Apply for credit">
           <h2 className="text-2xl font-light tracking-tight">Apply</h2>
           <label className="block text-sm">
             <span className="font-medium">Product</span>
@@ -164,7 +164,7 @@ function FacilityCard({ f, name, onAccept, onMove }: {
   }, [f.status, f.facility_id]);
   const next = f.schedule.find((i) => i.status === "DUE" || i.status === "ARREARS");
   return (
-    <li className="rounded-[2rem] bg-stone-100 p-8" aria-label={name}>
+    <li className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label={name}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm text-stone-500">{name}</p>
         <p className="text-sm font-medium">{STATUS[f.status] ?? f.status}</p>

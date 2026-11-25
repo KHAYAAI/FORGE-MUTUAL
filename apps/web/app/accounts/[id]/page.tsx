@@ -50,7 +50,7 @@ export default function ActivityPage() {
           Back to accounts
         </Link>
       </p>
-      <h1 id="activity-heading" className="text-4xl font-light tracking-tight">
+      <h1 id="activity-heading" className="text-3xl font-semibold tracking-tight">
         Activity
       </h1>
       {error ? <Notice tone="error">{error}</Notice> : null}

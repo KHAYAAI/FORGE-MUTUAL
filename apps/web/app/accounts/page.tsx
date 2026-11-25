@@ -36,19 +36,35 @@ export default function AccountsPage() {
 
   return (
     <section aria-labelledby="accounts-heading" className="space-y-6">
-      <h1 id="accounts-heading" className="text-4xl font-light tracking-tight">
-        Your accounts
-      </h1>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-stone-500">Overview</p>
+          <h1 id="accounts-heading" className="text-3xl font-semibold tracking-tight">
+            Your accounts
+          </h1>
+        </div>
+        <div className="flex gap-2 text-sm">
+          <Link href="/payments/new" className="rounded-lg bg-stone-950 px-4 py-2 font-medium text-white hover:bg-black">
+            Send money
+          </Link>
+          <Link href="/fx" className="rounded-lg border border-stone-200 bg-white px-4 py-2 font-medium text-stone-800 hover:bg-stone-50">
+            Convert
+          </Link>
+          <Link href="/get-paid" className="rounded-lg border border-stone-200 bg-white px-4 py-2 font-medium text-stone-800 hover:bg-stone-50">
+            Receive
+          </Link>
+        </div>
+      </div>
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {accounts.map((a) => (
-          <li key={a.account_id} className="rounded-[2rem] bg-stone-100 p-8">
+          <li key={a.account_id} className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium text-stone-500">{a.asset} account</p>
-              <Link href={`/accounts/${encodeURIComponent(a.account_id)}`} className="text-sm text-sky-700 underline">
+              <Link href={`/accounts/${encodeURIComponent(a.account_id)}`} className="text-sm font-medium text-sky-700 hover:underline">
                 Activity
               </Link>
             </div>
-            <p className="mt-2 text-4xl font-light tabular-nums" data-testid="balance">
+            <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums" data-testid="balance">
               {formatMinor(a.available_minor, a.asset)}
             </p>
             {/* Every balance names the entity that holds it and whether it is insured. */}

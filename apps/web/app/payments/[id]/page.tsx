@@ -51,7 +51,7 @@ export default function PaymentStatusPage() {
           Back to accounts
         </Link>
       </p>
-      <h1 className="text-4xl font-light tracking-tight">Payment</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Payment</h1>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
         <dt className="text-stone-500">Status</dt>
         <dd data-testid="payment-state">{STATE_LABEL[payment.state]}</dd>

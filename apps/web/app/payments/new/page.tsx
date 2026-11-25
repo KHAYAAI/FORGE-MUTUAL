@@ -77,7 +77,7 @@ export default function NewPaymentPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-4xl font-light tracking-tight">Send a payment</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Send a payment</h1>
       {error ? <Notice tone="error">{error}</Notice> : null}
       <form onSubmit={submit} className="space-y-4" aria-label="Send a payment">
         <label className="block text-sm">

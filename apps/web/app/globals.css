@@ -29,3 +29,10 @@
   --color-sky-700: #4a50d6;
   --color-sky-900: #2b2f8f;
 }
+
+body {
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "tnum" 0, "ss01" 1;
+  letter-spacing: -0.005em;
+}
+h1 { letter-spacing: -0.02em; }

@@ -50,7 +50,7 @@ export default function SignInPage() {
   if (mode === "oidc") {
     return (
       <section className="mx-auto max-w-md space-y-6">
-        <h1 className="text-4xl font-light tracking-tight">Sign in</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
         {callbackError ? <Notice tone="error">{callbackError}</Notice> : null}
         <a
           href="/api/auth/login"
@@ -64,7 +64,7 @@ export default function SignInPage() {
 
   return (
     <section className="mx-auto max-w-md space-y-6">
-      <h1 className="text-4xl font-light tracking-tight">Sign in</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
       {callbackError ? <Notice tone="error">{callbackError}</Notice> : null}
       {mode === "dev" ? (
         <Notice tone="info">

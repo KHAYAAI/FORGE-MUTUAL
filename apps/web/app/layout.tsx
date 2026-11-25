@@ -13,9 +13,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   await connection();
   return (
     <html lang="en-ZA">
-      <body className="min-h-screen bg-white text-stone-900 antialiased">
-        <Nav />
-        <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">{children}</main>
+      <body className="min-h-screen bg-stone-50 text-stone-900 antialiased">
+        <div className="lg:flex">
+          <Nav />
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">{children}</main>
+        </div>
       </body>
     </html>
   );

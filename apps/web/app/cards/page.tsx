@@ -91,7 +91,7 @@ export default function CardsPage() {
   if (!offered)
     return (
       <section className="space-y-4" aria-labelledby="cards-heading">
-        <h1 id="cards-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="cards-heading" className="text-3xl font-semibold tracking-tight">
           Cards
         </h1>
         <p className="max-w-2xl text-stone-600">Cards are not yet available.</p>
@@ -101,7 +101,7 @@ export default function CardsPage() {
   return (
     <section className="space-y-10" aria-labelledby="cards-heading">
       <div>
-        <h1 id="cards-heading" className="text-4xl font-light tracking-tight">
+        <h1 id="cards-heading" className="text-3xl font-semibold tracking-tight">
           Cards
         </h1>
         <p className="mt-2 max-w-2xl text-stone-600">
@@ -120,7 +120,7 @@ export default function CardsPage() {
         </ul>
       ) : null}
       {cards ? (
-        <form onSubmit={issue} className="max-w-xl space-y-4 rounded-[2rem] bg-stone-100 p-8" aria-label="Get a card">
+        <form onSubmit={issue} className="max-w-xl space-y-4 rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label="Get a card">
           <h2 className="text-2xl font-light tracking-tight">Get a card</h2>
           <label className="block text-sm">
             <span className="font-medium">Name</span>
@@ -151,7 +151,7 @@ function CardItem({ card, onStatus, onLimits, onShow }: {
     setAuths(res.data?.authorisations ?? []);
   }
   return (
-    <li className="rounded-[2rem] bg-stone-100 p-8" aria-label={card.label}>
+    <li className="rounded-2xl border border-stone-200 bg-white shadow-sm p-8" aria-label={card.label}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm text-stone-500">{card.label}</p>
         <p className="text-sm font-medium">{STATUS[card.status] ?? card.status}</p>
