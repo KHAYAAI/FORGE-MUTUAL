@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="utf-8"><title>FORGE MUTUAL</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--ink:#0a0a0a;--ink2:#26241f;--muted:#6f6a62;--rule:#c9c3b7;--panel:#ece8e0}
+@page{size:A4;margin:16mm 18mm 20mm}
+*{box-sizing:border-box}
+body{font:400 9.6pt/1.6 'Inter Tight',Inter,sans-serif;color:var(--ink2);margin:0}
+.mono,.eyebrow,th,.lab{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.16em;font-size:6.6pt;color:var(--muted);font-weight:500}
+.mark{font:700 15pt 'Inter Tight';letter-spacing:-.01em;color:var(--ink);display:inline-flex;align-items:center}
+.mark .o{display:inline-block;width:.74em;height:.74em;border:.13em solid var(--ink);border-radius:50%;position:relative;margin:0 .02em}
+.mark .o:after{content:"";position:absolute;left:-.13em;right:-.13em;top:50%;height:.13em;margin-top:-.065em;background:var(--ink)}
+.top{border-top:1px solid var(--ink);padding-top:18pt;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:12pt;align-items:baseline}
+.cover h1.hero{font:400 34pt/1.05 'Inter Tight';letter-spacing:-.035em;color:var(--ink);margin:46pt 0 18pt}
+.cover p.lead{font-size:10.5pt;max-width:56ch;color:var(--ink2)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:30pt 0 22pt}
+.stats div{padding:12pt 10pt 14pt;border-left:1px solid var(--rule);min-height:96pt;display:flex;flex-direction:column;justify-content:space-between}
+.stats div:first-child{border-left:0}
+.stats b{font:400 17pt 'Inter Tight';letter-spacing:-.02em;color:var(--ink)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:18pt}
+.three h4{font:600 9.5pt 'Inter Tight';margin:0 0 5pt;color:var(--ink)}.three h4 em{font-weight:400}
+.three p{font-size:8pt;color:var(--muted);margin:0}
+.cover{page-break-after:always;min-height:250mm;display:flex;flex-direction:column}
+.cover .bottom{margin-top:auto;border-top:1px solid var(--ink);padding-top:8pt;display:flex;justify-content:space-between}
+.contents{background:var(--panel);padding:22pt 24pt;page-break-after:always}
+.contents .lab i{display:inline-block;width:22pt;border-top:1px solid var(--muted);vertical-align:middle;margin:0 8pt}
+.toc{display:grid;grid-template-columns:1fr 1fr;column-gap:26pt;margin-top:16pt}
+.toc div{display:grid;grid-template-columns:22pt 1fr auto;align-items:baseline;border-bottom:1px solid var(--rule);padding:8pt 0}
+.toc span{font-size:11pt;color:var(--ink)}.toc span.mono{font-size:6.6pt;color:var(--muted)}
+.part{page-break-before:always;margin-bottom:10pt}
+.eyebrow{display:flex;align-items:center;gap:8pt;margin-bottom:10pt}.eyebrow i{width:26pt;border-top:1px solid var(--muted)}
+h1{font:400 24pt/1.12 'Inter Tight';letter-spacing:-.03em;color:var(--ink);margin:0}
+h2{font:400 17pt/1.2 'Inter Tight';letter-spacing:-.025em;color:var(--ink);margin:26pt 0 8pt;padding-top:10pt;border-top:1px solid var(--rule);page-break-after:avoid}
+h3{font:500 12pt/1.3 'Inter Tight';letter-spacing:-.01em;color:var(--ink);margin:18pt 0 6pt;page-break-after:avoid}
+h4,h5,h6{font:600 9.8pt 'Inter Tight';color:var(--ink);margin:12pt 0 4pt;page-break-after:avoid}
+p{margin:0 0 8pt}a{color:inherit}
+strong{font-weight:600;color:var(--ink)}
+table{width:100%;border-collapse:collapse;margin:8pt 0 12pt;font-size:8.2pt}
+th{text-align:left;padding:6pt 8pt;border-bottom:1px solid var(--ink);vertical-align:bottom}
+td{padding:6pt 8pt;border-bottom:1px solid var(--rule);vertical-align:top}
+tr{page-break-inside:avoid}
+blockquote{margin:12pt 0;padding:2pt 0 2pt 14pt;border-left:2px solid var(--ink);font-size:10pt;color:var(--ink)}
+code{font:400 7.8pt 'JetBrains Mono';background:var(--panel);padding:0 2pt;word-break:break-word}
+pre{background:var(--panel);padding:8pt 10pt;font:400 7.4pt/1.45 'JetBrains Mono';white-space:pre-wrap;word-break:break-word}
+pre code{background:none;padding:0}
+hr{border:0;border-top:1px solid var(--rule);margin:14pt 0}
+ul,ol{padding-left:14pt}li{margin:2pt 0}
+.endband{page-break-before:always;border-top:1px solid var(--ink);padding-top:16pt;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:20pt;font-size:8pt;color:var(--muted)}
+.endband ul{list-style:none;padding:0;color:var(--ink2)}
+</style></head><body><div class="cover">
+<div class="top"><div class="brand"><span class="mark">F<span class="o"></span>RGE</span><span class="mono">Mutual</span></div><span class="mono">The complete document · November MMXXVI</span></div>
+<h1 class="hero">A bank its members own.<br><em>Built</em>, not yet licensed.</h1>
+<p class="lead">Forge Mutual is a proposed South African mutual bank for technology companies and the people who build them: rand and dollar accounts, cross-border payments at one disclosed price, and team approvals, owned by its depositor-members. This document sets out everything: the model, how it makes money, whether it is sustainable, what the regulator's own forms taught us, what is built, what is drafted and what remains before it can open on a sponsor bank and apply for its own licence.</p>
+<div class="stats">
+<div><span class="lab">Regulatory returns covered</span><b>27 of 27</b></div>
+<div><span class="lab">Policies drafted, none approved</span><b>58</b></div>
+<div><span class="lab">Governance roles filled</span><b>1 of 37</b></div>
+<div><span class="lab">Customers to break even</span><b>≈ 10,000</b></div></div>
+<div class="three">
+<div><h4>Owned by its <em>members</em>.</h4><p>One member, one vote. Surplus returns to members as better pricing or rebates, not dividends to outside owners.</p></div>
+<div><h4>Controls in the <em>code</em>.</h4><p>Reconciliation, sanctions screening, two-person approvals and all 27 mutual-bank returns are built and tested.</p></div>
+<div><h4>Sponsor <em>first</em>.</h4><p>A sponsor bank holds the licence while Forge earns a track record; its own registration follows.</p></div></div>
+<div class="bottom"><span class="mono">© MMXXVI MYFORGE (Pty) Ltd · Forge Mutual</span><span class="mono">Draft · not approved · not advice</span></div></div><div class="contents"><div class="lab">Contents<i></i>Five parts</div><div class="toc"><div><span class="mono">01</span><span>The whole picture</span><span class="mono">Synthesis</span></div><div><span class="mono">02</span><span>Business</span><span class="mono">Model</span></div><div><span class="mono">03</span><span>Legal form and governance</span><span class="mono">Structure</span></div><div><span class="mono">04</span><span>Licence application and regulation</span><span class="mono">Regulator</span></div><div><span class="mono">05</span><span>Technology and operations</span><span class="mono">Platform</span></div></div><p style="margin-top:16pt;font-size:8.4pt;color:var(--muted)">Part I is new and pulls everything into one argument. Parts II to V reproduce every source document in full. Figures marked ASSUMPTION come from the concept document; figures marked VERIFY are regulatory facts to confirm with the lawyer. Forge has no licence, no customers and holds no money.</p></div>
+{{BODY}}
+<div class="endband"><div><span class="mark" style="font-size:12pt">F<span class="o"></span>RGE</span> <span class="mono">Mutual</span><p style="margin-top:8pt">A proposed member-owned bank for technology companies and their founders, built on open-source software that runs in South Africa.</p></div>
+<div><div class="lab">The platform</div><ul><li>Rand, dollar, euro and sterling accounts</li><li>Cross-border payments and FX</li><li>Team approvals</li><li>All 27 regulatory returns</li></ul></div>
+<div><div class="lab">Status</div><ul><li>Built and tested locally</li><li>Policies drafted</li><li>Seeking lawyer, founders, capital and a sponsor bank</li></ul></div></div></body></html>
