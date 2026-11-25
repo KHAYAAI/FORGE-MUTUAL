@@ -1,6 +1,6 @@
 # FORGE MUTUAL: the complete document
 
-> All amounts are in rand, converted from the concept document's US-dollar figures at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+> Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
 >
 > Assembled 2026-11-25 from everything in this repository. Part I is new: it pulls the model, the money, the sustainability case and the
 > status into one argument. Parts II to V reproduce every source document in full, so nothing is lost. **Nothing here is approved, audited
@@ -114,7 +114,7 @@ profit but **enough surplus to grow capital** (which a mutual must mostly build 
 
 ## 5. What it costs to run
 
-From the concept document (ASSUMPTION): operating costs grow from about **R36 million to R288 million a year over five years**, and variable
+From the concept document (ASSUMPTION): operating costs grow from about **R36 million (US$2 million) to R288 million (US$16 million) a year over five years**, and variable
 costs are about **25% of revenue**. That model leaves out four costs that the regulatory work has since made concrete:
 
 1. **The sponsor bank's share** of interest and fees during the sponsor stage (unknown until a term sheet).
@@ -127,18 +127,18 @@ Technology is not the dominant cost: the stack is open source and self-hosted, a
 
 ## 6. Is it sustainable? The honest arithmetic
 
-**The concept document's scenarios (ASSUMPTION, converted to rand):**
+**The concept document's scenarios (ASSUMPTION, in rand with US dollars in brackets):**
 
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about R32.4 million | about R160 million | about R499 million |
-| Operating result | about -R82.8 million | about -R59.4 million | about +R86.4 million |
-| Deposits | about R864 million | about R4.86 billion | about R16.2 billion |
-| Peak funding need | about R319 million | about R356 million | about R302 million |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
-Revenue per customer is assumed at R9,000, R16,200 or R25,200 a year, growing 10% a year. For comparison, Mercury earns about R39,100 per customer;
+Revenue per customer is assumed at R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year, growing 10% a year. For comparison, Mercury earns about R39,100 (US$2,170) per customer;
 South African companies are smaller, so even the conservative case may be generous.
 
 **What the arithmetic says.**
@@ -146,9 +146,9 @@ South African companies are smaller, so even the conservative case may be genero
 - **Break-even needs about 10,000 business customers** in every scenario. That is close to the whole South African serviceable market. So
   sustainability depends on widening the base: cross-border SMEs, founders' personal accounts, platforms embedding Forge, other African
   markets through partner banks, and the micro-lender network.
-- **The funding need is similar in every scenario (about R270 million to R360 million)**, because spending grows with success. The minimum
+- **The funding need is similar in every scenario (about R270 million (US$15 million) to R360 million (US$20 million))**, because spending grows with success. The minimum
   regulatory capital (R10 million, VERIFY) is not the need.
-- **Revenue per customer is the lever.** At R16,200 a year, break-even is about 10,000 customers; every R1,800 more per customer brings it
+- **Revenue per customer is the lever.** At R16,200 (US$900) a year, break-even is about 10,000 customers; every R1,800 (US$100) more per customer brings it
   materially closer. The biggest per-customer earners are FX volume and, later, credit.
 - **Float income is real but shared.** On a sponsor, interest on balances is split with the sponsor; on its own licence Forge keeps it, but
   must then hold liquid assets and a reserve that earn little (section 7).
@@ -157,9 +157,9 @@ South African companies are smaller, so even the conservative case may be genero
 
   revenue per customer per year = subscription + (FX volume × spread) + (payments × fee) + (average balance × net interest share)
 
-For a tech SME converting R9 million a year at a 0.6% disclosed spread, paying a R150 subscription a month, making 100 cross-border payments
-at a modest fee, and holding an average R1 million balance at a 1% net share, the spread (about R54,000), subscription (about R1,800) and float
-(about R10,000) together exceed the R16,200 base case. This is why the plan's first proof point is measured FX economics on real statements.
+For a tech SME converting R9 million (US$500,000) a year at a 0.6% disclosed spread, paying a R150 subscription a month, making 100 cross-border payments
+at a modest fee, and holding an average R1 million balance at a 1% net share, the spread (about R54,000 (US$3,000)), subscription (about R1,800) and float
+(about R10,000) together exceed the R16,200 (US$900) base case. This is why the plan's first proof point is measured FX economics on real statements.
 
 **What makes it sustainable as a mutual.**
 
@@ -350,7 +350,7 @@ It is not a mass-market bank. Capitec has 26.6 million active clients and 686,00
 | Influence | What Forge takes | What Forge does not take |
 |---|---|---|
 | Mercury (US) | Software first on partner banks; a licence later; breadth beyond tech | Its scale or US market |
-| Erebor (US) | A specialist, API-first bank for tech; on-chain money treated as native | Its capital (about R6.84 billion raised) or its customer base |
+| Erebor (US) | A specialist, API-first bank for tech; on-chain money treated as native | Its capital (about R6.84 billion (US$380 million) raised) or its customer base |
 | Capitec | Simplicity and low cost to serve | Mass-market ambition |
 | Discovery | Orchestration and consented, data-driven incentives | A large group customer base or years of heavy investment |
 | Investec | Community, high value per client, founder-plus-company banking | A decades-old brand |
@@ -477,7 +477,7 @@ Mass-market retail, consumer lending, crypto traders looking for an exchange, an
 
 These come from earlier notes and are unverified. The serviceable market is an estimate: a few thousand startups and scale-ups plus several thousand active tech SMEs, agencies and exporters.
 
-**The funding backdrop is thin.** South African startups raised about R1.49 billion in the first half of 2026, against R5.89 billion in Egypt, R4.57 billion in Nigeria and R2.27 billion in Kenya. Startup runway alone cannot support a bank, which is why profitable tech SMEs, adjacent businesses and other African markets matter.
+**The funding backdrop is thin.** South African startups raised about R1.49 billion (US$83 million) in the first half of 2026, against R5.89 billion (US$327 million) in Egypt, R4.57 billion (US$254 million) in Nigeria and R2.27 billion (US$126 million) in Kenya. Startup runway alone cannot support a bank, which is why profitable tech SMEs, adjacent businesses and other African markets matter.
 
 ---
 
@@ -539,24 +539,24 @@ DeFi (swaps, staking, yield), self-custody products, Forge-issued stablecoins, a
 
 #### 8.3 Illustrative economics
 
-All amounts are in rand, converted from the concept document's US-dollar figures at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
 
-These are assumptions, not data. Revenue per customer starts at R9,000, R16,200 or R25,200 a year and grows 10% a year; variable costs are 25% of revenue; operating costs grow from R36 million to R288 million over five years.
+These are assumptions, not data. Revenue per customer starts at R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year and grows 10% a year; variable costs are 25% of revenue; operating costs grow from R36 million (US$2 million) to R288 million (US$16 million) over five years.
 
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about R32.4 million | about R160 million | about R499 million |
-| Operating result | about -R82.8 million | about -R59.4 million | about +R86.4 million |
-| Deposits | about R864 million | about R4.86 billion | about R16.2 billion |
-| Peak funding need | about R319 million | about R356 million | about R302 million |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
 **What this means**
 
 - Break-even needs about 10,000 business customers, close to the whole South African serviceable market, so expansion is necessary.
 - The funding need is similar across scenarios, because spending grows with success.
-- Mercury earns about R39,100 per customer (R11.7 billion over about 300,000 customers, a calculation from reported figures). South African companies are smaller, so even the conservative case may be generous.
+- Mercury earns about R39,100 (US$2,170) per customer (R11.7 billion (US$650 million) over about 300,000 customers, a calculation from reported figures). South African companies are smaller, so even the conservative case may be generous.
 - The model excludes the sponsor bank's revenue share, licence capital, credit losses and compliance headcount. Real economics are harder.
 
 The customer interviews (section 17) replace these assumptions with real prices and balances.
@@ -648,8 +648,8 @@ An alternative to test first is the agent-network model used in Nigeria (Moniepo
 |---|---|---|---|
 | Customers | Tech, crypto, defence | Startups and tech, then broader | Tech companies, then adjacent SMEs |
 | Structure | Own national charter (opened February 2026) | Partner banks; conditional charter approval April 2026 | Sponsor bank, licence later |
-| Scale | R72.9 billion deposits by end of June 2026 | 300,000+ customers, about R11.7 billion annualised revenue | Concept |
-| Capital | About R6.84 billion raised | Large | Far smaller |
+| Scale | R72.9 billion (US$4.05 billion) deposits by end of June 2026 | 300,000+ customers, about R11.7 billion (US$650 million) annualised revenue | Concept |
+| Capital | About R6.84 billion (US$380 million) raised | Large | Far smaller |
 | Stack | Proprietary | Proprietary | Open-source, self-hostable |
 
 Erebor found demand for crypto-backed lending lower than expected, which is a reminder that on-chain features are not yet why businesses choose a bank.
@@ -745,7 +745,7 @@ A short audit of each (task P0-11 in the architecture) decides reuse, adaptation
 | MFI risks | Funding mismatch, contagion, over-indebtedness | Pilot first, caps, software-enforced limits |
 | Data and consent | POPIA applies to every data feature | Consent required, purposes limited, decisions explainable |
 | Focus | A bank, a platform, a digital-asset entity and an MFI network are four businesses | Strict sequencing |
-| Capital | About R270 million to R360 million before profit in the base case | Milestone funding; a sale as an acceptable outcome |
+| Capital | About R270 million (US$15 million) to R360 million (US$20 million) before profit in the base case | Milestone funding; a sale as an acceptable outcome |
 | AI-built software | Defects in money-path code | Tests decide; two human reviews; no real data in development |
 
 ---
@@ -801,7 +801,7 @@ Estimates assume six to eight people working with coding agents. Calendar time t
 - Capitec has 26.6M active clients, not 22M.
 - GoTyme has more than 12.5M customers, per its chief executive.
 - Bank Zero's 275,000 direct and 500,000 alliance customers are unsupported. Sources show over 40,000 funded accounts (April 2025), about R700M deposits and its first alliance partner only in April 2026.
-- Erebor raised about R6.84 billion in total, not R11.4 billion.
+- Erebor raised about R6.84 billion (US$380 million) in total, not R11.4 billion (US$635 million).
 - One account holding rand, USDC and tokenised deposits with full deposit insurance is not currently achievable. Third-party stablecoins are not bank liabilities and are not deposit-insured, and only a licensed bank can issue tokenised deposits.
 
 **To verify before relying on**
@@ -1039,7 +1039,7 @@ disclosed price; pay a foreign supplier with one all-in quoted cost; pay local s
 
 **Size of the market (VERIFY, from earlier notes):** about 1,246 startups (StartupBlink), 53,082 technology companies (Tracxn), 91,816 registered software companies
 (CIPC, mostly tiny or inactive). The serviceable market is **an estimate of a few thousand startups and scale-ups plus several thousand active tech SMEs, agencies and
-exporters**. Startup funding is thin: about R1.49 billion in the first half of 2026, against R5.89 billion in Egypt, R4.57 billion in Nigeria and R2.27 billion in Kenya (VERIFY).
+exporters**. Startup funding is thin: about R1.49 billion (US$83 million) in the first half of 2026, against R5.89 billion (US$327 million) in Egypt, R4.57 billion (US$254 million) in Nigeria and R2.27 billion (US$126 million) in Kenya (VERIFY).
 
 **GAP:** none of this is yet tested with real customers. The plan's Phase 0 calls for about twenty customer interviews and a design-partner cohort; they have not been run.
 The wedge test is stated in CONTEXT s12: if Forge cannot beat roughly **1% all-in cost with same-day settlement** on real customer statements, cross-border payments are
@@ -1098,7 +1098,7 @@ remuneration), three lines of defence, 58 draft policies and 37 defined seats.
 
 ### 8. Financial projections
 
-All amounts are in rand, converted from the concept document's US-dollar figures at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
 
 > **This section is a placeholder by design.** The repository holds an *illustrative* pro forma and the concept document's *illustrative* economics. They are shown below
 > so that nobody mistakes them for forecasts, and so the gaps are visible.
@@ -1108,18 +1108,18 @@ All amounts are in rand, converted from the concept document's US-dollar figures
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about R32.4 million | about R160 million | about R499 million |
-| Operating result | about -R82.8 million | about -R59.4 million | about +R86.4 million |
-| Deposits | about R864 million | about R4.86 billion | about R16.2 billion |
-| Peak funding need | about R319 million | about R356 million | about R302 million |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
-The model assumes revenue per customer of R9,000, R16,200 or R25,200 a year growing 10% a year, variable costs of 25% of revenue and operating costs rising from R36 million to R288 million.
+The model assumes revenue per customer of R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year growing 10% a year, variable costs of 25% of revenue and operating costs rising from R36 million (US$2 million) to R288 million (US$16 million).
 It **excludes** the sponsor bank's revenue share, licence capital, credit losses and compliance headcount, so the real position is harder.
 
 **What the repository's pro forma shows (`docs/regulatory/proforma/`, illustrative, rand):** deposits of R150M, R600M and R1.5bn at the end of years 1 to 3, with small
 surpluses. It exists to show the shape of the DI 100 and DI 200 forms. **It does not agree with the concept document's economics** (for example, year-5 base deposits of about
-R4.86 billion against R1.5bn at year 3). One consistent model must replace both.
+R4.86 billion (US$270 million) against R1.5bn at year 3). One consistent model must replace both.
 
 **Three weak points a regulator will test:**
 
@@ -1128,7 +1128,7 @@ R4.86 billion against R1.5bn at year 3). One consistent model must replace both.
 2. **Volatile deposits.** Technology deposits swing with funding cycles and are correlated (the Silicon Valley Bank lesson, CONTEXT s16). The plan needs concentration limits,
    stress tests and a liquidity buffer sized to that, and a mutual's members can redeem shares (constitution clause 4.3).
 3. **Capital.** The minimum for a mutual bank is understood to be R10M (VERIFY) and for a bank R250M (VERIFY), but the concept document puts the funding need at about
-   **R270 million to R360 million before profit in the base case**. The minimum is not the need.
+   **R270 million (US$15 million) to R360 million (US$20 million) before profit in the base case**. The minimum is not the need.
 
 4. **Liquid assets and the reserve balance.** Building DI 310 from the official form showed that a balance with a sponsor or partner bank is
    **not** a liquid asset under the Mutual Banks Act (only Reserve Bank notes and coin, gold, Reserve Bank clearing balances, Treasury bills,
@@ -1151,7 +1151,7 @@ lending and cost drivers), a sponsor-bank revenue share, stress scenarios, and t
 |---|---|---|---|
 | Minimum registered capital (mutual bank) | **R10M** (VERIFY) | Founder capital and member shares | **GAP: nothing raised** |
 | Minimum registered capital (bank option) | **R250M** (VERIFY) | Investors | **GAP** |
-| Funding need before profit (base case) | about **R270 million to R360 million** (ASSUMPTION) | To be decided: members, development finance, founder, strategic partners | **GAP** |
+| Funding need before profit (base case) | about **R270 million (US$15 million) to R360 million (US$20 million)** (ASSUMPTION) | To be decided: members, development finance, founder, strategic partners | **GAP** |
 | Loss-absorbing buffer above the minimum | to be set by the CRO and CFO | | **GAP** |
 
 A mutual cannot easily raise venture equity or be sold (CONTEXT s5.2), so the plan must say where the money comes from. Options to evaluate with the lawyer and an
@@ -3462,7 +3462,7 @@ sequenceDiagram
   WS->>WF: Start workflow (workflow ID = idempotency key)
   WF->>POL: Check limits, sector, step-up
   POL-->>WF: allow / deny / step-up
-  WF->>CMP: Screen beneficiary and country; capture exchange-control data
+  WF->>CMP: Screen beneficiary and country, capture exchange-control data
   CMP-->>WF: clear / hold
   WF->>LG: Pending transfer: customer ZAR -> AD_PARTNER_SETTLEMENT (+ fee leg)
   LG-->>WF: transfer_ids

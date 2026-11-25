@@ -70,7 +70,7 @@ disclosed price; pay a foreign supplier with one all-in quoted cost; pay local s
 
 **Size of the market (VERIFY, from earlier notes):** about 1,246 startups (StartupBlink), 53,082 technology companies (Tracxn), 91,816 registered software companies
 (CIPC, mostly tiny or inactive). The serviceable market is **an estimate of a few thousand startups and scale-ups plus several thousand active tech SMEs, agencies and
-exporters**. Startup funding is thin: about R1.49 billion in the first half of 2026, against R5.89 billion in Egypt, R4.57 billion in Nigeria and R2.27 billion in Kenya (VERIFY).
+exporters**. Startup funding is thin: about R1.49 billion (US$83 million) in the first half of 2026, against R5.89 billion (US$327 million) in Egypt, R4.57 billion (US$254 million) in Nigeria and R2.27 billion (US$126 million) in Kenya (VERIFY).
 
 **GAP:** none of this is yet tested with real customers. The plan's Phase 0 calls for about twenty customer interviews and a design-partner cohort; they have not been run.
 The wedge test is stated in CONTEXT s12: if Forge cannot beat roughly **1% all-in cost with same-day settlement** on real customer statements, cross-border payments are
@@ -129,7 +129,7 @@ remuneration), three lines of defence, 58 draft policies and 37 defined seats.
 
 ## 8. Financial projections
 
-All amounts are in rand, converted from the concept document's US-dollar figures at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
 
 > **This section is a placeholder by design.** The repository holds an *illustrative* pro forma and the concept document's *illustrative* economics. They are shown below
 > so that nobody mistakes them for forecasts, and so the gaps are visible.
@@ -139,18 +139,18 @@ All amounts are in rand, converted from the concept document's US-dollar figures
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about R32.4 million | about R160 million | about R499 million |
-| Operating result | about -R82.8 million | about -R59.4 million | about +R86.4 million |
-| Deposits | about R864 million | about R4.86 billion | about R16.2 billion |
-| Peak funding need | about R319 million | about R356 million | about R302 million |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
-The model assumes revenue per customer of R9,000, R16,200 or R25,200 a year growing 10% a year, variable costs of 25% of revenue and operating costs rising from R36 million to R288 million.
+The model assumes revenue per customer of R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year growing 10% a year, variable costs of 25% of revenue and operating costs rising from R36 million (US$2 million) to R288 million (US$16 million).
 It **excludes** the sponsor bank's revenue share, licence capital, credit losses and compliance headcount, so the real position is harder.
 
 **What the repository's pro forma shows (`docs/regulatory/proforma/`, illustrative, rand):** deposits of R150M, R600M and R1.5bn at the end of years 1 to 3, with small
 surpluses. It exists to show the shape of the DI 100 and DI 200 forms. **It does not agree with the concept document's economics** (for example, year-5 base deposits of about
-R4.86 billion against R1.5bn at year 3). One consistent model must replace both.
+R4.86 billion (US$270 million) against R1.5bn at year 3). One consistent model must replace both.
 
 **Three weak points a regulator will test:**
 
@@ -159,7 +159,7 @@ R4.86 billion against R1.5bn at year 3). One consistent model must replace both.
 2. **Volatile deposits.** Technology deposits swing with funding cycles and are correlated (the Silicon Valley Bank lesson, CONTEXT s16). The plan needs concentration limits,
    stress tests and a liquidity buffer sized to that, and a mutual's members can redeem shares (constitution clause 4.3).
 3. **Capital.** The minimum for a mutual bank is understood to be R10M (VERIFY) and for a bank R250M (VERIFY), but the concept document puts the funding need at about
-   **R270 million to R360 million before profit in the base case**. The minimum is not the need.
+   **R270 million (US$15 million) to R360 million (US$20 million) before profit in the base case**. The minimum is not the need.
 
 4. **Liquid assets and the reserve balance.** Building DI 310 from the official form showed that a balance with a sponsor or partner bank is
    **not** a liquid asset under the Mutual Banks Act (only Reserve Bank notes and coin, gold, Reserve Bank clearing balances, Treasury bills,
@@ -182,7 +182,7 @@ lending and cost drivers), a sponsor-bank revenue share, stress scenarios, and t
 |---|---|---|---|
 | Minimum registered capital (mutual bank) | **R10M** (VERIFY) | Founder capital and member shares | **GAP: nothing raised** |
 | Minimum registered capital (bank option) | **R250M** (VERIFY) | Investors | **GAP** |
-| Funding need before profit (base case) | about **R270 million to R360 million** (ASSUMPTION) | To be decided: members, development finance, founder, strategic partners | **GAP** |
+| Funding need before profit (base case) | about **R270 million (US$15 million) to R360 million (US$20 million)** (ASSUMPTION) | To be decided: members, development finance, founder, strategic partners | **GAP** |
 | Loss-absorbing buffer above the minimum | to be set by the CRO and CFO | | **GAP** |
 
 A mutual cannot easily raise venture equity or be sold (CONTEXT s5.2), so the plan must say where the money comes from. Options to evaluate with the lawyer and an

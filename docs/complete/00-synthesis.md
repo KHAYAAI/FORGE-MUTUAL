@@ -1,6 +1,6 @@
 # FORGE MUTUAL: the complete document
 
-> All amounts are in rand, converted from the concept document's US-dollar figures at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
+> Money is shown in rand first, with the concept document's original US-dollar figure in brackets, converted at an assumed R18.00 per US dollar (ASSUMPTION; update with the rate at the time of use).
 >
 > Assembled 2026-11-25 from everything in this repository. Part I is new: it pulls the model, the money, the sustainability case and the
 > status into one argument. Parts II to V reproduce every source document in full, so nothing is lost. **Nothing here is approved, audited
@@ -114,7 +114,7 @@ profit but **enough surplus to grow capital** (which a mutual must mostly build 
 
 ## 5. What it costs to run
 
-From the concept document (ASSUMPTION): operating costs grow from about **R36 million to R288 million a year over five years**, and variable
+From the concept document (ASSUMPTION): operating costs grow from about **R36 million (US$2 million) to R288 million (US$16 million) a year over five years**, and variable
 costs are about **25% of revenue**. That model leaves out four costs that the regulatory work has since made concrete:
 
 1. **The sponsor bank's share** of interest and fees during the sponsor stage (unknown until a term sheet).
@@ -127,18 +127,18 @@ Technology is not the dominant cost: the stack is open source and self-hosted, a
 
 ## 6. Is it sustainable? The honest arithmetic
 
-**The concept document's scenarios (ASSUMPTION, converted to rand):**
+**The concept document's scenarios (ASSUMPTION, in rand with US dollars in brackets):**
 
 | Year 5 | Conservative | Base | Optimistic |
 |---|---|---|---|
 | Customers | 3,200 | 9,000 | 18,000 |
-| Revenue | about R32.4 million | about R160 million | about R499 million |
-| Operating result | about -R82.8 million | about -R59.4 million | about +R86.4 million |
-| Deposits | about R864 million | about R4.86 billion | about R16.2 billion |
-| Peak funding need | about R319 million | about R356 million | about R302 million |
+| Revenue | about R32.4 million (US$1.8 million) | about R160 million (US$8.9 million) | about R499 million (US$27.7 million) |
+| Operating result | about -R82.8 million (-US$4.6 million) | about -R59.4 million (-US$3.3 million) | about +R86.4 million (+US$4.8 million) |
+| Deposits | about R864 million (US$48 million) | about R4.86 billion (US$270 million) | about R16.2 billion (US$900 million) |
+| Peak funding need | about R319 million (US$17.7 million) | about R356 million (US$19.8 million) | about R302 million (US$16.8 million) |
 | Customers to break even | about 10,900 | about 10,100 | about 10,400 |
 
-Revenue per customer is assumed at R9,000, R16,200 or R25,200 a year, growing 10% a year. For comparison, Mercury earns about R39,100 per customer;
+Revenue per customer is assumed at R9,000 (US$500), R16,200 (US$900) or R25,200 (US$1,400) a year, growing 10% a year. For comparison, Mercury earns about R39,100 (US$2,170) per customer;
 South African companies are smaller, so even the conservative case may be generous.
 
 **What the arithmetic says.**
@@ -146,9 +146,9 @@ South African companies are smaller, so even the conservative case may be genero
 - **Break-even needs about 10,000 business customers** in every scenario. That is close to the whole South African serviceable market. So
   sustainability depends on widening the base: cross-border SMEs, founders' personal accounts, platforms embedding Forge, other African
   markets through partner banks, and the micro-lender network.
-- **The funding need is similar in every scenario (about R270 million to R360 million)**, because spending grows with success. The minimum
+- **The funding need is similar in every scenario (about R270 million (US$15 million) to R360 million (US$20 million))**, because spending grows with success. The minimum
   regulatory capital (R10 million, VERIFY) is not the need.
-- **Revenue per customer is the lever.** At R16,200 a year, break-even is about 10,000 customers; every R1,800 more per customer brings it
+- **Revenue per customer is the lever.** At R16,200 (US$900) a year, break-even is about 10,000 customers; every R1,800 (US$100) more per customer brings it
   materially closer. The biggest per-customer earners are FX volume and, later, credit.
 - **Float income is real but shared.** On a sponsor, interest on balances is split with the sponsor; on its own licence Forge keeps it, but
   must then hold liquid assets and a reserve that earn little (section 7).
@@ -157,9 +157,9 @@ South African companies are smaller, so even the conservative case may be genero
 
   revenue per customer per year = subscription + (FX volume × spread) + (payments × fee) + (average balance × net interest share)
 
-For a tech SME converting R9 million a year at a 0.6% disclosed spread, paying a R150 subscription a month, making 100 cross-border payments
-at a modest fee, and holding an average R1 million balance at a 1% net share, the spread (about R54,000), subscription (about R1,800) and float
-(about R10,000) together exceed the R16,200 base case. This is why the plan's first proof point is measured FX economics on real statements.
+For a tech SME converting R9 million (US$500,000) a year at a 0.6% disclosed spread, paying a R150 subscription a month, making 100 cross-border payments
+at a modest fee, and holding an average R1 million balance at a 1% net share, the spread (about R54,000 (US$3,000)), subscription (about R1,800) and float
+(about R10,000) together exceed the R16,200 (US$900) base case. This is why the plan's first proof point is measured FX economics on real statements.
 
 **What makes it sustainable as a mutual.**
 
