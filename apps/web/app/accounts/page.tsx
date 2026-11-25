@@ -56,9 +56,9 @@ export default function AccountsPage() {
           </Link>
         </div>
       </div>
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {accounts.map((a) => (
-          <li key={a.account_id} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <li key={a.account_id} className="lift rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-3"><CurrencyBadge asset={a.asset} /><p className="text-sm font-medium text-stone-500">{a.asset} account</p></div>
               <Link href={`/accounts/${encodeURIComponent(a.account_id)}`} className="text-sm font-medium text-sky-700 hover:underline">

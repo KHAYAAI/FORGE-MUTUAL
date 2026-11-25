@@ -138,7 +138,7 @@ export default function FxPage() {
       </form>
 
       {quote ? (
-        <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8" aria-label="Your quote">
+        <div className="motion-pop space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8" aria-label="Your quote">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-stone-500">You pay</dt>
             <dd className="tabular-nums">{formatMinor(quote.sell_amount_minor, quote.sell_asset)}</dd>

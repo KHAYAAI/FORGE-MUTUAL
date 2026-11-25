@@ -36,3 +36,41 @@ body {
   letter-spacing: -0.005em;
 }
 h1 { letter-spacing: -0.02em; }
+
+/* Motion. Short, purposeful, and switched off for people who ask for reduced motion. */
+/* Text-bearing content only moves; it never fades, so its contrast is right on every frame. */
+@keyframes fade-up { from { transform: translateY(10px); } to { transform: none; } }
+@keyframes pop-in { 0% { transform: scale(.92) translateY(14px) rotate(-2deg); } 70% { transform: scale(1.02) translateY(-2px) rotate(.3deg); } 100% { opacity: 1; transform: none; } }
+@keyframes slide-in { from { transform: translateY(-8px) scale(.98); } to { transform: none; } }
+@keyframes sheen { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+@keyframes swap { 0% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(74 80 214 / .35); } 100% { box-shadow: 0 0 0 14px rgb(74 80 214 / 0); } }
+@keyframes frost { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; } }
+
+.motion-page { animation: fade-up .45s cubic-bezier(.2,.7,.2,1) both; }
+.motion-stagger > * { animation: fade-up .5s cubic-bezier(.2,.7,.2,1) both; }
+.motion-stagger > *:nth-child(2) { animation-delay: .06s; }
+.motion-stagger > *:nth-child(3) { animation-delay: .12s; }
+.motion-stagger > *:nth-child(4) { animation-delay: .18s; }
+.motion-stagger > *:nth-child(n+5) { animation-delay: .24s; }
+.motion-pop { animation: pop-in .6s cubic-bezier(.2,.8,.2,1) both; }
+.motion-notice { animation: slide-in .3s ease-out both; }
+.motion-swap { animation: swap .5s cubic-bezier(.4,0,.2,1); }
+.motion-pulse { animation: pulse-ring 1.2s ease-out 2; }
+.motion-frost { animation: frost .35s ease-out both; }
+
+.card-3d { transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s, filter .4s; transform-style: preserve-3d; will-change: transform; }
+.card-3d:hover { transform: perspective(900px) rotateX(6deg) rotateY(-8deg) translateY(-4px); box-shadow: 0 24px 40px -18px rgb(0 0 0 / .45); }
+.card-sheen { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.card-sheen::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / .22), transparent); transform: translateX(-120%) skewX(-20deg); }
+.card-3d:hover .card-sheen::after, .card-sheen.run::after { animation: sheen .9s ease-out; }
+
+.lift { transition: transform .2s ease, box-shadow .2s ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -14px rgb(0 0 0 / .25); }
+button, a { transition: background-color .15s, color .15s, border-color .15s, transform .1s; }
+button:active:not(:disabled), a:active { transform: scale(.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .card-3d:hover, .lift:hover { transform: none; }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import Nav from "@/components/Nav";
+import PageMotion from "@/components/PageMotion";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-stone-50 text-stone-900 antialiased">
         <div className="lg:flex">
           <Nav />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">
+            <PageMotion>{children}</PageMotion>
+          </main>
         </div>
       </body>
     </html>

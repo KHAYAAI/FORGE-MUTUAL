@@ -114,7 +114,7 @@ export default function CardsPage() {
       {done ? <Notice tone="success">{done}</Notice> : null}
       {cards === null ? <p className="text-stone-500">Loading…</p> : null}
       {cards?.length ? (
-        <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <ul className="motion-stagger grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {cards.map((c) => (
             <CardItem key={c.card_id} card={c} onStatus={setStatus} onLimits={setLimits} onShow={show} />
           ))}
@@ -161,6 +161,7 @@ function CardItem({ card, onStatus, onLimits, onShow }: {
         last4={card.last4}
         expiry={`${String(card.expiry_month ?? "").padStart(2, "0")}/${String(card.expiry_year ?? "").slice(-2)}`}
         frozen={card.status !== "ACTIVE"}
+        appear={Date.now() - new Date(card.created_at ?? 0).getTime() < 60_000}
         skin={[...card.card_id].reduce((n, ch) => n + ch.charCodeAt(0), 0)}
       />
       <div className="mt-5 flex items-baseline justify-between gap-2">
